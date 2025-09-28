@@ -1,0 +1,19 @@
+# Chezmoi 配置文件
+
+# 编辑命令的配置
+[edit]
+    # 设置默认编辑器为 nvim
+    command = "nvim"
+    # 设置编辑器参数，'--wait' 确保在文件关闭后才继续执行命令 
+    args = ["--wait"]
+
+# 差异对比命令的配置
+[diff]
+    command = "diff"
+    args = ["-u"]
+
+# 更新配置
+[update]
+    # 设置为 false 后，`chezmoi update` 只会拉取变更，不会自动应用
+    # 您需要手动执行 `chezmoi apply` 来应用变更
+    apply = false

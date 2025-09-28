@@ -1,0 +1,7 @@
+# 忽略仓库根目录的 README.md
+README.md
+
+# 如果需要，也可以忽略其他仓库管理文件
+.gitignore
+LICENSE
+scripts/
