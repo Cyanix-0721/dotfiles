@@ -21,8 +21,8 @@ echo "✓ 输入法安装完成"
 
 # 配置输入法环境变量
 echo "配置输入法环境变量..."
-if ! sudo grep -q "GTK_IM_MODULE=fcitx5" /etc/environment; then
-    echo -e "\n# 输入法配置\nexport GTK_IM_MODULE=fcitx5\nexport QT_IM_MODULE=fcitx5\nexport XMODIFIERS=@im=fcitx5" | sudo tee -a /etc/environment > /dev/null
+if ! sudo grep -q "GTK_IM_MODULE=fcitx" /etc/environment; then
+    echo -e "\nexport GTK_IM_MODULE=fcitx\nexport QT_IM_MODULE=fcitx\nexport XMODIFIERS=@im=fcitx" | sudo tee -a /etc/environment > /dev/null
     echo "✓ 输入法环境变量配置完成"
 else
     echo "✓ 输入法环境变量已配置，跳过"
