@@ -1,0 +1,7 @@
+[init]
+	defaultBranch = main
+[fetch]
+	prune = true
+[user]
+	name = Cyanix-0721
+	email = 34270450+Cyanix-0721@users.noreply.github.com
