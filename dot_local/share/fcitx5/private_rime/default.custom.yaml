@@ -1,0 +1,4 @@
+patch:
+  # 这里的 wanxiang_suggestion 为万象方案的默认预设
+  # 辅码方案为 `wanxiang_pro_suggestion`
+  __include: wanxiang_suggestion:/

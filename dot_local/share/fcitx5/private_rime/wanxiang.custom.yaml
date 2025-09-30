@@ -1,0 +1,4 @@
+patch:
+  translator/enable_user_dict: false # 关闭自动调频
+  translator/packs/+:                # 添加词库扩展包，在用户目录下建立 wanxiang_pack.dict.yaml 文件
+    - wanxiang_pack

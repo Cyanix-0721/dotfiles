@@ -30,7 +30,7 @@ fi
 
 # 安装万象拼音方案
 echo "安装万象拼音方案..."
-sudo pacman -S --noconfirm rime-wanxiang-data rime-wanxiang-dict rime-wanxiang-dict-pinyin rime-wanxiang-gram-zh-hans rime-wanxiang-pinyin
+sudo pacman -S --noconfirm rime-wanxiang-pinyin
 echo "✓ 万象拼音方案安装完成"
 
 echo "注意: 中文本地化配置可能需要重新启动才能完全生效"
