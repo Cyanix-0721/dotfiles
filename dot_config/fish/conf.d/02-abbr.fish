@@ -25,10 +25,8 @@ abbr -a gb   'git branch'
 abbr -a gbd  'git branch -d'
 
 # -----------------------------------------------------------------------------
-# Directory navigation (zoxide)
+# Directory navigation
 # -----------------------------------------------------------------------------
-abbr -a z    'z'           # zoxide jump
-abbr -a zi   'zi'          # zoxide interactive
 abbr -a ..   'cd ..'
 abbr -a ...  'cd ../..'
 abbr -a .... 'cd ../../..'
@@ -36,12 +34,13 @@ abbr -a .... 'cd ../../..'
 # -----------------------------------------------------------------------------
 # File listing (eza)
 # -----------------------------------------------------------------------------
-abbr -a ls   'eza'
-abbr -a ll   'eza -l'
-abbr -a la   'eza -la'
-abbr -a lt   'eza --tree'
-abbr -a llt  'eza -l --tree'
-abbr -a lla  'eza -la --git'
+abbr -a ls   'eza --icons'
+abbr -a ll   'eza -l --icons'
+abbr -a la   'eza -la --icons'
+abbr -a lt   'eza --tree --icons'
+abbr -a llt  'eza -l --tree --icons'
+abbr -a lr   'eza -R --icons'
+abbr -a lsd  'eza -D --icons'
 
 # -----------------------------------------------------------------------------
 # Search tools (ripgrep, fd)
