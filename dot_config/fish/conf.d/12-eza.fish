@@ -1,0 +1,5 @@
+alias ls="eza"
+alias ll="eza -l --git"
+alias la="eza -la --git"
+alias lt="eza -T --git-ignore"
+alias lta="eza -Ta --git-ignore"
