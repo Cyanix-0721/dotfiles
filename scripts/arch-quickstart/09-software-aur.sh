@@ -12,5 +12,5 @@ fi
 
 # 安装常用软件 (AUR) / Install common software (AUR)
 echo "安装常用软件 (AUR)... / Installing common software (AUR)..."
-paru -S --noconfirm localsend-bin clash-verge-rev-bin zen-browser-bin
+paru -S --noconfirm localsend-bin clash-verge-rev-bin zen-browser-bin bibata-cursor-theme-bin
 echo "✓ 常用软件 (AUR) 安装完成 / Common software (AUR) installation completed"
