@@ -2,7 +2,7 @@
 
 set -e
 
-echo "=== 安装基础工具和 AUR 助手 / Install basic tools and AUR helpers ==="
+echo "=== 系统基础环境配置 / System Foundation Setup ==="
 
 # 检查网络连接 / Check network connection
 echo "检查网络连接... / Checking network connection..."
@@ -48,6 +48,31 @@ else
     echo "跳过 reflector 服务配置 / Skipping reflector service configuration"
 fi
 
+# 配置 ArchlinuxCN 仓库 / Configure ArchlinuxCN Repository
+read -p "是否配置 ArchlinuxCN 仓库？(y/N) / Configure ArchlinuxCN repository? (y/N): " configure_archlinuxcn
+if [[ $configure_archlinuxcn =~ ^[Yy]$ ]]; then
+    echo "=== 配置 ArchlinuxCN 仓库 / Configuring ArchlinuxCN Repository ==="
+    
+    # 检查是否已配置 archlinuxcn / Check if archlinuxcn is already configured
+    if ! sudo grep -q "\[archlinuxcn\]" /etc/pacman.conf; then
+        echo "添加 ArchlinuxCN 仓库到 pacman.conf... / Adding ArchlinuxCN repository to pacman.conf..."
+        echo -e "\n[archlinuxcn]\nServer = https://repo.archlinuxcn.org/\$arch" | sudo tee -a /etc/pacman.conf > /dev/null
+        
+        # 导入 GPG 密钥 / Import GPG key
+        echo "导入 ArchlinuxCN GPG 密钥... / Importing ArchlinuxCN GPG key..."
+        sudo pacman-key --lsign-key "farseerfc@archlinux.org"
+        
+        # 更新并安装密钥环 / Update and install keyring
+        echo "安装 archlinuxcn-keyring... / Installing archlinuxcn-keyring..."
+        sudo pacman -Sy --noconfirm archlinuxcn-keyring
+        echo "✓ ArchlinuxCN 仓库配置成功 / ArchlinuxCN repository configured successfully"
+    else
+        echo "✓ ArchlinuxCN 仓库已配置，跳过 / ArchlinuxCN repository already configured, skipping"
+    fi
+else
+    echo "跳过 ArchlinuxCN 仓库配置 / Skipping ArchlinuxCN repository configuration"
+fi
+
 # 安装 paru / Install paru
 echo "安装 paru... / Installing paru..."
 if ! command -v paru &> /dev/null; then
@@ -81,4 +106,17 @@ if [[ $install_yay =~ ^[Yy]$ ]]; then
     fi
 fi
 
-echo "✓ 基础工具和 AUR 助手安装完成 / ✓ Basic tools and AUR helpers installation completed"
+# 安装 Flatpak / Install Flatpak
+read -p "是否安装 Flatpak？(Y/n) / Install Flatpak? (Y/n): " install_flatpak
+if [[ ! $install_flatpak =~ ^[Nn]$ ]]; then
+    echo "=== 安装 Flatpak / Installing Flatpak ==="
+    
+    # 安装 Flatpak / Install Flatpak
+    echo "安装 Flatpak… / Installing Flatpak…"
+    sudo pacman -S --noconfirm flatpak
+    echo "✓ Flatpak 安装完成 / Flatpak installation completed"
+else
+    echo "跳过 Flatpak 安装 / Skipping Flatpak installation"
+fi
+
+echo "✓ 系统基础环境配置完成 / ✓ System foundation setup completed"

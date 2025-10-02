@@ -9,15 +9,10 @@ show_menu() {
     clear
     echo "=== Arch Linux 快速配置菜单 / Quick Setup Menu ==="
     echo "1. 全部运行 / Run All (Complete Setup)"
-    echo "2. 基础工具和AUR助手 / Base Tools & AUR Helper"
-    echo "3. ArchlinuxCN仓库配置 / ArchlinuxCN Repository Setup"
-    echo "4. Flatpak安装 / Flatpak Installation"
-    echo "5. rEFInd引导管理器 / rEFInd Boot Manager"
-    echo "6. Chezmoi配置管理 / Chezmoi Configuration Manager"
-    echo "7. 备份工具安装 / Backup Tools Installation"
-    echo "8. 中文本地化配置 / Chinese Localization Setup"
-    echo "9. 常用软件 (Pacman) / Common Software (Pacman)"
-    echo "10. 常用软件 (AUR) / Common Software (AUR)"
+    echo "2. 系统基础环境配置 / System Foundation Setup"
+    echo "3. 系统工具安装 / System Tools Installation"
+    echo "4. 中文本地化配置 / Chinese Localization Setup"
+    echo "5. 必备软件包安装 / Essential Packages Installation"
     echo "0. 退出 / Exit"
     echo ""
 }
@@ -28,17 +23,12 @@ run_script() {
     local script_name=""
     
     case $script_num in
-        0) echo "再见! / Goodbye!"; exit 0 ;;
+        0) echo "再见! / Goodbye!"; exit  ;;
         1) echo "开始完整配置… / Starting complete setup…" ;;
-        2) script_name="01-base.sh" ;;
-        3) script_name="02-archlinuxcn.sh" ;;
-        4) script_name="03-flatpak.sh" ;;
-        5) script_name="04-refind.sh" ;;
-        6) script_name="05-chezmoi.sh" ;;
-        7) script_name="06-backup-tools.sh" ;;
-        8) script_name="07-localization.sh" ;;
-        9) script_name="08-software-pacman.sh" ;;
-        10) script_name="09-software-aur.sh" ;;
+        2) script_name="01-system-foundation.sh" ;;
+        3) script_name="02-system-tools.sh" ;;
+        4) script_name="03-chinese-localization.sh" ;;
+        5) script_name="04-essential-packages.sh" ;;
         *) echo "无效选项 / Invalid option"; return 1 ;;
     esac
     
@@ -47,7 +37,7 @@ run_script() {
         return 0
     elif [ "$script_num" -eq 1 ]; then
         # 运行所有脚本（按数字顺序）
-        for script in "$SCRIPT_DIR"/{01,02,03,04,05,06,07,08,09}-*.sh; do
+        for script in "$SCRIPT_DIR"/{01,02,03,04}-*.sh; do
             if [ -f "$script" ] && [ -x "$script" ]; then
                 echo "执行: $(basename "$script") / Executing: $(basename "$script")"
                 "$script"
@@ -72,7 +62,7 @@ run_script() {
 # 主循环
 while true; do
     show_menu
-    read -p "请选择操作 / Please select an option [0-10]: " choice
+    read -p "请选择操作 / Please select an option [0-5]: " choice
     
     if run_script "$choice"; then
         # 所有成功的选项都需要等待用户按键
