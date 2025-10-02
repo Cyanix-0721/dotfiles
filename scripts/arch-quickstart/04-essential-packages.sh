@@ -25,6 +25,29 @@ echo "安装开发与系统工具… / Installing development and system tools�
 sudo pacman -S --noconfirm neovim lazygit github-cli btop fastfetch dex
 paru -S --noconfirm clash-verge-rev-bin
 
+# 询问是否安装 Podman
+echo -n "是否安装 Podman 和 podman-compose？[Y/n] / Install Podman and podman-compose? [Y/n]: "
+read -r install_podman
+
+# 设置默认值为 Y
+install_podman=${install_podman:-Y}
+
+if [[ $install_podman =~ ^[Yy]$ ]]; then
+    echo "安装 Podman 和 podman-compose… / Installing Podman and podman-compose…"
+    sudo pacman -S --noconfirm podman podman-compose
+    
+    echo "配置 Podman 镜像源… / Configuring Podman registry mirror…"
+    
+    # 创建配置文件并写入内容
+    sudo tee /etc/containers/registries.conf.d/10-unqualified-search-registries.conf << EOF
+unqualified-search-registries = ["docker.io"]
+EOF
+    
+    echo "✓ Podman 安装和配置完成 / Podman installation and configuration completed"
+else
+    echo "跳过 Podman 安装 / Skipping Podman installation"
+fi
+
 echo "安装文档处理工具… / Installing document processing tools…"
 sudo pacman -S --noconfirm poppler resvg imagemagick jq
 
