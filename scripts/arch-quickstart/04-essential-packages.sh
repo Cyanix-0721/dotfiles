@@ -15,7 +15,7 @@ sudo pacman -S --noconfirm fzf zoxide ripgrep fd eza bat
 
 echo "安装办公与笔记软件… / Installing office and note-taking software…"
 sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn
-paru -S --noconfirm zen-browser-bin
+paru -S --noconfirm zen-browser-bin ungoogled-chromium-bin
 
 echo "安装媒体与工具软件… / Installing media and utility software…"
 sudo pacman -S --noconfirm vlc mpv yazi 7zip ffmpeg
