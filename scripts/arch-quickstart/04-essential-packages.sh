@@ -14,11 +14,11 @@ echo "安装命令行效率工具… / Installing command line efficiency tools�
 sudo pacman -S --noconfirm fzf zoxide ripgrep fd eza bat
 
 echo "安装办公与笔记软件… / Installing office and note-taking software…"
-sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn
+sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn
 paru -S --noconfirm zen-browser-bin ungoogled-chromium-bin
 
 echo "安装媒体与工具软件… / Installing media and utility software…"
-sudo pacman -S --noconfirm vlc mpv yazi 7zip ffmpeg
+sudo pacman -S --noconfirm vlc mpv yazi 7zip ffmpeg gimp
 paru -S --noconfirm localsend-bin bibata-cursor-theme-bin
 
 echo "安装开发与系统工具… / Installing development and system tools…"
