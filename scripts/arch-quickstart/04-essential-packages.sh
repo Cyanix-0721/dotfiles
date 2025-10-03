@@ -22,7 +22,7 @@ sudo pacman -S --noconfirm vlc mpv yazi 7zip ffmpeg gimp
 paru -S --noconfirm localsend-bin bibata-cursor-theme-bin
 
 echo "安装开发与系统工具… / Installing development and system tools…"
-sudo pacman -S --noconfirm neovim lazygit github-cli btop fastfetch dex uv ast-grep
+sudo pacman -S --noconfirm neovim lazygit github-cli btop fastfetch dex uv ast-grep git-delta
 paru -S --noconfirm clash-verge-rev-bin
 
 # 询问是否安装 Podman
