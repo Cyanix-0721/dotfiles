@@ -16,12 +16,15 @@ sudo pacman -S --noconfirm fzf zoxide ripgrep fd eza bat stow btop fastfetch dex
 echo "安装开发工具… / Installing development tools…"
 sudo pacman -S --noconfirm neovim lazygit github-cli uv ast-grep git-delta poppler resvg imagemagick jq
 
-echo "安装日常应用… / Installing daily applications…"
-sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn vlc mpv ffmpeg gimp yazi 7zip telegram-desktop
-paru -S --noconfirm zen-browser-bin ungoogled-chromium-bin localsend-bin bibata-cursor-theme-bin
+echo "安装系统工具… / Installing system tools…"
+sudo pacman -S --noconfirm mako
 
 echo "安装网络工具… / Installing network tools…"
-paru -S --noconfirm clash-verge-rev-bin
+paru -S --noconfirm clash-verge-rev-bin nautilus
+
+echo "安装日常应用… / Installing daily applications…"
+sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn vlc mpv ffmpeg gimp yazi 7zip telegram-desktop dolphin nautilus
+paru -S --noconfirm zen-browser-bin ungoogled-chromium-bin localsend-bin bibata-cursor-theme-bin qt6ct-kde
 
 # 询问是否安装 Podman
 echo -n "是否安装 Podman 和 podman-compose？[Y/n] / Install Podman and podman-compose? [Y/n]: "
