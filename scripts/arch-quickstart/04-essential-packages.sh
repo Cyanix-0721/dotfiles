@@ -20,7 +20,7 @@ echo "安装系统工具… / Installing system tools…"
 sudo pacman -S --noconfirm mako
 
 echo "安装网络工具… / Installing network tools…"
-paru -S --noconfirm clash-verge-rev-bin nautilus
+paru -S --noconfirm clash-verge-rev-bin
 
 echo "安装日常应用… / Installing daily applications…"
 sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn vlc mpv ffmpeg gimp yazi 7zip telegram-desktop dolphin nautilus
