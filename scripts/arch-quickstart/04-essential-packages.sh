@@ -17,7 +17,7 @@ echo "安装开发工具… / Installing development tools…"
 sudo pacman -S --noconfirm neovim lazygit github-cli uv ast-grep git-delta poppler resvg imagemagick jq
 
 echo "安装系统工具… / Installing system tools…"
-sudo pacman -S --noconfirm mako
+sudo pacman -S --noconfirm mako fuzzel
 
 echo "安装网络工具… / Installing network tools…"
 paru -S --noconfirm clash-verge-rev-bin
