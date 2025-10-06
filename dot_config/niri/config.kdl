@@ -111,7 +111,7 @@ output "eDP-1" {
 // https://yalter.github.io/niri/Configuration:-Layout
 layout {
     // Set gaps around windows in logical pixels.
-    gaps 16
+    gaps 12
 
     // When to center a column when changing focus, options are:
     // - "never", default behavior, focusing an off-screen column will keep at the left
@@ -302,14 +302,8 @@ cursor {
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
 
-// Required for clipboard history integration
 spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store &"
-
-// Recommended (must install polkit-kde before hand) for elevation prompts
 spawn-at-startup "/usr/lib/polkit-kde-authentication-agent-1"
-// This may be a different path on different distributions, the above is for the arch linux mate-polkit package
-
-// Starts DankShell
 spawn-at-startup "dms" "run"
 
 // If using niri newer than 271534e115e5915231c99df287bbfe396185924d (~aug 17 2025)
@@ -328,7 +322,7 @@ hotkey-overlay {
 // Additionally, clients will be informed that they are tiled, removing some client-side rounded corners.
 // This option will also fix border/focus ring drawing behind some semitransparent windows.
 // After enabling or disabling this, you need to restart the apps for this to take effect.
-// prefer-no-csd
+prefer-no-csd
 
 // You can change the path where screenshots are saved.
 // A ~ at the front will be expanded to the home directory.
@@ -353,47 +347,7 @@ animations {
 // Find more information on the wiki:
 // https://yalter.github.io/niri/Configuration:-Window-Rules
 
-// Work around WezTerm's initial configure bug
-// by setting an empty default-column-width.
-window-rule {
-    // This regular expression is intentionally made as specific as possible,
-    // since this is the default config, and we want no false positives.
-    // You can get away with just app-id="wezterm" if you want.
-    match app-id=r#"^org\.wezfurlong\.wezterm$"#
-    default-column-width {}
-}
-
-// Open the Firefox picture-in-picture player as floating by default.
-window-rule {
-    // This app-id regular expression will work for both:
-    // - host Firefox (app-id is "firefox")
-    // - Flatpak Firefox (app-id is "org.mozilla.firefox")
-    match app-id="firefox$" title="^Picture-in-Picture$"
-    match app-id="zen$" title="^Picture-in-Picture$"
-    open-floating true
-}
-
-// Maximize Firefox by default.
-window-rule {
-    match app-id="firefox$"
-    match app-id="zen$"
-    open-maximized true
-}
-
-// Example: block out two password managers from screen capture.
-// (This example rule is commented out with a "/-" in front.)
-window-rule {
-    match app-id=r#"^org\.keepassxc\.KeePassXC$"#
-    match app-id=r#"^org\.gnome\.World\.Secrets$"#
-
-    block-out-from "screen-capture"
-
-    // Use this instead if you want them visible on third-party screenshot tools.
-    // block-out-from "screencast"
-}
-
-// Example: enable rounded corners for all windows.
-// (This example rule is commented out with a "/-" in front.)
+// Enable rounded corners for all windows.
 window-rule {
     geometry-corner-radius 12
     clip-to-geometry true
@@ -402,7 +356,39 @@ window-rule {
 // Make inactive windows semitransparent.
 window-rule {
     match is-active=false
-    opacity 0.95
+    opacity 0.9
+}
+
+// 为 Kitty 终端设置常驻半透明
+window-rule {
+    match app-id="^kitty$"
+    opacity 0.9
+    draw-border-with-background false
+}
+
+// Maximize Firefox by default.
+window-rule {
+    match app-id="firefox$"
+    match app-id="zen$"
+    open-maximized true
+}
+// Open the Firefox picture-in-picture player as floating by default.
+window-rule {
+    match app-id=r#"^(firefox|zen)$"# title=r#"^(Picture-in-Picture|画中画)$"#
+    opacity 1.0
+    default-floating-position x=32 y=32 relative-to="top-left"
+    open-floating true
+}
+
+// Block out two password managers from screen capture.
+window-rule {
+    match app-id=r#"^org\.keepassxc\.KeePassXC$"#
+    match app-id=r#"^org\.gnome\.World\.Secrets$"#
+
+    block-out-from "screen-capture"
+
+    // Use this instead if you want them visible on third-party screenshot tools.
+    // block-out-from "screencast"
 }
 
 binds {

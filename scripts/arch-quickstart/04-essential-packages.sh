@@ -23,7 +23,7 @@ echo "安装网络工具… / Installing network tools…"
 paru -S --noconfirm clash-verge-rev-bin
 
 echo "安装日常应用… / Installing daily applications…"
-sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn vlc mpv ffmpeg gimp yazi 7zip telegram-desktop dolphin nautilus scrcpy
+sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn vlc mpv ffmpeg gimp yazi 7zip telegram-desktop dolphin nautilus scrcpy syncthing
 paru -S --noconfirm zen-browser-bin ungoogled-chromium-bin localsend-bin bibata-cursor-theme-bin qt6ct-kde
 
 # 询问是否安装 Podman
