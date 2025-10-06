@@ -119,7 +119,7 @@
       "showAudioIcon": true
     }
   ],
-  "appLauncherViewMode": "list",
+  "appLauncherViewMode": "grid",
   "spotlightModalViewMode": "list",
   "networkPreference": "auto",
   "iconTheme": "System Default",

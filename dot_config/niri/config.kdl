@@ -167,9 +167,10 @@ layout {
         // - CSS-like notation: "rgb(255, 127, 0)", rgba(), hsl() and a few others.
 
         // Color of the ring on the active monitor.
-        active-color "#7fc8ff"
+        active-color "#39c5bb"
 
         // Color of the ring on inactive monitors.
+        // inactive-gradient from="#505050" to="#808080" angle=45 relative-to="workspace-view"
         //
         // The focus ring only draws around the active window, so the only place
         // where you can see its inactive-color is on other monitors.
@@ -188,7 +189,6 @@ layout {
         // of the workspace, rather than relative to just the window itself.
         // To do that, set relative-to="workspace-view".
         //
-        // inactive-gradient from="#505050" to="#808080" angle=45 relative-to="workspace-view"
     }
 
     // You can also add a border. It's similar to the focus ring, but always visible.
@@ -286,6 +286,9 @@ environment {
 cursor {
   xcursor-theme "Bibata-Modern-Classic"
   xcursor-size 24
+  
+  hide-when-typing
+  hide-after-inactive-ms 1000
 }
 
 // Add lines like this to spawn processes at startup.
@@ -317,7 +320,7 @@ config-notification {
 
 hotkey-overlay {
     // Uncomment this line to disable the "Important Hotkeys" pop-up at startup.
-    // skip-at-startup
+    skip-at-startup
 }
 
 // Uncomment this line to ask the clients to omit their client-side decorations if possible.
@@ -365,13 +368,21 @@ window-rule {
     // This app-id regular expression will work for both:
     // - host Firefox (app-id is "firefox")
     // - Flatpak Firefox (app-id is "org.mozilla.firefox")
-    match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+    match app-id="firefox$" title="^Picture-in-Picture$"
+    match app-id="zen$" title="^Picture-in-Picture$"
     open-floating true
+}
+
+// Maximize Firefox by default.
+window-rule {
+    match app-id="firefox$"
+    match app-id="zen$"
+    open-maximized true
 }
 
 // Example: block out two password managers from screen capture.
 // (This example rule is commented out with a "/-" in front.)
-/-window-rule {
+window-rule {
     match app-id=r#"^org\.keepassxc\.KeePassXC$"#
     match app-id=r#"^org\.gnome\.World\.Secrets$"#
 
@@ -383,9 +394,15 @@ window-rule {
 
 // Example: enable rounded corners for all windows.
 // (This example rule is commented out with a "/-" in front.)
-/-window-rule {
+window-rule {
     geometry-corner-radius 12
     clip-to-geometry true
+}
+
+// Make inactive windows semitransparent.
+window-rule {
+    match is-active=false
+    opacity 0.95
 }
 
 binds {
