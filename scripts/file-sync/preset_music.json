@@ -1,0 +1,17 @@
+{
+    "name": "音乐库同步",
+    "description": "从NTFS只读分区同步音乐文件到本地音乐库",
+    "source": "/mnt/DDDD/UserData/Music/Music/My collection/",
+    "destination": "/home/slayer/Music/",
+    
+    "folder_white_list": [],
+    
+    "folder_black_list": [],
+    
+    "extension_white_list": [
+        "flac", "wav", "mp3", "m4a", "aac", "ogg", "ape", "wma",
+        "aiff", "alac", "dsf", "dff", "mka", "opus", "wv"
+    ],
+    
+    "extension_black_list": []
+}
