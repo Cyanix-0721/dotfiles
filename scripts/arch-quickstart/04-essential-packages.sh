@@ -11,10 +11,10 @@ if ! command -v paru &>/dev/null; then
 fi
 
 echo "安装命令行工具… / Installing command line tools…"
-sudo pacman -S --noconfirm fzf zoxide ripgrep fd eza bat stow btop fastfetch dex
+sudo pacman -S --noconfirm fzf zoxide ripgrep fd eza bat stow btop fastfetch dex viu
 
 echo "安装开发工具… / Installing development tools…"
-sudo pacman -S --noconfirm neovim lazygit github-cli uv ast-grep git-delta poppler resvg imagemagick jq android-tools
+sudo pacman -S --noconfirm neovim python-pynvim lazygit github-cli uv ast-grep git-delta poppler resvg imagemagick jq android-tools luarocks
 
 echo "安装系统工具… / Installing system tools…"
 sudo pacman -S --noconfirm mako fuzzel ntfs-3g
