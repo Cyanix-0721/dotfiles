@@ -4,19 +4,19 @@ set -e
 
 # 检查root权限
 if [[ $EUID -ne 0 ]]; then
-   echo "错误：请以root权限运行此脚本" 
-   exit 1
+  echo "错误：请以root权限运行此脚本"
+  exit 1
 fi
 
 # 检查并安装reflector
-if ! command -v reflector &> /dev/null; then
-    echo "检测到reflector未安装，正在安装..."
-    pacman -Sy reflector --noconfirm
-    echo "reflector安装完成！"
+if ! command -v reflector &>/dev/null; then
+  echo "检测到reflector未安装，正在安装..."
+  pacman -Sy reflector --noconfirm
+  echo "reflector安装完成！"
 fi
 
 # 创建Reflector服务文件
-cat > /etc/systemd/system/reflector.service << 'EOF'
+cat >/etc/systemd/system/reflector.service <<'EOF'
 [Unit]
 Description=Pacman mirrorlist update with Reflector
 Wants=network-online.target
@@ -32,7 +32,7 @@ WantedBy=multi-user.target
 EOF
 
 # 创建Reflector定时器文件
-cat > /etc/systemd/system/reflector.timer << 'EOF'
+cat >/etc/systemd/system/reflector.timer <<'EOF'
 [Unit]
 Description=Run reflector weekly to update mirrorlist
 Requires=reflector.service
