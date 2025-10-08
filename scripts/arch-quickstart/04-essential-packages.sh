@@ -90,4 +90,18 @@ else
   echo "跳过 LazyVim 安装 / Skipping LazyVim installation"
 fi
 
+# 询问是否安装 vfox
+echo -n "是否安装 vfox (版本管理工具)？[Y/n] / Install vfox (version manager)? [Y/n]: "
+read -r install_vfox
+
+install_vfox=${install_vfox:-Y}
+
+if [[ $install_vfox =~ ^[Yy]$ ]]; then
+  echo "安装 vfox… / Installing vfox…"
+  curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash
+  echo "✓ vfox 安装完成 / vfox installation completed"
+else
+  echo "跳过 vfox 安装 / Skipping vfox installation"
+fi
+
 echo "✓ 常用软件安装完成 / Common software installation completed"
