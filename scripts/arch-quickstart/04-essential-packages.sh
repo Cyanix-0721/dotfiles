@@ -18,6 +18,7 @@ sudo pacman -S --noconfirm neovim python-pynvim lazygit gitui github-cli uv ast-
 
 echo "安装系统工具… / Installing system tools…"
 sudo pacman -S --noconfirm mako fuzzel ntfs-3g
+paru -S --noconfirm octopi
 
 echo "安装网络工具… / Installing network tools…"
 paru -S --noconfirm clash-verge-rev-bin
