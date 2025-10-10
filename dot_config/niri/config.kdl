@@ -371,12 +371,19 @@ window-rule {
     match app-id="zen$"
     open-maximized true
 }
+
 // Open the Firefox picture-in-picture player as floating by default.
 window-rule {
     match app-id=r#"^(firefox|zen)$"# title=r#"^(Picture-in-Picture|画中画)$"#
     opacity 1.0
     default-floating-position x=32 y=32 relative-to="top-left"
     open-floating true
+}
+
+// Open the mpv opacity 1.0 by default.
+window-rule {
+    match app-id=r#"^(mpv)$"#
+    opacity 1.0
 }
 
 // Block out two password managers from screen capture.
