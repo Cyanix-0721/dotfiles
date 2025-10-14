@@ -1,646 +1,765 @@
 #!/usr/bin/env python3
 """
 通用文件同步工具 - 支持Linux/Linux、Linux/Windows、Windows/Linux
+Universal File Sync Tool - Supports Linux↔Linux, Linux↔Windows, Windows↔Linux
+
 在Linux端执行，支持各种文件系统，可选排除空文件夹
+Executes on Linux, supports various filesystems, optional empty directory exclusion
 """
 
-import os
 import sys
 import json
 import subprocess
 import shutil
+import logging
+import argparse
 from pathlib import Path
-import glob
-import datetime
+from typing import Dict, List, Tuple, Optional
+from dataclasses import dataclass
 
-class UniversalFileSyncTool:
-    def __init__(self):
-        self.script_dir = Path(__file__).parent
-        self.presets = self.load_presets()
-        
-    def load_presets(self):
-        """加载所有预设文件"""
-        presets = {}
-        
-        # 查找所有预设文件 (preset_*.json)
-        preset_files = glob.glob(str(self.script_dir / "preset_*.json"))
-        
-        for i, preset_file in enumerate(sorted(preset_files), 1):
-            try:
-                with open(preset_file, 'r', encoding='utf-8') as f:
-                    preset_data = json.load(f)
-                
-                preset_name = Path(preset_file).stem.replace("preset_", "")
-                presets[str(i)] = {
-                    "name": preset_data.get("name", preset_name),
-                    "file": preset_file,
-                    "data": preset_data
-                }
-                print(f"✅ 加载预设: {preset_data.get('name', preset_name)}")
-                
-            except Exception as e:
-                print(f"❌ 加载预设文件失败 {preset_file}: {e}")
-        
-        return presets
 
-    def check_rsync_available(self):
-        """检查rsync是否可用"""
-        if not shutil.which('rsync'):
-            print("错误: 未找到rsync命令，请先安装rsync")
-            print("Ubuntu/Debian: sudo apt install rsync")
-            print("Arch/Manjaro: sudo pacman -S rsync")
-            return False
-        return True
+@dataclass
+class FileSystemInfo:
+    """文件系统信息 / Filesystem information"""
 
-    def detect_filesystem_type(self, path):
-        """检测路径的文件系统类型"""
+    fs_type: str
+    mount_point: str
+    device: str
+
+
+@dataclass
+class SyncScenario:
+    """同步场景信息 / Sync scenario information"""
+
+    source_fs: str
+    dest_fs: str
+    scenario_type: str
+    recommendations: List[str]
+    warnings: List[str]
+
+
+class FileSystemAnalyzer:
+    """文件系统分析器 / Filesystem analyzer"""
+
+    WINDOWS_FS_TYPES = ["ntfs", "ntfs3", "fuseblk", "vfat", "exfat", "msdos"]
+
+    def __init__(self, logger: logging.Logger):
+        self.logger = logger
+
+    def detect_filesystem_type(self, path: str) -> FileSystemInfo:
+        """检测路径的文件系统类型 / Detect filesystem type of path"""
         try:
-            # 获取路径的挂载点
             result = subprocess.run(
-                ['df', '--output=source,target,fstype', path],
-                capture_output=True, 
-                text=True, 
-                check=True
+                ["df", "--output=source,target,fstype", path],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=5,
             )
-            
-            lines = result.stdout.strip().split('\n')
+
+            lines = result.stdout.strip().split("\n")
             if len(lines) > 1:
-                # 第二行是目标路径的信息
                 parts = lines[1].split()
                 if len(parts) >= 3:
-                    device, mount_point, fstype = parts[0], parts[1], parts[2]
-                    return fstype, mount_point, device
-                    
+                    return FileSystemInfo(
+                        fs_type=parts[2], mount_point=parts[1], device=parts[0]
+                    )
+        except subprocess.TimeoutExpired:
+            self.logger.error(f"检测文件系统超时: {path}")
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"检测文件系统失败: {e}")
         except Exception as e:
-            print(f"⚠️  检测文件系统失败 {path}: {e}")
-            
-        return "unknown", path, "unknown"
+            self.logger.warning(f"检测文件系统时发生异常: {e}")
 
-    def analyze_sync_scenario(self, source, destination):
-        """分析同步场景并返回优化建议"""
-        source_fs, source_mount, source_device = self.detect_filesystem_type(source)
-        dest_fs, dest_mount, dest_device = self.detect_filesystem_type(destination)
-        
-        print(f"\n🔍 同步场景分析:")
-        print(f"   源: {source}")
-        print(f"     文件系统: {source_fs}, 挂载点: {source_mount}")
-        print(f"   目标: {destination}")
-        print(f"     文件系统: {dest_fs}, 挂载点: {dest_mount}")
-        
-        scenario = {
-            "source_fs": source_fs,
-            "dest_fs": dest_fs,
-            "recommendations": [],
-            "warnings": []
-        }
-        
-        # Windows文件系统检测
-        windows_fs = ["ntfs", "ntfs3", "fuseblk", "vfat", "exfat", "msdos"]
-        
-        # 场景1: Windows to Linux
-        if source_fs.lower() in windows_fs and dest_fs.lower() not in windows_fs:
-            scenario["type"] = "Windows to Linux"
-            scenario["recommendations"].extend([
-                "--modify-window=2 (扩大时间戳窗口)",
-                "--no-perms (忽略Windows权限)",
-                "--no-owner --no-group (忽略所有者和组)"
-            ])
-            scenario["warnings"].extend([
-                "时间戳精度差异: Windows(100ns) vs Linux(1s)",
-                "权限系统不兼容",
-                "符号链接处理可能不同"
-            ])
-            
-        # 场景2: Linux to Windows  
-        elif source_fs.lower() not in windows_fs and dest_fs.lower() in windows_fs:
-            scenario["type"] = "Linux to Windows"
-            scenario["recommendations"].extend([
-                "--modify-window=2 (扩大时间戳窗口)",
-                "--no-perms (忽略Linux权限)",
-                "--no-owner --no-group (忽略所有者和组)"
-            ])
-            scenario["warnings"].extend([
-                "时间戳精度差异",
-                "权限信息会丢失",
-                "符号链接可能无法创建"
-            ])
-            
-        # 场景3: Linux to Linux
-        elif source_fs.lower() not in windows_fs and dest_fs.lower() not in windows_fs:
-            scenario["type"] = "Linux to Linux"
-            scenario["recommendations"].extend([
-                "-a (归档模式，保留所有属性)",
-                "--modify-window=1 (标准时间戳窗口)"
-            ])
-            
-        # 场景4: Windows to Windows
-        elif source_fs.lower() in windows_fs and dest_fs.lower() in windows_fs:
-            scenario["type"] = "Windows to Windows"
-            scenario["recommendations"].extend([
-                "--modify-window=2 (扩大时间戳窗口)",
-                "-rlt (递归、链接、时间)"
-            ])
-            
+        return FileSystemInfo("unknown", path, "unknown")
+
+    def analyze_sync_scenario(self, source: str, destination: str) -> SyncScenario:
+        """分析同步场景并返回优化建议 / Analyze sync scenario and return recommendations"""
+        source_info = self.detect_filesystem_type(source)
+        dest_info = self.detect_filesystem_type(destination)
+
+        self.logger.info("同步场景分析 / Sync scenario analysis:")
+        self.logger.info(f"  源 / Source: {source}")
+        self.logger.info(
+            f"    文件系统 / Filesystem: {source_info.fs_type}, 挂载点 / Mount: {source_info.mount_point}"
+        )
+        self.logger.info(f"  目标 / Destination: {destination}")
+        self.logger.info(
+            f"    文件系统 / Filesystem: {dest_info.fs_type}, 挂载点 / Mount: {dest_info.mount_point}"
+        )
+
+        source_is_windows = source_info.fs_type.lower() in self.WINDOWS_FS_TYPES
+        dest_is_windows = dest_info.fs_type.lower() in self.WINDOWS_FS_TYPES
+
+        recommendations = []
+        warnings = []
+
+        # 确定场景类型 / Determine scenario type
+        if source_is_windows and not dest_is_windows:
+            scenario_type = "Windows to Linux"
+            recommendations.extend(
+                [
+                    "--modify-window=2 (扩大时间戳窗口 / Expand timestamp window)",
+                    "--no-perms (忽略Windows权限 / Ignore Windows permissions)",
+                    "--no-owner --no-group (忽略所有者和组 / Ignore owner and group)",
+                ]
+            )
+            warnings.extend(
+                [
+                    "时间戳精度差异: Windows(100ns) vs Linux(1s) / Timestamp precision difference",
+                    "权限系统不兼容 / Permission system incompatible",
+                    "符号链接处理可能不同 / Symlink handling may differ",
+                ]
+            )
+        elif not source_is_windows and dest_is_windows:
+            scenario_type = "Linux to Windows"
+            recommendations.extend(
+                [
+                    "--modify-window=2 (扩大时间戳窗口 / Expand timestamp window)",
+                    "--no-perms (忽略Linux权限 / Ignore Linux permissions)",
+                    "--no-owner --no-group (忽略所有者和组 / Ignore owner and group)",
+                ]
+            )
+            warnings.extend(
+                [
+                    "时间戳精度差异 / Timestamp precision difference",
+                    "权限信息会丢失 / Permission information will be lost",
+                    "符号链接可能无法创建 / Symlinks may not be created",
+                ]
+            )
+        elif not source_is_windows and not dest_is_windows:
+            scenario_type = "Linux to Linux"
+            recommendations.extend(
+                [
+                    "-a (归档模式，保留所有属性 / Archive mode, preserve all attributes)",
+                    "--modify-window=1 (标准时间戳窗口 / Standard timestamp window)",
+                ]
+            )
+        elif source_is_windows and dest_is_windows:
+            scenario_type = "Windows to Windows"
+            recommendations.extend(
+                [
+                    "--modify-window=2 (扩大时间戳窗口 / Expand timestamp window)",
+                    "-rlt (递归、链接、时间 / Recursive, links, time)",
+                ]
+            )
         else:
-            scenario["type"] = "未知场景"
-            scenario["recommendations"].extend([
-                "--modify-window=2 (保守时间戳窗口)",
-                "-rlt (基本文件属性)"
-            ])
-            
-        return scenario
+            scenario_type = "Unknown scenario"
+            recommendations.extend(
+                [
+                    "--modify-window=2 (保守时间戳窗口 / Conservative timestamp window)",
+                    "-rlt (基本文件属性 / Basic file attributes)",
+                ]
+            )
 
-    def build_rsync_command_universal(self, config, sync_mode="mirror", dry_run=False, scenario=None, exclude_empty_dirs=True):
-        """构建通用rsync命令"""
-        source = config["source"]
-        destination = config["destination"]
-        
-        # 基础参数
-        base_args = ['rsync', '-vh', '--progress']
-        
-        # 根据场景选择参数
-        if scenario["type"] in ["Linux to Linux"]:
-            # Linux to Linux: 使用完整归档模式
-            base_args.extend(['-a'])  # 归档模式
-            base_args.extend(['--modify-window=1'])
-        else:
-            # 跨平台同步: 使用保守参数
-            base_args.extend(['-rlt'])  # 递归、保留链接和时间戳
-            base_args.extend(['--modify-window=2'])  # 扩大时间窗口
-            base_args.extend(['--no-perms', '--no-owner', '--no-group'])  # 忽略权限
-            
-            # 对于Windows目标，添加额外参数
-            windows_fs = ["ntfs", "ntfs3", "fuseblk", "vfat", "exfat", "msdos"]
-            if scenario["dest_fs"].lower() in windows_fs:
-                base_args.extend(['--size-only'])  # 对于Windows目标，使用大小比较
+        return SyncScenario(
+            source_fs=source_info.fs_type,
+            dest_fs=dest_info.fs_type,
+            scenario_type=scenario_type,
+            recommendations=recommendations,
+            warnings=warnings,
+        )
 
-        # 同步模式参数
-        if sync_mode == "mirror":
-            base_args.append('--delete')
-        elif sync_mode == "update":
-            # 只更新，不删除
-            pass
-        elif sync_mode == "safe":
-            base_args.append('--ignore-existing')
+    def analyze_empty_directories(
+        self, source_path: str, max_display: int = 10
+    ) -> List[str]:
+        """分析源目录中的空文件夹 / Analyze empty directories in source"""
+        if not Path(source_path).exists():
+            return []
 
-        # 可选排除空文件夹 - 根据参数决定
-        if exclude_empty_dirs:
-            base_args.append('--prune-empty-dirs')
+        self.logger.info(f"空文件夹分析 / Empty directory analysis: {source_path}")
 
-        if dry_run:
-            base_args.append('--dry-run')
-
-        # 处理文件夹黑白名单
-        folder_white_list = config.get("folder_white_list", [])
-        folder_black_list = config.get("folder_black_list", [])
-        
-        # 处理文件扩展名黑白名单
-        extension_white_list = config.get("extension_white_list", [])
-        extension_black_list = config.get("extension_black_list", [])
-
-        # 构建包含/排除参数
-        filter_args = []
-        
-        # 首先包含所有目录（以便递归）
-        filter_args.extend(['--include', '*/'])
-        
-        # 文件夹白名单处理
-        for folder in folder_white_list:
-            filter_args.extend(['--include', f'{folder}/'])
-            filter_args.extend(['--include', f'{folder}/**'])
-        
-        # 文件扩展名白名单处理
-        for ext in extension_white_list:
-            filter_args.extend(['--include', f'*.{ext}'])
-            if ext != ext.upper():  # 避免重复添加
-                filter_args.extend(['--include', f'*.{ext.upper()}'])
-        
-        # 文件夹黑名单处理
-        for folder in folder_black_list:
-            filter_args.extend(['--exclude', f'{folder}/'])
-        
-        # 文件扩展名黑名单处理
-        for ext in extension_black_list:
-            filter_args.extend(['--exclude', f'*.{ext}'])
-            if ext != ext.upper():  # 避免重复添加
-                filter_args.extend(['--exclude', f'*.{ext.upper()}'])
-        
-        # 如果指定了白名单，需要排除其他所有文件
-        if extension_white_list or folder_white_list:
-            filter_args.extend(['--exclude', '*'])
-
-        return base_args + filter_args + [source, destination]
-
-    def validate_paths(self, source, destination):
-        """验证源路径和目标路径"""
-        if not os.path.exists(source):
-            print(f"错误: 源路径不存在: {source}")
-            return False
-        
-        if not os.path.exists(destination):
-            create = input(f"目标路径不存在: {destination}\n是否创建? (y/n): ").strip().lower()
-            if create == 'y':
-                os.makedirs(destination, exist_ok=True)
-                print(f"已创建目标目录: {destination}")
-            else:
-                return False
-        
-        return True
-
-    def analyze_empty_directories(self, config):
-        """分析源目录中的空文件夹"""
-        source = config["source"]
-        
-        if not os.path.exists(source):
-            return
-        
-        print(f"\n📁 空文件夹分析: {source}")
-        
         empty_dirs = []
-        total_dirs = 0
-        
         try:
-            for root, dirs, files in os.walk(source):
-                total_dirs += 1
-                
-                # 检查当前目录是否为空
-                if not dirs and not files:
-                    rel_path = os.path.relpath(root, source)
-                    if rel_path != '.':  # 跳过根目录
-                        empty_dirs.append(rel_path)
-                        
-                # 限制输出数量，避免过多信息
-                if len(empty_dirs) >= 10:
+            for root, dirs, files in Path(source_path).walk():
+                # 检查当前目录是否为空 / Check if current directory is empty
+                if not list(Path(root).iterdir()):
+                    rel_path = Path(root).relative_to(source_path)
+                    if str(rel_path) != ".":
+                        empty_dirs.append(str(rel_path))
+
+                if len(empty_dirs) >= 100:  # 限制收集数量 / Limit collection
                     break
-                    
         except Exception as e:
-            print(f"❌ 分析空文件夹时出错: {e}")
-            return
-        
+            self.logger.error(
+                f"分析空文件夹时出错 / Error analyzing empty directories: {e}"
+            )
+            return []
+
         if empty_dirs:
-            print(f"   🔍 发现 {len(empty_dirs)} 个空文件夹 (显示前10个):")
-            for empty_dir in empty_dirs[:10]:
-                print(f"      📁 {empty_dir}")
-            if len(empty_dirs) > 10:
-                print(f"      ... 还有 {len(empty_dirs) - 10} 个空文件夹")
+            self.logger.info(
+                f"  发现 {len(empty_dirs)} 个空文件夹 / Found {len(empty_dirs)} empty directories"
+            )
+            for empty_dir in empty_dirs[:max_display]:
+                self.logger.debug(f"    📁 {empty_dir}")
+            if len(empty_dirs) > max_display:
+                self.logger.debug(
+                    f"    ... 还有 {len(empty_dirs) - max_display} 个 / {len(empty_dirs) - max_display} more"
+                )
         else:
-            print(f"   ✅ 未发现空文件夹")
+            self.logger.info("  未发现空文件夹 / No empty directories found")
 
         return empty_dirs
 
-    def run_universal_sync(self, config, sync_mode="mirror", dry_run=False, exclude_empty_dirs=True):
-        """执行通用同步操作"""
-        source = config["source"]
-        destination = config["destination"]
-        
-        if not self.validate_paths(source, destination):
-            return False
 
-        # 分析同步场景
-        scenario = self.analyze_sync_scenario(source, destination)
-        
-        print(f"\n🎯 同步类型: {scenario['type']}")
-        
-        if scenario["recommendations"]:
-            print("💡 推荐参数:")
-            for rec in scenario["recommendations"]:
-                print(f"   ✅ {rec}")
-                
-        if scenario["warnings"]:
-            print("⚠️  注意事项:")
-            for warning in scenario["warnings"]:
-                print(f"   ⚠️  {warning}")
+class RsyncCommandBuilder:
+    """Rsync 命令构建器 / Rsync command builder"""
 
-        # 分析空文件夹
-        empty_dirs = self.analyze_empty_directories(config)
-        
-        # 显示空文件夹排除设置
+    def __init__(self, logger: logging.Logger):
+        self.logger = logger
+
+    def build_command(
+        self,
+        source: str,
+        destination: str,
+        scenario: SyncScenario,
+        sync_mode: str = "mirror",
+        dry_run: bool = False,
+        exclude_empty_dirs: bool = True,
+        folder_white_list: Optional[List[str]] = None,
+        folder_black_list: Optional[List[str]] = None,
+        extension_white_list: Optional[List[str]] = None,
+        extension_black_list: Optional[List[str]] = None,
+    ) -> List[str]:
+        """构建rsync命令 / Build rsync command"""
+
+        # 基础参数 / Base arguments
+        cmd = ["rsync", "-vh", "--progress"]
+
+        # 根据场景选择参数 / Select parameters based on scenario
+        if scenario.scenario_type == "Linux to Linux":
+            cmd.extend(["-a", "--modify-window=1"])
+        else:
+            cmd.extend(
+                ["-rlt", "--modify-window=2", "--no-perms", "--no-owner", "--no-group"]
+            )
+
+            # 对于Windows目标，使用大小比较 / For Windows destination, use size comparison
+            if scenario.dest_fs.lower() in FileSystemAnalyzer.WINDOWS_FS_TYPES:
+                cmd.append("--size-only")
+
+        # 同步模式 / Sync mode
+        if sync_mode == "mirror":
+            cmd.append("--delete")
+        elif sync_mode == "safe":
+            cmd.append("--ignore-existing")
+        # update 模式不需要额外参数 / update mode needs no extra parameters
+
+        # 空文件夹排除 / Empty directory exclusion
         if exclude_empty_dirs:
-            print(f"\n✅ 空文件夹排除: 已启用")
-            if empty_dirs:
-                print(f"   以上 {len(empty_dirs)} 个空文件夹将不会被同步")
-            else:
-                print(f"   未发现空文件夹，此设置不会影响同步")
-        else:
-            print(f"\n❌ 空文件夹排除: 已禁用")
-            if empty_dirs:
-                print(f"   注意: {len(empty_dirs)} 个空文件夹将会被同步到目标目录")
+            cmd.append("--prune-empty-dirs")
 
-        # 确保路径以斜杠结尾
-        if not source.endswith('/'):
-            source += '/'
-        if not destination.endswith('/'):
-            destination += '/'
-
-        command = self.build_rsync_command_universal(config, sync_mode, dry_run, scenario, exclude_empty_dirs)
-        
-        print("\n" + "="*60)
-        print(f"🔄 通用文件同步")
-        print(f"📁 源: {source}")
-        print(f"📁 目标: {destination}")
-        print(f"📝 预设: {config.get('name', '未知')}")
-        print(f"🔧 同步模式: {self.get_sync_mode_description(sync_mode)}")
-        print(f"💻 场景: {scenario['type']}")
-        print(f"🗑️  空文件夹排除: {'启用' if exclude_empty_dirs else '禁用'}")
-        
-        # 显示使用的参数
-        print(f"\n⚙️  使用参数:")
-        param_desc = {
-            '-a': '归档模式 (保留所有属性)',
-            '-rlt': '递归+链接+时间戳 (基础属性)',
-            '--modify-window=1': '标准时间戳窗口',
-            '--modify-window=2': '扩大时间戳窗口',
-            '--no-perms': '忽略权限',
-            '--no-owner': '忽略所有者',
-            '--no-group': '忽略组',
-            '--size-only': '仅比较文件大小',
-            '--prune-empty-dirs': '排除空文件夹'
-        }
-        
-        for arg in command:
-            if arg in param_desc:
-                print(f"   {arg}: {param_desc[arg]}")
-            
+        # Dry run
         if dry_run:
-            print("\n⚠️  模式: 模拟运行")
-        print("="*60)
-        print(f"🔧 完整命令:\n{' '.join(command)}")
-        print("="*60)
+            cmd.append("--dry-run")
 
-        try:
-            # 执行rsync命令
-            result = subprocess.run(command, check=False)
-            if result.returncode == 0:
-                print("\n✅ 同步操作完成!")
-                if dry_run:
-                    print("💡 这是模拟运行，要实际执行请去掉--dry-run选项")
-                
-                # 显示同步后建议
-                if not dry_run:
-                    self.show_post_sync_advice(scenario, exclude_empty_dirs)
-                return True
+        # 构建过滤器 / Build filters
+        filter_args = self._build_filters(
+            folder_white_list or [],
+            folder_black_list or [],
+            extension_white_list or [],
+            extension_black_list or [],
+        )
+
+        # 确保路径以斜杠结尾 / Ensure paths end with slash
+        if not source.endswith("/"):
+            source += "/"
+        if not destination.endswith("/"):
+            destination += "/"
+
+        return cmd + filter_args + [source, destination]
+
+    def _build_filters(
+        self,
+        folder_white_list: List[str],
+        folder_black_list: List[str],
+        extension_white_list: List[str],
+        extension_black_list: List[str],
+    ) -> List[str]:
+        """构建过滤器参数 / Build filter arguments"""
+        filters = []
+
+        # 首先包含所有目录 / Include all directories first
+        filters.extend(["--include", "*/"])
+
+        # 文件夹白名单 / Folder whitelist
+        for folder in folder_white_list:
+            filters.extend(["--include", f"{folder}/", "--include", f"{folder}/**"])
+
+        # 文件扩展名白名单 / Extension whitelist
+        for ext in extension_white_list:
+            filters.extend(["--include", f"*.{ext}"])
+            if ext != ext.upper():
+                filters.extend(["--include", f"*.{ext.upper()}"])
+
+        # 文件夹黑名单 / Folder blacklist
+        for folder in folder_black_list:
+            filters.extend(["--exclude", f"{folder}/"])
+
+        # 文件扩展名黑名单 / Extension blacklist
+        for ext in extension_black_list:
+            filters.extend(["--exclude", f"*.{ext}"])
+            if ext != ext.upper():
+                filters.extend(["--exclude", f"*.{ext.upper()}"])
+
+        # 如果指定了白名单，排除其他所有文件 / If whitelist specified, exclude all other files
+        if extension_white_list or folder_white_list:
+            filters.extend(["--exclude", "*"])
+
+        return filters
+
+
+class SyncManager:
+    """同步管理器 / Sync manager"""
+
+    SYNC_MODE_DESCRIPTIONS = {
+        "mirror": "镜像同步 (删除目标中多余文件) / Mirror sync (delete extra files)",
+        "update": "增量更新 (只添加/更新，不删除) / Incremental update (add/update only)",
+        "safe": "安全同步 (不覆盖现有文件) / Safe sync (don't overwrite existing)",
+    }
+
+    def __init__(self, logger: logging.Logger):
+        self.logger = logger
+        self.fs_analyzer = FileSystemAnalyzer(logger)
+        self.cmd_builder = RsyncCommandBuilder(logger)
+
+    @staticmethod
+    def check_rsync_available() -> bool:
+        """检查rsync是否可用 / Check if rsync is available"""
+        return shutil.which("rsync") is not None
+
+    def validate_paths(
+        self, source: str, destination: str, auto_create: bool = False
+    ) -> bool:
+        """验证源路径和目标路径 / Validate source and destination paths"""
+        source_path = Path(source)
+        dest_path = Path(destination)
+
+        if not source_path.exists():
+            self.logger.error(f"源路径不存在 / Source path does not exist: {source}")
+            return False
+
+        if not dest_path.exists():
+            if auto_create:
+                try:
+                    dest_path.mkdir(parents=True, exist_ok=True)
+                    self.logger.info(
+                        f"已创建目标目录 / Created destination directory: {destination}"
+                    )
+                except Exception as e:
+                    self.logger.error(
+                        f"创建目标目录失败 / Failed to create destination: {e}"
+                    )
+                    return False
             else:
-                print(f"\n❌ 同步操作失败，返回码: {result.returncode}")
+                self.logger.error(
+                    f"目标路径不存在 / Destination path does not exist: {destination}"
+                )
                 return False
-                
-        except KeyboardInterrupt:
-            print("\n\n⚠️  操作被用户中断")
-            return False
-        except Exception as e:
-            print(f"\n❌ 执行过程中发生错误: {e}")
-            return False
 
-    def show_post_sync_advice(self, scenario, exclude_empty_dirs):
-        """显示同步后建议"""
-        print(f"\n💡 同步后建议:")
-        
-        if scenario["type"] in ["Windows to Linux", "Linux to Windows"]:
-            print(f"   1. 验证文件完整性: 随机抽查文件是否能正常访问")
-            print(f"   2. 检查时间戳: 确认重要文件的时间戳正确")
-            if exclude_empty_dirs:
-                print(f"   3. 空文件夹检查: 确认空文件夹已正确排除")
-            print(f"   4. 验证文件数量: 确认目标目录文件数量符合预期")
-        else:
-            print(f"   1. 快速验证: 确认主要文件已同步")
-            if not exclude_empty_dirs:
-                print(f"   2. 空文件夹: 确认需要的空文件夹结构已保留")
-            print(f"   3. 权限检查: 确认文件权限正确 (仅Linux to Linux)")
-
-    def get_sync_mode_description(self, sync_mode):
-        """获取同步模式的描述"""
-        descriptions = {
-            "mirror": "镜像同步 (删除目标中多余文件)",
-            "update": "增量更新 (只添加/更新，不删除)",
-            "safe": "安全同步 (不覆盖现有文件)"
-        }
-        return descriptions.get(sync_mode, "标准同步")
-
-    def show_presets_menu(self):
-        """显示预设菜单"""
-        print("\n" + "="*60)
-        print("🔄 通用文件同步工具")
-        print("支持: Linux↔Linux, Linux↔Windows, Windows↔Linux")
-        print("特性: 可选排除空文件夹 (默认启用)")
-        print("="*60)
-        
-        if not self.presets:
-            print("❌ 未找到任何预设文件")
-            print("请在同目录下创建 preset_*.json 文件")
-            print("可参考 template.json 创建模板")
-            print("="*60)
-            return False
-            
-        for key, preset in self.presets.items():
-            data = preset["data"]
-            print(f"{key}. {data['name']}")
-            print(f"   源: {data['source']}")
-            print(f"   目标: {data['destination']}")
-            print(f"   描述: {data.get('description', '无描述')}")
-            
-            # 显示过滤配置摘要
-            filters = []
-            if data.get("folder_white_list"):
-                filters.append(f"📂白({len(data['folder_white_list'])})")
-            if data.get("folder_black_list"):
-                filters.append(f"📂黑({len(data['folder_black_list'])})")
-            if data.get("extension_white_list"):
-                filters.append(f"📄白({len(data['extension_white_list'])})")
-            if data.get("extension_black_list"):
-                filters.append(f"📄黑({len(data['extension_black_list'])})")
-                
-            if filters:
-                print(f"   过滤: {' '.join(filters)}")
-            print()
-        
-        print("0. 退出")
-        print("="*60)
         return True
 
-    def show_sync_options(self, preset_name, config):
-        """显示同步选项菜单"""
-        print(f"\n🎯 预设: {preset_name}")
-        print(f"📁 源目录: {config['source']}")
-        print(f"📁 目标目录: {config['destination']}")
-        
-        # 显示详细配置
-        print("\n⚙️  过滤配置:")
-        if config.get("folder_white_list"):
-            print(f"📂 文件夹白名单: {', '.join(config['folder_white_list'])}")
-        if config.get("folder_black_list"):
-            print(f"📂 文件夹黑名单: {', '.join(config['folder_black_list'])}")
-        if config.get("extension_white_list"):
-            print(f"📄 文件白名单: {', '.join(config['extension_white_list'])}")
-        if config.get("extension_black_list"):
-            print(f"📄 文件黑名单: {', '.join(config['extension_black_list'])}")
-        
-        print("\n🔄 同步模式:")
-        print("1. 镜像同步 (推荐 - 删除目标中多余文件)")
-        print("2. 增量更新 (只添加/更新，不删除)")
-        print("3. 安全同步 (不覆盖现有文件)")
-        
-        print("\n📋 执行选项:")
-        print("4. 智能模拟运行 (排除空文件夹)")
-        print("5. 智能实际执行 (排除空文件夹)")
-        print("6. 自定义空文件夹设置")
-        print("7. 返回上级菜单")
-        
-        choice = input("请选择 (1-7): ").strip()
-        return choice
+    def run_sync(
+        self,
+        config: Dict,
+        sync_mode: str = "mirror",
+        dry_run: bool = False,
+        exclude_empty_dirs: bool = True,
+        auto_create_dest: bool = False,
+    ) -> bool:
+        """执行同步操作 / Execute sync operation"""
+        source = config["source"]
+        destination = config["destination"]
 
-    def main(self):
-        """主菜单"""
-        if not self.check_rsync_available():
-            sys.exit(1)
+        # 验证路径 / Validate paths
+        if not self.validate_paths(source, destination, auto_create_dest):
+            return False
 
-        while True:
-            if not self.show_presets_menu():
-                input("\n按Enter键退出...")
-                break
-                
-            choice = input("请选择预设 (0-{}): ".format(len(self.presets))).strip()
+        # 分析场景 / Analyze scenario
+        scenario = self.fs_analyzer.analyze_sync_scenario(source, destination)
 
-            if choice == "0":
-                print("再见! 👋")
-                break
-            elif choice in self.presets:
-                # 选择的预设
-                preset = self.presets[choice]
-                self.handle_sync_operation(preset)
+        self.logger.info(f"同步类型 / Sync type: {scenario.scenario_type}")
+
+        if scenario.recommendations:
+            self.logger.info("推荐参数 / Recommended parameters:")
+            for rec in scenario.recommendations:
+                self.logger.info(f"  ✅ {rec}")
+
+        if scenario.warnings:
+            self.logger.warning("注意事项 / Warnings:")
+            for warning in scenario.warnings:
+                self.logger.warning(f"  ⚠️  {warning}")
+
+        # 分析空文件夹 / Analyze empty directories
+        empty_dirs = self.fs_analyzer.analyze_empty_directories(source)
+
+        # 显示空文件夹设置 / Display empty directory settings
+        if exclude_empty_dirs:
+            self.logger.info("空文件夹排除: 已启用 / Empty dir exclusion: Enabled")
+            if empty_dirs:
+                self.logger.info(
+                    f"  {len(empty_dirs)} 个空文件夹将不会被同步 / empty dirs will not be synced"
+                )
+        else:
+            self.logger.info("空文件夹排除: 已禁用 / Empty dir exclusion: Disabled")
+            if empty_dirs:
+                self.logger.warning(
+                    f"  {len(empty_dirs)} 个空文件夹将会被同步 / empty dirs will be synced"
+                )
+
+        # 构建命令 / Build command
+        command = self.cmd_builder.build_command(
+            source=source,
+            destination=destination,
+            scenario=scenario,
+            sync_mode=sync_mode,
+            dry_run=dry_run,
+            exclude_empty_dirs=exclude_empty_dirs,
+            folder_white_list=config.get("folder_white_list"),
+            folder_black_list=config.get("folder_black_list"),
+            extension_white_list=config.get("extension_white_list"),
+            extension_black_list=config.get("extension_black_list"),
+        )
+
+        # 显示同步信息 / Display sync information
+        self.logger.info("=" * 60)
+        self.logger.info("通用文件同步 / Universal File Sync")
+        self.logger.info(f"源 / Source: {source}")
+        self.logger.info(f"目标 / Destination: {destination}")
+        self.logger.info(f"预设 / Preset: {config.get('name', 'Unknown')}")
+        self.logger.info(
+            f"同步模式 / Sync mode: {self.SYNC_MODE_DESCRIPTIONS.get(sync_mode, sync_mode)}"
+        )
+        self.logger.info(f"场景 / Scenario: {scenario.scenario_type}")
+        self.logger.info(
+            f"空文件夹排除 / Empty dir exclusion: {'启用' if exclude_empty_dirs else '禁用'} / {'Enabled' if exclude_empty_dirs else 'Disabled'}"
+        )
+
+        if dry_run:
+            self.logger.warning("模式: 模拟运行 / Mode: DRY RUN")
+
+        self.logger.info("=" * 60)
+        self.logger.debug(f"完整命令 / Full command: {' '.join(command)}")
+        self.logger.info("=" * 60)
+
+        # 执行命令 / Execute command
+        try:
+            result = subprocess.run(command, check=False)
+
+            if result.returncode == 0:
+                self.logger.info("同步操作完成 / Sync operation completed!")
+                if dry_run:
+                    self.logger.info(
+                        "这是模拟运行，要实际执行请去掉--dry-run / This was a dry run"
+                    )
+                else:
+                    self._show_post_sync_advice(scenario, exclude_empty_dirs)
+                return True
             else:
-                print("无效选择，请重新输入")
+                self.logger.error(
+                    f"同步操作失败，返回码 / Sync failed, return code: {result.returncode}"
+                )
+                return False
+        except KeyboardInterrupt:
+            self.logger.warning("操作被用户中断 / Operation interrupted by user")
+            return False
+        except Exception as e:
+            self.logger.error(f"执行过程中发生错误 / Error during execution: {e}")
+            return False
 
-    def handle_sync_operation(self, preset):
-        """处理同步操作"""
-        preset_name = preset["data"]["name"]
+    def _show_post_sync_advice(self, scenario: SyncScenario, exclude_empty_dirs: bool):
+        """显示同步后建议 / Show post-sync advice"""
+        self.logger.info("同步后建议 / Post-sync advice:")
+
+        if scenario.scenario_type in ["Windows to Linux", "Linux to Windows"]:
+            self.logger.info("  1. 验证文件完整性 / Verify file integrity")
+            self.logger.info("  2. 检查时间戳 / Check timestamps")
+            if exclude_empty_dirs:
+                self.logger.info("  3. 空文件夹检查 / Empty directory check")
+            self.logger.info("  4. 验证文件数量 / Verify file count")
+        else:
+            self.logger.info("  1. 快速验证 / Quick verification")
+            if not exclude_empty_dirs:
+                self.logger.info("  2. 空文件夹结构 / Empty directory structure")
+            self.logger.info("  3. 权限检查 / Permission check (Linux to Linux only)")
+
+
+class PresetManager:
+    """预设管理器 / Preset manager"""
+
+    def __init__(self, preset_dir: Path, logger: logging.Logger):
+        self.preset_dir = preset_dir
+        self.logger = logger
+        self.presets: Dict[str, Dict] = {}
+
+    def load_presets(self) -> Dict[str, Dict]:
+        """加载所有预设文件 / Load all preset files"""
+        preset_files = sorted(self.preset_dir.glob("preset_*.json"))
+
+        for i, preset_file in enumerate(preset_files, 1):
+            try:
+                with open(preset_file, "r", encoding="utf-8") as f:
+                    preset_data = json.load(f)
+
+                preset_name = preset_file.stem.replace("preset_", "")
+                self.presets[str(i)] = {
+                    "name": preset_data.get("name", preset_name),
+                    "file": str(preset_file),
+                    "data": preset_data,
+                }
+                self.logger.info(
+                    f"加载预设 / Loaded preset: {preset_data.get('name', preset_name)}"
+                )
+            except json.JSONDecodeError as e:
+                self.logger.error(f"JSON解析失败 / JSON parse error {preset_file}: {e}")
+            except Exception as e:
+                self.logger.error(
+                    f"加载预设文件失败 / Failed to load preset {preset_file}: {e}"
+                )
+
+        return self.presets
+
+    def get_preset(self, preset_id: str) -> Optional[Dict]:
+        """获取指定预设 / Get specific preset"""
+        return self.presets.get(preset_id)
+
+    def list_presets(self) -> List[Tuple[str, str, str, str]]:
+        """列出所有预设 / List all presets"""
+        result = []
+        for key, preset in self.presets.items():
+            data = preset["data"]
+            result.append(
+                (
+                    key,
+                    data.get("name", "Unknown"),
+                    data.get("source", ""),
+                    data.get("destination", ""),
+                    data.get("description", ""),
+                )
+            )
+        return result
+
+
+def setup_logging(verbose: bool = False, quiet: bool = False) -> logging.Logger:
+    """设置日志系统 / Setup logging system"""
+    logger = logging.getLogger("file_sync")
+    logger.handlers.clear()
+
+    if quiet:
+        level = logging.ERROR
+    elif verbose:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+
+    logger.setLevel(level)
+
+    # 控制台处理器 / Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(level)
+
+    # 格式化器 / Formatter
+    if verbose:
+        formatter = logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        )
+    else:
+        formatter = logging.Formatter("%(message)s")
+
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    return logger
+
+
+def interactive_mode(
+    sync_manager: SyncManager, preset_manager: PresetManager, logger: logging.Logger
+):
+    """交互式模式 / Interactive mode"""
+    logger.info("=" * 60)
+    logger.info("🔄 通用文件同步工具 / Universal File Sync Tool")
+    logger.info("支持 / Supports: Linux↔Linux, Linux↔Windows, Windows↔Linux")
+    logger.info(
+        "特性 / Features: 可选排除空文件夹 / Optional empty directory exclusion"
+    )
+    logger.info("=" * 60)
+
+    presets = preset_manager.list_presets()
+
+    if not presets:
+        logger.error("未找到任何预设文件 / No preset files found")
+        logger.info(
+            "请在同目录下创建 preset_*.json 文件 / Please create preset_*.json files"
+        )
+        logger.info("可参考 template.json / Refer to template.json")
+        return
+
+    # 显示预设列表 / Display preset list
+    for preset_id, name, source, dest, desc in presets:
+        logger.info(f"{preset_id}. {name}")
+        logger.info(f"   源 / Source: {source}")
+        logger.info(f"   目标 / Destination: {dest}")
+        if desc:
+            logger.info(f"   描述 / Description: {desc}")
+        logger.info("")
+
+    logger.info("0. 退出 / Exit")
+    logger.info("=" * 60)
+
+    try:
+        choice = input(
+            "请选择预设 / Select preset (0-{}): ".format(len(presets))
+        ).strip()
+
+        if choice == "0":
+            logger.info("再见! / Goodbye! 👋")
+            return
+
+        preset = preset_manager.get_preset(choice)
+        if not preset:
+            logger.error("无效选择 / Invalid choice")
+            return
+
         config = preset["data"]
-        
-        while True:
-            sync_choice = self.show_sync_options(preset_name, config)
-            
-            sync_modes = {
-                "1": "mirror",
-                "2": "update", 
-                "3": "safe"
-            }
-            
-            if sync_choice in ["1", "2", "3"]:
-                # 选择同步模式后，选择执行方式
-                sync_mode = sync_modes[sync_choice]
-                print(f"\n🔄 同步模式: {self.get_sync_mode_description(sync_mode)}")
-                print("🗑️  空文件夹排除选项:")
-                print("1. 启用空文件夹排除 (推荐)")
-                print("2. 禁用空文件夹排除")
-                exclude_choice = input("请选择 (1-2): ").strip()
-                
-                exclude_empty_dirs = (exclude_choice == "1")
-                
-                exec_choice = input("选择执行方式:\n1. 模拟运行\n2. 实际执行\n3. 返回\n请选择 (1-3): ").strip()
-                
-                if exec_choice == "1":
-                    self.run_universal_sync(config, sync_mode, dry_run=True, exclude_empty_dirs=exclude_empty_dirs)
-                    input("\n按Enter键继续...")
-                elif exec_choice == "2":
-                    confirm = input("确认执行同步操作? (y/n): ").strip().lower()
-                    if confirm == 'y':
-                        self.run_universal_sync(config, sync_mode, dry_run=False, exclude_empty_dirs=exclude_empty_dirs)
-                        input("\n按Enter键继续...")
-                    else:
-                        print("操作已取消")
-                elif exec_choice == "3":
-                    continue
-                else:
-                    print("无效选择")
-                    
-            elif sync_choice == "4":
-                # 智能模拟运行 (默认排除空文件夹)
-                self.run_universal_sync(config, "mirror", dry_run=True, exclude_empty_dirs=True)
-                input("\n按Enter键继续...")
-            elif sync_choice == "5":
-                # 智能实际执行 (默认排除空文件夹)
-                confirm = input("确认执行智能同步操作? (y/n): ").strip().lower()
-                if confirm == 'y':
-                    self.run_universal_sync(config, "mirror", dry_run=False, exclude_empty_dirs=True)
-                    input("\n按Enter键继续...")
-                else:
-                    print("操作已取消")
-            elif sync_choice == "6":
-                # 自定义空文件夹设置
-                self.custom_empty_dir_setting(config)
-            elif sync_choice == "7":
-                # 返回上级
-                break
-            else:
-                print("无效选择")
+        logger.info(f"\n选择的预设 / Selected preset: {config.get('name')}")
 
-    def custom_empty_dir_setting(self, config):
-        """自定义空文件夹设置"""
-        print(f"\n⚙️  自定义空文件夹设置")
-        print("当前预设:", config['name'])
-        
-        while True:
-            print("\n空文件夹排除选项:")
-            print("1. 启用空文件夹排除 (不同步空文件夹)")
-            print("2. 禁用空文件夹排除 (同步所有空文件夹)")
-            print("3. 返回上级菜单")
-            
-            choice = input("请选择 (1-3): ").strip()
-            
-            if choice == "1":
-                sync_mode = input("选择同步模式:\n1. 镜像同步\n2. 增量更新\n3. 安全同步\n请选择 (1-3): ").strip()
-                sync_modes = {"1": "mirror", "2": "update", "3": "safe"}
-                actual_mode = sync_modes.get(sync_mode, "mirror")
-                
-                exec_choice = input("选择执行方式:\n1. 模拟运行\n2. 实际执行\n请选择 (1-2): ").strip()
-                
-                if exec_choice == "1":
-                    self.run_universal_sync(config, actual_mode, dry_run=True, exclude_empty_dirs=True)
-                elif exec_choice == "2":
-                    confirm = input("确认执行同步操作? (y/n): ").strip().lower()
-                    if confirm == 'y':
-                        self.run_universal_sync(config, actual_mode, dry_run=False, exclude_empty_dirs=True)
-                else:
-                    print("无效选择")
-                input("\n按Enter键继续...")
-                
-            elif choice == "2":
-                sync_mode = input("选择同步模式:\n1. 镜像同步\n2. 增量更新\n3. 安全同步\n请选择 (1-3): ").strip()
-                sync_modes = {"1": "mirror", "2": "update", "3": "safe"}
-                actual_mode = sync_modes.get(sync_mode, "mirror")
-                
-                # 警告用户
-                print("⚠️  警告: 禁用空文件夹排除将同步所有空文件夹")
-                print("   这可能导致目标目录中出现大量空文件夹结构")
-                confirm = input("确定要禁用空文件夹排除吗? (y/n): ").strip().lower()
-                
-                if confirm == 'y':
-                    exec_choice = input("选择执行方式:\n1. 模拟运行\n2. 实际执行\n请选择 (1-2): ").strip()
-                    
-                    if exec_choice == "1":
-                        self.run_universal_sync(config, actual_mode, dry_run=True, exclude_empty_dirs=False)
-                    elif exec_choice == "2":
-                        final_confirm = input("确认执行同步操作? (y/n): ").strip().lower()
-                        if final_confirm == 'y':
-                            self.run_universal_sync(config, actual_mode, dry_run=False, exclude_empty_dirs=False)
-                    else:
-                        print("无效选择")
-                input("\n按Enter键继续...")
-                
-            elif choice == "3":
-                break
-            else:
-                print("无效选择")
+        # 同步模式选择 / Sync mode selection
+        logger.info("\n同步模式 / Sync mode:")
+        logger.info("1. 镜像同步 / Mirror sync (recommended)")
+        logger.info("2. 增量更新 / Incremental update")
+        logger.info("3. 安全同步 / Safe sync")
+
+        mode_choice = input("请选择 / Select (1-3): ").strip()
+        sync_modes = {"1": "mirror", "2": "update", "3": "safe"}
+        sync_mode = sync_modes.get(mode_choice, "mirror")
+
+        # 执行方式选择 / Execution mode selection
+        logger.info("\n执行方式 / Execution mode:")
+        logger.info("1. 模拟运行 / Dry run")
+        logger.info("2. 实际执行 / Actual execution")
+
+        exec_choice = input("请选择 / Select (1-2): ").strip()
+        dry_run = exec_choice == "1"
+
+        # 空文件夹排除选择 / Empty directory exclusion selection
+        logger.info("\n空文件夹排除 / Empty directory exclusion:")
+        logger.info("1. 启用 (推荐) / Enable (recommended)")
+        logger.info("2. 禁用 / Disable")
+
+        exclude_choice = input("请选择 / Select (1-2): ").strip()
+        exclude_empty_dirs = exclude_choice != "2"
+
+        # 执行同步 / Execute sync
+        if not dry_run:
+            confirm = (
+                input("\n确认执行同步操作? / Confirm sync operation? (y/n): ")
+                .strip()
+                .lower()
+            )
+            if confirm != "y":
+                logger.info("操作已取消 / Operation cancelled")
+                return
+
+        sync_manager.run_sync(
+            config, sync_mode, dry_run, exclude_empty_dirs, auto_create_dest=True
+        )
+
+    except KeyboardInterrupt:
+        logger.warning("\n操作被用户中断 / Operation interrupted by user")
+    except Exception as e:
+        logger.error(f"发生错误 / Error occurred: {e}")
 
 
 def main():
-    """主函数"""
-    try:
-        tool = UniversalFileSyncTool()
-        tool.main()
-    except KeyboardInterrupt:
-        print("\n\n程序被用户中断")
-    except Exception as e:
-        print(f"程序运行出错: {e}")
+    """主函数 / Main function"""
+    parser = argparse.ArgumentParser(
+        description="通用文件同步工具 / Universal File Sync Tool",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument(
+        "-p", "--preset", type=str, help="预设ID或名称 / Preset ID or name"
+    )
+    parser.add_argument(
+        "-m",
+        "--mode",
+        type=str,
+        choices=["mirror", "update", "safe"],
+        default="mirror",
+        help="同步模式 / Sync mode (default: mirror)",
+    )
+    parser.add_argument(
+        "-n",
+        "--dry-run",
+        action="store_true",
+        help="模拟运行，不实际执行 / Dry run, do not execute",
+    )
+    parser.add_argument(
+        "--no-exclude-empty",
+        action="store_true",
+        help="不排除空文件夹 / Do not exclude empty directories",
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="详细输出 / Verbose output"
+    )
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="静默模式，只显示错误 / Quiet mode, show errors only",
+    )
+    parser.add_argument(
+        "--auto-create-dest",
+        action="store_true",
+        help="自动创建目标目录 / Auto-create destination directory",
+    )
+
+    args = parser.parse_args()
+
+    # 设置日志 / Setup logging
+    logger = setup_logging(verbose=args.verbose, quiet=args.quiet)
+
+    # 检查rsync / Check rsync
+    if not SyncManager.check_rsync_available():
+        logger.error("错误: 未找到rsync命令 / Error: rsync command not found")
+        logger.info("Ubuntu/Debian: sudo apt install rsync")
+        logger.info("Arch/Manjaro: sudo pacman -S rsync")
+        sys.exit(1)
+
+    # 初始化管理器 / Initialize managers
+    script_dir = Path(__file__).parent
+    preset_manager = PresetManager(script_dir, logger)
+    preset_manager.load_presets()
+
+    sync_manager = SyncManager(logger)
+
+    # CLI 模式或交互模式 / CLI mode or interactive mode
+    if args.preset:
+        # CLI 模式 / CLI mode
+        preset = preset_manager.get_preset(args.preset)
+        if not preset:
+            logger.error(f"未找到预设 / Preset not found: {args.preset}")
+            sys.exit(1)
+
+        config = preset["data"]
+        exclude_empty_dirs = not args.no_exclude_empty
+
+        success = sync_manager.run_sync(
+            config, args.mode, args.dry_run, exclude_empty_dirs, args.auto_create_dest
+        )
+
+        sys.exit(0 if success else 1)
+    else:
+        # 交互模式 / Interactive mode
+        interactive_mode(sync_manager, preset_manager, logger)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n程序被用户中断 / Program interrupted by user")
+        sys.exit(130)
+    except Exception as e:
+        print(f"程序运行出错 / Program error: {e}")
+        sys.exit(1)
