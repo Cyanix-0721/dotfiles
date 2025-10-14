@@ -11,29 +11,35 @@ core.autocrlf setting based on the operating system.
 并将其应用为全局设置。同时根据操作系统设置适当的 core.autocrlf 配置。
 """
 
-import os
 import sys
+import os
+import argparse
 import platform
 import subprocess
 import configparser
 from pathlib import Path
+import logging
+from typing import Optional
 
 
 class GitConfigManager:
     """Git configuration management class / Git 配置管理类"""
 
-    def __init__(self):
+    def __init__(self, dry_run: bool = False, logger: Optional[logging.Logger] = None):
         self.script_dir = Path(__file__).parent.absolute()
         self.dotfiles_root = self.script_dir.parent.parent
         self.gitconfig_path = self.dotfiles_root / "dot_gitconfig"
+        self.dry_run = dry_run
+        # Use provided logger or create module-level logger
+        self.logger = logger or logging.getLogger("setup_git_config")
 
     def log(self, message_cn, message_en):
-        """Print bilingual log messages / 打印双语日志信息"""
-        print(f"{message_cn} / {message_en}")
+        """Log bilingual messages at INFO level / 以 INFO 级别记录双语信息"""
+        self.logger.info(f"{message_cn} / {message_en}")
 
     def error(self, message_cn, message_en):
-        """Print bilingual error messages / 打印双语错误信息"""
-        print(f"错误 / Error: {message_cn} / {message_en}", file=sys.stderr)
+        """Log bilingual error messages at ERROR level / 以 ERROR 级别记录双语错误信息"""
+        self.logger.error(f"错误 / Error: {message_cn} / {message_en}")
 
     def check_git_installed(self):
         """Check if git is installed / 检查是否安装了 git"""
@@ -54,7 +60,9 @@ class GitConfigManager:
 
         try:
             config = configparser.ConfigParser()
-            config.read(self.gitconfig_path)
+            # config.read accepts path-like objects on modern Pythons, but
+            # converting to str is more explicit and maximizes compatibility.
+            config.read(str(self.gitconfig_path))
 
             if "user" not in config:
                 self.error(
@@ -83,11 +91,35 @@ class GitConfigManager:
 
     def get_autocrlf_setting(self):
         """Get appropriate autocrlf setting based on OS / 根据操作系统获取适当的 autocrlf 设置"""
+        # Treat WSL as Linux (i.e. use 'input').
+        if self.is_wsl():
+            return "input"
+
         system = platform.system().lower()
         if system == "windows":
             return "true"
         else:
             return "input"
+
+    def is_wsl(self):
+        """Detect whether running under WSL. Returns True for WSL1/WSL2."""
+        # Common reliable checks: presence of WSL_DISTRO_NAME env var or
+        # /proc/version containing 'microsoft' (case-insensitive).
+        try:
+            if "WSL_DISTRO_NAME" in os.environ:
+                return True
+        except Exception:
+            # os may not be available in some restricted environments; fallthrough
+            pass
+
+        if platform.system().lower() == "linux":
+            try:
+                with open("/proc/version", "r", encoding="utf-8", errors="ignore") as f:
+                    contents = f.read().lower()
+                    return "microsoft" in contents
+            except Exception:
+                return False
+        return False
 
     def run_git_command(self, args):
         """Run git command safely / 安全地运行 git 命令"""
@@ -101,6 +133,14 @@ class GitConfigManager:
 
     def set_git_config(self, key, value):
         """Set a git configuration value / 设置 git 配置值"""
+        if self.dry_run:
+            # In dry-run mode, do not execute commands; just print what would run.
+            self.log(
+                f"[DRY RUN] 将运行: git config --global {key} {value}",
+                f"[DRY RUN] would run: git config --global {key} {value}",
+            )
+            return True
+
         success, output = self.run_git_command(["config", "--global", key, value])
         if success:
             self.log(f"设置 {key} = {value}", f"Set {key} = {value}")
@@ -184,20 +224,54 @@ class GitConfigManager:
         for key in configs_to_show:
             value = self.get_current_git_config(key)
             if value:
-                print(f"  {key} = {value}")
+                self.logger.info(f"  {key} = {value}")
             else:
-                print(f"  {key} = (未设置 / not set)")
+                self.logger.info(f"  {key} = (未设置 / not set)")
 
 
 def main():
     """Main function / 主函数"""
-    if len(sys.argv) > 1 and sys.argv[1] in ["-h", "--help", "help"]:
+    parser = argparse.ArgumentParser(
+        description="Configure global Git user.name, user.email and core.autocrlf based on dot_gitconfig and OS"
+    )
+    parser.add_argument(
+        "-n",
+        "--dry-run",
+        action="store_true",
+        help="Show actions without applying them",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose (DEBUG) logging",
+    )
+    parser.add_argument(
+        "command",
+        nargs="?",
+        choices=["show", "status", "help"],
+        help="Optional command: 'show' or 'status' to display current config, 'help' to show the docstring",
+    )
+
+    args = parser.parse_args()
+
+    if args.command == "help":
         print(__doc__)
         return 0
 
-    manager = GitConfigManager()
+    # Configure logging
+    log_level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
-    if len(sys.argv) > 1 and sys.argv[1] in ["show", "status"]:
+    logger = logging.getLogger("setup_git_config")
+
+    manager = GitConfigManager(dry_run=args.dry_run, logger=logger)
+
+    if args.command in ("show", "status"):
         manager.show_current_config()
         return 0
 

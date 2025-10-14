@@ -10,14 +10,23 @@
   - Windows: `true`
   - Unix/Linux/macOS: `input`
 - 🌐 双语输出支持 / Bilingual output support (Chinese/English)
+- 🧪 支持 dry-run（预览变更）和 verbose（调试）模式 / Supports dry-run and verbose modes
 
 ## 使用方法 / Usage
 
 ### 基本使用 / Basic Usage
 
 ```bash
-# 运行配置脚本 / Run the configuration script
+# 运行配置脚本 / Run the configuration script (will apply changes)
 python setup_git_config.py
+
+# 仅预览将要执行的操作（dry-run，不会修改配置）
+python setup_git_config.py --dry-run
+python setup_git_config.py -n
+
+# 开启调试输出（verbose）以获取更多日志
+python setup_git_config.py --verbose
+python setup_git_config.py -v
 
 # 查看当前配置 / Show current configuration
 python setup_git_config.py show
@@ -60,6 +69,9 @@ Then automatically sets the following global Git configurations:
 - `user.name`
 - `user.email`
 - `core.autocrlf` (基于操作系统 / based on OS)
+  - Windows: `true`
+  - Unix/Linux/macOS: `input`
+  - WSL: treated as Linux (`input`)
 
 ## 错误处理 / Error Handling
 
@@ -70,6 +82,14 @@ The script includes comprehensive error handling:
 - ❌ 配置文件缺失检测 / Missing configuration file detection
 - ❌ 用户信息缺失检测 / Missing user information detection
 - ❌ Git 命令执行失败处理 / Git command execution failure handling
+
+## 平台兼容性 / Platform compatibility
+
+- Windows: 使用 Git for Windows 或在 PATH 中可用的 git，脚本会将 core.autocrlf 设置为 `true`。
+- Linux/macOS: 脚本将 core.autocrlf 设置为 `input`。
+- WSL: 脚本会检测 WSL（通过 `WSL_DISTRO_NAME` 或 `/proc/version` 中包含 `microsoft`），并将 WSL 视为 Linux（使用 `input`）。
+
+注意：确保在 Windows 上安装 Git 并添加到 PATH；在受限环境下（公司策略）写入全局配置可能失败。
 
 ## 示例输出 / Example Output
 
