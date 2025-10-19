@@ -380,6 +380,12 @@ window-rule {
     open-floating true
 }
 
+// Maximize vscode by default.
+window-rule {
+    match app-id="code$"
+    open-maximized true
+}
+
 // Open the mpv opacity 1.0 by default.
 window-rule {
     match app-id=r#"^(mpv)$"#
