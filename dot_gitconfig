@@ -14,3 +14,5 @@
   dark = true      # or light = true, or omit for auto-detection
 [merge]
   conflictStyle = zdiff3
+[credential]
+  helper = cache --timeout=3600 # seconds
