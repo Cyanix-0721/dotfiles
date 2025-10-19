@@ -36,7 +36,7 @@ install_podman=${install_podman:-Y}
 
 if [[ $install_podman =~ ^[Yy]$ ]]; then
   echo "安装容器工具… / Installing container tools…"
-  sudo pacman -S --noconfirm podman podman-compose
+  sudo pacman -S --noconfirm podman podman-compose podman-docker
 
   echo "配置 Podman 镜像源… / Configuring Podman registry mirror…"
   sudo tee /etc/containers/registries.conf.d/10-unqualified-search-registries.conf <<EOF
