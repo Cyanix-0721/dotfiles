@@ -3,12 +3,8 @@
 Git configuration setup script
 自动配置 Git 设置脚本
 
-This script reads the user.name and user.email from the dotfiles repository's
-dot_gitconfig file and applies them globally. It also sets the appropriate
-core.autocrlf setting based on the operating system.
-
-该脚本从 dotfiles 仓库的 dot_gitconfig 文件中读取 user.name 和 user.email，
-并将其应用为全局设置。同时根据操作系统设置适当的 core.autocrlf 配置。
+This script sets the appropriate core.autocrlf based on the operating system.
+该脚本仅根据操作系统设置合适的 core.autocrlf。
 """
 
 import sys
@@ -16,8 +12,6 @@ import os
 import argparse
 import platform
 import subprocess
-import configparser
-from pathlib import Path
 import logging
 from typing import Optional
 
@@ -26,9 +20,6 @@ class GitConfigManager:
     """Git configuration management class / Git 配置管理类"""
 
     def __init__(self, dry_run: bool = False, logger: Optional[logging.Logger] = None):
-        self.script_dir = Path(__file__).parent.absolute()
-        self.dotfiles_root = self.script_dir.parent.parent
-        self.gitconfig_path = self.dotfiles_root / "dot_gitconfig"
         self.dry_run = dry_run
         # Use provided logger or create module-level logger
         self.logger = logger or logging.getLogger("setup_git_config")
@@ -48,46 +39,6 @@ class GitConfigManager:
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
             return False
-
-    def read_dotfiles_gitconfig(self):
-        """Read user configuration from dot_gitconfig / 从 dot_gitconfig 读取用户配置"""
-        if not self.gitconfig_path.exists():
-            self.error(
-                f"找不到配置文件: {self.gitconfig_path}",
-                f"Configuration file not found: {self.gitconfig_path}",
-            )
-            return None, None
-
-        try:
-            config = configparser.ConfigParser()
-            # config.read accepts path-like objects on modern Pythons, but
-            # converting to str is more explicit and maximizes compatibility.
-            config.read(str(self.gitconfig_path))
-
-            if "user" not in config:
-                self.error(
-                    "配置文件中没有找到 [user] 部分",
-                    "No [user] section found in configuration file",
-                )
-                return None, None
-
-            user_name = config.get("user", "name", fallback=None)
-            user_email = config.get("user", "email", fallback=None)
-
-            if not user_name or not user_email:
-                self.error(
-                    "配置文件中缺少用户名或邮箱",
-                    "Missing username or email in configuration file",
-                )
-                return None, None
-
-            return user_name, user_email
-
-        except Exception as e:
-            self.error(
-                f"读取配置文件时出错: {e}", f"Error reading configuration file: {e}"
-            )
-            return None, None
 
     def get_autocrlf_setting(self):
         """Get appropriate autocrlf setting based on OS / 根据操作系统获取适当的 autocrlf 设置"""
@@ -155,18 +106,13 @@ class GitConfigManager:
 
     def setup_git_config(self):
         """Main setup function / 主要设置函数"""
-        self.log("开始 Git 配置设置...", "Starting Git configuration setup...")
+        self.log("开始 Git 配置设置（仅 core.autocrlf）...", "Starting Git configuration setup (core.autocrlf only)...")
 
         # Check if git is installed
         if not self.check_git_installed():
             self.error(
                 "Git 未安装或不在 PATH 中", "Git is not installed or not in PATH"
             )
-            return False
-
-        # Read configuration from dot_gitconfig
-        user_name, user_email = self.read_dotfiles_gitconfig()
-        if not user_name or not user_email:
             return False
 
         # Get autocrlf setting
@@ -179,11 +125,7 @@ class GitConfigManager:
         )
 
         # Apply configurations
-        configs_to_set = [
-            ("user.name", user_name),
-            ("user.email", user_email),
-            ("core.autocrlf", autocrlf_value),
-        ]
+        configs_to_set = [("core.autocrlf", autocrlf_value)]
 
         success_count = 0
         for key, value in configs_to_set:
@@ -220,7 +162,8 @@ class GitConfigManager:
         """Show current git configuration / 显示当前 git 配置"""
         self.log("当前 Git 配置:", "Current Git configuration:")
 
-        configs_to_show = ["user.name", "user.email", "core.autocrlf"]
+        # Only display core.autocrlf since this script only manages it.
+        configs_to_show = ["core.autocrlf"]
         for key in configs_to_show:
             value = self.get_current_git_config(key)
             if value:
@@ -232,7 +175,7 @@ class GitConfigManager:
 def main():
     """Main function / 主函数"""
     parser = argparse.ArgumentParser(
-        description="Configure global Git user.name, user.email and core.autocrlf based on dot_gitconfig and OS"
+        description="Configure global Git core.autocrlf based on the operating system."
     )
     parser.add_argument(
         "-n",
