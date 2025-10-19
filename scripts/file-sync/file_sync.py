@@ -12,9 +12,10 @@ import json
 import subprocess
 import shutil
 import logging
+import os
 import argparse
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Union
 from dataclasses import dataclass
 
 
@@ -171,9 +172,9 @@ class FileSystemAnalyzer:
 
         empty_dirs = []
         try:
-            for root, dirs, files in Path(source_path).walk():
+            for root, dirs, files in os.walk(source_path):
                 # 检查当前目录是否为空 / Check if current directory is empty
-                if not list(Path(root).iterdir()):
+                if not files and not dirs:
                     rel_path = Path(root).relative_to(source_path)
                     if str(rel_path) != ".":
                         empty_dirs.append(str(rel_path))
@@ -519,13 +520,77 @@ class PresetManager:
 
         return self.presets
 
-    def get_preset(self, preset_id: str) -> Optional[Dict]:
-        """获取指定预设 / Get specific preset"""
-        return self.presets.get(preset_id)
+    def get_preset(self, preset: str) -> Optional[Dict]:
+        """
+        获取指定预设 / Get preset by id, name or file path
+        - 数字字符串: 作为编号
+        - 名称: 精确匹配 data.name（区分大小写）
+        - 文件路径: 若存在 .json 文件则直接加载
+        """
+        # by numeric id
+        if preset in self.presets:
+            return self.presets[preset]
 
-    def list_presets(self) -> List[Tuple[str, str, str, str]]:
+        # by name
+        for item in self.presets.values():
+            if item["data"].get("name") == preset:
+                return item
+
+        # by file path
+        p = Path(preset)
+        if p.exists() and p.is_file():
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                return {
+                    "name": data.get("name", p.stem),
+                    "file": str(p),
+                    "data": data,
+                }
+            except Exception as e:
+                self.logger.error(
+                    f"加载预设文件失败 / Failed to load preset file {p}: {e}"
+                )
+                return None
+
+        return None
+
+    @staticmethod
+    def normalize_and_validate_config(raw: Dict) -> Optional[Dict]:
+        """
+        规范化并校验配置字段，确保类型正确，必填项存在。
+        必填: source, destination
+        可选数组: folder_white_list, folder_black_list, extension_white_list, extension_black_list
+        返回规范化后的 dict；若校验失败返回 None
+        """
+        required = ["source", "destination"]
+        for k in required:
+            if k not in raw or not isinstance(raw[k], str) or not raw[k].strip():
+                return None
+
+        def to_list(v: Optional[Union[List[str], str]]) -> List[str]:
+            if v is None:
+                return []
+            if isinstance(v, list):
+                return [str(x) for x in v]
+            if isinstance(v, str):
+                return [v] if v.strip() else []
+            return []
+
+        return {
+            "name": raw.get("name", "Unnamed preset"),
+            "description": raw.get("description", ""),
+            "source": raw["source"],
+            "destination": raw["destination"],
+            "folder_white_list": to_list(raw.get("folder_white_list")),
+            "folder_black_list": to_list(raw.get("folder_black_list")),
+            "extension_white_list": to_list(raw.get("extension_white_list")),
+            "extension_black_list": to_list(raw.get("extension_black_list")),
+        }
+
+    def list_presets(self) -> List[Tuple[str, str, str, str, str]]:
         """列出所有预设 / List all presets"""
-        result = []
+        result: List[Tuple[str, str, str, str, str]] = []
         for key, preset in self.presets.items():
             data = preset["data"]
             result.append(
@@ -620,7 +685,13 @@ def interactive_mode(
             logger.error("无效选择 / Invalid choice")
             return
 
-        config = preset["data"]
+        raw_config = preset["data"]
+        config = PresetManager.normalize_and_validate_config(raw_config)  # type: ignore
+        if not config:
+            logger.error(
+                "配置缺失或字段类型错误：至少需要 source 与 destination（字符串）/ Invalid config: requires string fields 'source' and 'destination'"
+            )
+            return
         logger.info(f"\n选择的预设 / Selected preset: {config.get('name')}")
 
         # 同步模式选择 / Sync mode selection
@@ -678,7 +749,10 @@ def main():
     )
 
     parser.add_argument(
-        "-p", "--preset", type=str, help="预设ID或名称 / Preset ID or name"
+        "-p",
+        "--preset",
+        type=str,
+        help="预设ID/名称或文件路径(.json) / Preset ID, name or file path (.json)",
     )
     parser.add_argument(
         "-m",
@@ -741,7 +815,13 @@ def main():
             logger.error(f"未找到预设 / Preset not found: {args.preset}")
             sys.exit(1)
 
-        config = preset["data"]
+        # 规范化配置 / Normalize & validate config
+        config = PresetManager.normalize_and_validate_config(preset["data"])  # type: ignore
+        if not config:
+            logger.error(
+                "配置缺失或字段类型错误：至少需要 source 与 destination（字符串）/ Invalid config: requires string fields 'source' and 'destination'"
+            )
+            sys.exit(1)
         exclude_empty_dirs = not args.no_exclude_empty
 
         success = sync_manager.run_sync(

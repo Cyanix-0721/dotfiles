@@ -54,6 +54,10 @@ python file_sync.py
 
 ### 创建预设 / Create Preset
 
+提示 / Note:
+
+- 仅支持 JSON 预设文件（preset_*.json）。Only JSON presets are supported.
+
 复制 `template.json` 并重命名为 `preset_<name>.json`：
 
 Copy `template.json` and rename to `preset_<name>.json`:
@@ -93,6 +97,40 @@ cp template.json preset_mybackup.json
 | `folder_black_list`    | 文件夹黑名单（排除这些文件夹）/ Folder blacklist        |
 | `extension_white_list` | 文件扩展名白名单（只同步这些类型）/ Extension whitelist |
 | `extension_black_list` | 文件扩展名黑名单（排除这些类型）/ Extension blacklist   |
+
+### 路径末尾斜杠说明 / Trailing Slash Behavior
+
+⚠️ **重要**: rsync 对路径末尾斜杠的处理方式不同，请注意区分 / **Important**: rsync treats trailing slashes differently
+
+**源目录斜杠 / Source Directory Slash:**
+
+- **有斜杠** `/path/source/`：同步源目录**内的内容**到目标目录
+  - 例如: `/mnt/Music/` → 将 Music 文件夹内的文件同步到目标
+  - With slash: syncs **contents** of source directory to destination
+  
+- **无斜杠** `/path/source`：在目标目录**创建源目录的子文件夹**
+  - 例如: `/mnt/Music` → 在目标目录创建 Music 子文件夹
+  - Without slash: creates source directory **as a subdirectory** in destination
+
+**目标目录斜杠 / Destination Directory Slash:**
+
+- **建议始终以斜杠结尾** `/path/destination/`
+  - 确保行为一致性，避免意外结果
+  - Recommended to always end with slash for consistent behavior
+
+**示例对比 / Example Comparison:**
+
+```bash
+# 有斜杠: /home/user/Music/ 会包含 song1.mp3, song2.mp3 等
+# With slash: /home/user/Music/ will contain song1.mp3, song2.mp3, etc.
+source: "/mnt/source/"
+destination: "/home/user/Music/"
+
+# 无斜杠: /home/user/Music/ 会包含 source/song1.mp3, source/song2.mp3 等
+# Without slash: /home/user/Music/ will contain source/song1.mp3, source/song2.mp3, etc.
+source: "/mnt/source"
+destination: "/home/user/Music/"
+```
 
 ## 使用方法 / Usage
 
@@ -146,7 +184,7 @@ python file_sync.py -p 1 --mode mirror --dry-run --verbose
 
 | 参数 / Argument      | 说明 / Description                                                      |
 | -------------------- | ----------------------------------------------------------------------- |
-| `-p, --preset`       | 预设ID或名称 / Preset ID or name                                        |
+| `-p, --preset`       | 预设ID/名称或文件路径(.json) / Preset ID, name or file path (.json)      |
 | `-m, --mode`         | 同步模式: `mirror`（镜像）, `update`（增量）, `safe`（安全）/ Sync mode |
 | `-n, --dry-run`      | 模拟运行，不实际执行 / Dry run, do not execute                          |
 | `--no-exclude-empty` | 不排除空文件夹 / Do not exclude empty directories                       |
@@ -299,35 +337,3 @@ Ensure read permission on source and write permission on destination.
 使用 `--auto-create-dest` 参数自动创建目标目录。
 
 Use `--auto-create-dest` parameter to auto-create destination directory.
-
-## 开发 / Development
-
-### 代码结构 / Code Structure
-
-- `FileSystemAnalyzer`: 文件系统分析器 / Filesystem analyzer
-- `RsyncCommandBuilder`: rsync 命令构建器 / rsync command builder  
-- `SyncManager`: 同步管理器 / Sync manager
-- `PresetManager`: 预设管理器 / Preset manager
-
-### 运行测试 / Run Tests
-
-```bash
-# 模拟运行测试
-python file_sync.py -p 1 --dry-run --verbose
-
-# 静态类型检查
-mypy file_sync.py
-
-# 代码风格检查
-flake8 file_sync.py
-```
-
-## 许可 / License
-
-MIT License
-
-## 贡献 / Contributing
-
-欢迎提交 Issue 和 Pull Request！
-
-Issues and Pull Requests are welcome!
