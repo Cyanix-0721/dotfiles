@@ -18,7 +18,7 @@ sudo pacman -S --noconfirm neovim python-pynvim lazygit gitui github-cli uv ast-
 paru -S --noconfirm visual-studio-code-bin
 
 echo "安装系统工具… / Installing system tools…"
-sudo pacman -S --noconfirm mako fuzzel ntfs-3g niri
+sudo pacman -S --noconfirm mako fuzzel ntfs-3g niri isd
 paru -S --noconfirm octopi dms-shell-git
 
 echo "安装网络工具… / Installing network tools…"
@@ -26,7 +26,7 @@ paru -S --noconfirm clash-verge-rev-bin
 
 echo "安装日常应用… / Installing daily applications…"
 sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn mpv ffmpeg gimp yazi 7zip telegram-desktop dolphin nautilus scrcpy syncthing mpd rmpc kdenlive
-paru -S --noconfirm zen-browser-bin ungoogled-chromium-bin localsend-bin bibata-cursor-theme-bin qt6ct-kde vesktop-bin syncthingtray-qt6
+paru -S --noconfirm zen-browser-bin ungoogled-chromium-bin localsend-bin bibata-cursor-theme-bin qt6ct-kde vesktop-bin
 
 # 询问是否安装 Podman
 echo -n "是否安装 Podman 和 podman-compose？[Y/n] / Install Podman and podman-compose? [Y/n]: "
