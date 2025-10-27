@@ -10,16 +10,26 @@ from __future__ import annotations
 import argparse
 import ctypes
 import os
+import platform
 import subprocess
 import sys
+from pathlib import Path
 
+# 将上一级目录加入 sys.path 以便导入共享配置
+# Add parent directory to sys.path for shared configuration import
+SCRIPT_DIR = Path(__file__).resolve().parent
+# Prevent creation of __pycache__ when importing shared config
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(SCRIPT_DIR.parent))
+
+from config import DEFAULT_ACCOUNT  # type: ignore  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Customisation (edit as needed)
 # ---------------------------------------------------------------------------
-# SMB authentication / SMB 认证信息
-SMB_USER = "0d00"
-SMB_PASSWORD = "0721"
+# SMB authentication / SMB 认证信息（默认取自共享配置，可根据需要覆盖）
+SMB_USER = DEFAULT_ACCOUNT.username
+SMB_PASSWORD = DEFAULT_ACCOUNT.password
 
 # Default access level / 默认访问权限（read=只读，change=读写）
 DEFAULT_PERMISSION = "read"  # read or change
@@ -44,7 +54,7 @@ VALID_PERMISSIONS = {"read": "READ", "change": "CHANGE"}
 
 def ensure_windows() -> None:
     """Ensure script runs on Windows / 确认脚本运行在 Windows 系统"""
-    if os.name != "nt":
+    if platform.system() != "Windows":
         print("[ERROR] Windows is required for this script.")
         sys.exit(1)
 
