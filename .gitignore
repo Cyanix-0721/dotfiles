@@ -1,0 +1,5 @@
+# Python bytecode cache directories / Python 字节码缓存目录
+__pycache__/
+
+# Local virtual environments / 本地虚拟环境目录
+.venv/

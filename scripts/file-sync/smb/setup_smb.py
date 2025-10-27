@@ -18,8 +18,6 @@ from pathlib import Path
 # 将上一级目录加入 sys.path 以便导入共享配置
 # Add parent directory to sys.path for shared configuration import
 SCRIPT_DIR = Path(__file__).resolve().parent
-# Prevent creation of __pycache__ when importing shared config
-sys.dont_write_bytecode = True
 sys.path.insert(0, str(SCRIPT_DIR.parent))
 
 from config import DEFAULT_ACCOUNT  # type: ignore  # noqa: E402

@@ -5,8 +5,19 @@
 目录结构概览：
 
 - `rsync/` - Linux rsync 的同步脚本，用于单向文件同步。
+- `sftp/` - 跨平台 SFTP 轻量服务器脚本（依赖 `asyncssh`，可使用 `uv` 安装）。
 - `smb/` - Windows SMB 相关的助手脚本，用于创建 SMB 账户与共享。
 - `config.py` - 共享配置（默认账号信息），供子脚本导入。有关需要设置的环境变量和示例，请参见下文。
+
+依赖管理
+
+脚本所需的 Python 依赖记录在 `scripts/requirements*.txt` 文件中，可通过 `uv` 安装：
+
+```sh
+python ../install_uv_dependencies.py
+```
+
+安装脚本会根据当前系统自动附加 `requirements-windows.txt` 或 `requirements-linux.txt`。
 
 配置（`config.py`）
 
