@@ -16,8 +16,7 @@ class DefaultAccount:
 
     username: str
     password: str
-    ssh_private_key: Optional[Path] = None
-    ssh_public_key: Optional[Path] = None
+    ssh_public_key: Optional[Path] = None  # For SFTP server authentication
 
 
 def resolve_key_path(key_path: Optional[str]) -> Optional[Path]:
@@ -29,10 +28,9 @@ def resolve_key_path(key_path: Optional[str]) -> Optional[Path]:
 
 
 # Build DEFAULT_ACCOUNT from environment variables when available, otherwise
-# fall back to the literal defaults (username=0d00, password=0721, keys None).
+# fall back to the literal defaults (username=0d00, password=0721, public key None).
 DEFAULT_ACCOUNT = DefaultAccount(
     username=os.environ.get("FILESYNC_USERNAME", "0d00"),
     password=os.environ.get("FILESYNC_PASSWORD", "0721"),
-    ssh_private_key=resolve_key_path(os.environ.get("FILESYNC_SSH_PRIVATE_KEY")),
     ssh_public_key=resolve_key_path(os.environ.get("FILESYNC_SSH_PUBLIC_KEY")),
 )
