@@ -1,3 +1,4 @@
 # Dependencies for utility scripts / 工具脚本依赖列表
 asyncssh
 pyftpdlib
+cryptography
