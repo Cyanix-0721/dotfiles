@@ -132,9 +132,9 @@ class SimpleSSHServer(asyncssh.SSHServer):
 
 def _set_secure_permissions(path: Path) -> None:
     """Set secure permissions for private key file (cross-platform).
-    
+
     设置私钥文件的安全权限（跨平台）。
-    
+
     - Linux/macOS: Set to 0o600 (owner read/write only)
     - Windows: Set read-only for current user
     """
@@ -505,9 +505,6 @@ async def _run_server(
             except Exception:
                 pass
 
-    print("\n  Note: No system user required - all auth at application level")
-    print("  注意：无需系统用户 - 所有认证在应用层完成")
-    print("\nPress Ctrl+C to stop the server / 按 Ctrl+C 停止服务器")
     print("=" * 60)
 
     try:
