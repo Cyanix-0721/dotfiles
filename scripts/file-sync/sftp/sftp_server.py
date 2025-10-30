@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import signal
 import stat
 import sys
 from pathlib import Path
@@ -505,13 +506,34 @@ async def _run_server(
             except Exception:
                 pass
 
+    print("\nPress Ctrl+C to stop the server / 按 Ctrl+C 停止服务器")
     print("=" * 60)
 
+    # Setup signal handling for graceful shutdown
+    loop = asyncio.get_event_loop()
+    shutdown_event = asyncio.Event()
+
+    def signal_handler(sig: int = 0, frame: object = None) -> None:
+        print("\n[INFO] Shutting down server... / 正在关闭服务器...")
+        shutdown_event.set()
+
+    # Register signal handlers
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, signal_handler)
+        except NotImplementedError:
+            # Windows doesn't support add_signal_handler, use signal.signal instead
+            signal.signal(sig, signal_handler)
+
     try:
-        await asyncio.Future()
+        await shutdown_event.wait()
+    except Exception as e:
+        print(f"\n[ERROR] Server error: {e}")
     finally:
+        print("[INFO] Closing all connections... / 正在关闭所有连接...")
         server.close()
         await server.wait_closed()
+        print("[INFO] Server stopped / 服务器已停止")
 
 
 def main() -> None:
@@ -558,7 +580,8 @@ def main() -> None:
     try:
         asyncio.run(_run_server(root, host, port, username, password, public_key_path))
     except KeyboardInterrupt:
-        print("\n[INFO] Server stopped / 服务器已停止")
+        # Additional fallback for KeyboardInterrupt
+        pass
 
 
 if __name__ == "__main__":
