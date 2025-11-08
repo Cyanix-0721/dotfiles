@@ -159,7 +159,7 @@ layout {
         // off
 
         // How many logical pixels the ring extends out from the windows.
-        width 4
+        width 2
 
         // Colors can be set in a variety of ways:
         // - CSS named colors: "red"
@@ -264,6 +264,18 @@ layout {
 
 // env variables
 environment {
+  // 当前桌面环境
+  XDG_CURRENT_DESKTOP "niri"
+  
+  // 终端相关
+  TERMINAL "kitty"
+  
+  // Wayland 相关
+  ELECTRON_OZONE_PLATFORM_HINT "auto"
+  QT_QPA_PLATFORM "wayland"
+  QT_QPA_PLATFORMTHEME "qt6ct"
+  QT_QPA_PLATFORMTHEME_QT6 "qt6ct" 
+
   // 基础输入法环境变量
   INPUT_METHOD "fcitx"
   XMODIFIERS "@im=fcitx"
@@ -273,12 +285,6 @@ environment {
   GTK_IM_MODULE "fcitx"
   SDL_IM_MODULE "fcitx"
   GLFW_IM_MODULE "fcitx"
-  
-  // Wayland 相关
-  ELECTRON_OZONE_PLATFORM_HINT "auto"
-  QT_QPA_PLATFORM "wayland"
-  QT_QPA_PLATFORMTHEME "qt6ct"
-  QT_QPA_PLATFORMTHEME_QT6 "qt6ct"
 }
 
 // cursor theme
