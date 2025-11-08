@@ -18,7 +18,7 @@ sudo pacman -S --noconfirm neovim python-pynvim lazygit gitui github-cli uv ast-
 paru -S --noconfirm visual-studio-code-bin
 
 echo "安装系统工具… / Installing system tools…"
-sudo pacman -S --noconfirm mako fuzzel ntfs-3g niri isd
+sudo pacman -S --noconfirm mako fuzzel ntfs-3g niri isd xwayland-satellite
 paru -S --noconfirm octopi
 
 echo "安装网络工具… / Installing network tools…"
