@@ -106,4 +106,33 @@ else
   echo "跳过 vfox 安装 / Skipping vfox installation"
 fi
 
+# 询问是否启用 MPD 服务
+echo -n "是否启用 MPD (音乐播放器守护进程) 用户服务？[Y/n] / Enable MPD (Music Player Daemon) user service? [Y/n]: "
+read -r enable_mpd
+
+enable_mpd=${enable_mpd:-Y}
+
+if [[ $enable_mpd =~ ^[Yy]$ ]]; then
+  echo "启用 MPD 用户服务… / Enabling MPD user service…"
+  systemctl --user enable --now mpd.service
+  echo "✓ MPD 用户服务已启用 / MPD user service enabled"
+else
+  echo "跳过 MPD 服务启用 / Skipping MPD service enablement"
+fi
+
+# 询问是否启用 Syncthing 服务
+echo -n "是否启用 Syncthing (文件同步) 用户服务？[Y/n] / Enable Syncthing (file synchronization) user service? [Y/n]: "
+read -r enable_syncthing
+
+enable_syncthing=${enable_syncthing:-Y}
+
+if [[ $enable_syncthing =~ ^[Yy]$ ]]; then
+  echo "启用 Syncthing 用户服务… / Enabling Syncthing user service…"
+  systemctl --user enable --now syncthing.service
+  echo "✓ Syncthing 用户服务已启用 / Syncthing user service enabled"
+  echo "  访问 http://127.0.0.1:8384 进行配置 / Access http://127.0.0.1:8384 for configuration"
+else
+  echo "跳过 Syncthing 服务启用 / Skipping Syncthing service enablement"
+fi
+
 echo "✓ 常用软件安装完成 / Common software installation completed"
