@@ -7,6 +7,8 @@
 	email = 34270450+Cyanix-0721@users.noreply.github.com
 [core]
   pager = delta
+{{- template "os-windows" "  autocrlf = true" }}
+{{- template "os-unix" "  autocrlf = input" }}
 [interactive]
   diffFilter = delta --color-only
 [delta]
@@ -15,4 +17,5 @@
 [merge]
   conflictStyle = zdiff3
 [credential]
-  helper = cache --timeout=3600 # seconds
+{{- template "os-windows" "  helper = manager" }}
+{{- template "os-unix" "  helper = cache --timeout=86400 # seconds" }}
