@@ -5,3 +5,34 @@ README.md
 .gitignore
 LICENSE
 scripts/
+
+# Windows 系统忽略 Linux 特定配置
+{{- if eq .chezmoi.os "windows" }}
+# Linux 桌面环境配置
+.config/btop/
+.config/niri/
+.config/fuzzel/
+.config/fontconfig/
+.config/mpd/
+.config/rmpc/
+.config/fcitx5/
+.config/environment.d/
+.local/share/fcitx5/
+.local/share/rofi/
+
+# Linux shell 配置
+.config/fish/
+.config/kitty/
+.config/starship.toml
+.config/yazi/
+.config/fastfetch/
+.config/DankMaterialShell/
+
+# SSH 配置（Windows 路径不同）
+.ssh/
+{{- end }}
+
+# Linux/macOS 系统忽略 Windows 特定配置
+{{- if ne .chezmoi.os "windows" }}
+# 如果将来有 Windows 特定配置，在这里添加
+{{- end }}
