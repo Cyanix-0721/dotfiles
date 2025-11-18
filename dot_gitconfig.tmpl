@@ -3,8 +3,8 @@
 [fetch]
 	prune = true
 [user]
-	name = Cyanix-0721
-	email = 34270450+Cyanix-0721@users.noreply.github.com
+	name = {{ .name }}
+	email = {{ .email }}
 [core]
   pager = delta
 {{- template "os-windows" "  autocrlf = true" }}

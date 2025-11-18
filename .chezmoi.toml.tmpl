@@ -1,9 +1,16 @@
-# Chezmoi 配置文件
+{{- $name := promptStringOnce . "name" "Git user name" -}}
+{{- $email := promptStringOnce . "email" "Git email address" -}}
+{{- $editor := promptStringOnce . "editor" "Preferred editor" "nvim" -}}
+
+[data]
+    name = {{ $name | quote }}
+    email = {{ $email | quote }}
+    editor = {{ $editor | quote }}
 
 # 编辑命令的配置
 [edit]
-    # 设置默认编辑器为 nvim
-    command = "nvim"
+    # 设置默认编辑器
+    command = {{ $editor | quote }}
     # 设置编辑器参数，'--wait' 确保在文件关闭后才继续执行命令 
     args = ["--wait"]
 
