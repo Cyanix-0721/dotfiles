@@ -25,9 +25,6 @@ scripts/
 .config/kitty/
 .config/yazi/
 .config/DankMaterialShell/
-
-# SSH 配置（Windows 路径不同）
-.ssh/
 {{- end }}
 
 # Linux/macOS 系统忽略 Windows 特定配置
