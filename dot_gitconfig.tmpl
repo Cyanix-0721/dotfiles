@@ -7,8 +7,11 @@
 	email = {{ .email }}
 [core]
   pager = delta
-{{- template "os-windows" "  autocrlf = true" }}
-{{- template "os-unix" "  autocrlf = input" }}
+{{- if eq .chezmoi.os "windows" }}
+  autocrlf = true
+{{- else }}
+  autocrlf = input
+{{- end }}
 [interactive]
   diffFilter = delta --color-only
 [delta]
@@ -17,5 +20,8 @@
 [merge]
   conflictStyle = zdiff3
 [credential]
-{{- template "os-windows" "  helper = manager-core" }}
-{{- template "os-unix" "  helper = cache --timeout=86400 # seconds" }}
+{{- if eq .chezmoi.os "windows" }}
+  helper = manager-core
+{{- else }}
+  helper = cache --timeout=86400 # seconds
+{{- end }}
