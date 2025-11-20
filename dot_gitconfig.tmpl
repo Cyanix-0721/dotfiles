@@ -21,9 +21,13 @@
   conflictStyle = zdiff3
 [credential]
 {{- if eq .chezmoi.os "windows" }}
-  helper = manager-core
+  helper = manager
 {{- else }}
-  helper = cache --timeout=86400 # seconds
+  {{- if stat "/usr/share/git/credential/libsecret/git-credential-libsecret" }}
+    helper = /usr/share/git/credential/libsecret/git-credential-libsecret
+  {{- else }}
+    helper = cache --timeout=3600
+  {{- end }}
 {{- end }}
 [http]
   proxy = http://127.0.0.1:7897
