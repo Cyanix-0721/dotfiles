@@ -404,7 +404,7 @@ window-rule {
 
 // Maximize vscode by default.
 window-rule {
-    match app-id="code$"
+    match app-id="^(code|antigravity)$"
     open-maximized true
 }
 
@@ -446,7 +446,6 @@ binds {
     Mod+B hotkey-overlay-title="Run an Application: Zen-Browser" { spawn "zen-browser"; }
     Mod+P hotkey-overlay-title="Run an Application: KeePassXC" { spawn "keepassxc"; }
     Mod+M hotkey-overlay-title="Run an TaskManager: btop" { spawn "kitty" "btop"; }
-    // Super+Alt+L hotkey-overlay-title="Lock the Screen: hyprlock" { spawn "hyprlock"; }
     Super+Alt+L hotkey-overlay-title="Lock Screen" { spawn "dms" "ipc" "call" "lock" "lock"; }
     Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "dms" "ipc" "call" "clipboard" "toggle"; }
 
