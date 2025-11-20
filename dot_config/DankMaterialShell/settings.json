@@ -79,6 +79,16 @@
       "id": "darkMode",
       "enabled": true,
       "width": 50
+    },
+    {
+      "id": "idleInhibitor",
+      "enabled": true,
+      "width": 50
+    },
+    {
+      "id": "colorPicker",
+      "enabled": true,
+      "width": 50
     }
   ],
   "showWorkspaceIndex": false,
@@ -100,7 +110,6 @@
   "lockDateFormat": "yyyy-MM-dd",
   "mediaSize": 1,
   "dankBarLeftWidgets": [
-    "launcherButton",
     "workspaceSwitcher",
     "focusedWindow"
   ],
@@ -109,16 +118,38 @@
     "clock"
   ],
   "dankBarRightWidgets": [
-    "systemTray",
-    "clipboard",
-    "cpuUsage",
-    "memUsage",
-    "notificationButton",
-    "battery",
-    "controlCenterButton"
+    {
+      "id": "systemTray",
+      "enabled": true
+    },
+    {
+      "id": "clipboard",
+      "enabled": true
+    },
+    {
+      "id": "cpuUsage",
+      "enabled": true
+    },
+    {
+      "id": "memUsage",
+      "enabled": true,
+      "showSwap": false
+    },
+    {
+      "id": "notificationButton",
+      "enabled": true
+    },
+    {
+      "id": "battery",
+      "enabled": true
+    },
+    {
+      "id": "controlCenterButton",
+      "enabled": true
+    }
   ],
   "dankBarWidgetOrder": [],
-  "appLauncherViewMode": "list",
+  "appLauncherViewMode": "grid",
   "spotlightModalViewMode": "list",
   "sortAppsAlphabetically": false,
   "weatherLocation": "New York, NY",
@@ -127,7 +158,7 @@
   "weatherEnabled": false,
   "networkPreference": "auto",
   "vpnLastConnected": "",
-  "iconTheme": "System Default",
+  "iconTheme": "Adwaita",
   "launcherLogoMode": "compositor",
   "launcherLogoCustomPath": "",
   "launcherLogoColorOverride": "",
