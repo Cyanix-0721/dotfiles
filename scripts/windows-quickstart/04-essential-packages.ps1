@@ -142,6 +142,7 @@ Write-Host "`n=== 通讯软件 / Communication Apps ===" -ForegroundColor Yellow
 
 $commApps = @{
     "vesktop" = @{ Desc = "Vesktop (Discord 客户端 / Discord client)"; Global = $false }
+    "ayugram" = @{ Desc = "AyuGram (Telegram 客户端 / Telegram client)"; Global = $false }
 }
 
 foreach ($package in $commApps.GetEnumerator()) {
