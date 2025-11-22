@@ -282,6 +282,9 @@ environment {
   
   // 终端相关
   TERMINAL "kitty"
+
+  // SSH
+  SSH_AUTH_SOCK "$XDG_RUNTIME_DIR/ssh-agent.socket"
   
   // Wayland 相关
   ELECTRON_OZONE_PLATFORM_HINT "auto"

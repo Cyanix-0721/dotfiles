@@ -119,4 +119,29 @@ else
   echo "跳过 Flatpak 安装 / Skipping Flatpak installation"
 fi
 
+# 检查并配置 OpenSSH 和 ssh-agent
+echo "=== 配置 SSH Agent / Configuring SSH Agent ==="
+
+# 检查 openssh 是否已安装
+if ! command -v ssh &>/dev/null; then
+  echo "OpenSSH 未安装，正在安装... / OpenSSH not installed, installing..."
+  sudo pacman -S --noconfirm openssh
+  echo "✓ OpenSSH 安装完成 / OpenSSH installed"
+else
+  echo "✓ OpenSSH 已安装 / OpenSSH already installed"
+fi
+
+# 启用 ssh-agent 用户服务
+echo "启用 ssh-agent 用户服务... / Enabling ssh-agent user service..."
+systemctl --user enable --now ssh-agent.service
+echo "✓ ssh-agent 用户服务已启用 / ssh-agent user service enabled"
+
+# 提示用户配置环境变量
+echo ""
+echo "提示 / Note:"
+echo "  请在 Fish 配置中添加以下环境变量："
+echo "  Please add the following environment variable to your Fish config:"
+echo "  set -Ux SSH_AUTH_SOCK \"\$XDG_RUNTIME_DIR/ssh-agent.socket\""
+echo ""
+
 echo "✓ 系统基础环境配置完成 / ✓ System foundation setup completed"
