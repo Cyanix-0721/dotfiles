@@ -1,0 +1,106 @@
+# Aria2 配置文件 / Aria2 Configuration File
+# 参考 / Reference: https://aria2.github.io/manual/en/html/aria2c.html
+
+## 文件保存设置 / File Save Settings
+# 下载目录
+{{- if eq .chezmoi.os "windows" }}
+dir=D:/UserData/Downloads
+{{- else }}
+dir=${HOME}/Downloads
+{{- end }}
+# 启用磁盘缓存（0 为禁用缓存）
+disk-cache=64M
+# 文件预分配方式（none, prealloc, trunc, falloc）
+file-allocation=falloc
+# 断点续传
+continue=true
+
+## 连接设置 / Connection Settings
+# 同一服务器最大连接数
+max-connection-per-server=16
+# 单个任务最大线程数
+split=16
+# 最小文件分片大小
+min-split-size=10M
+# 整体下载速度限制（0 表示不限制）
+max-overall-download-limit=0
+# 单个任务下载速度限制
+max-download-limit=0
+# 整体上传速度限制
+max-overall-upload-limit=1M
+# 单个任务上传速度限制
+max-upload-limit=1M
+
+## RPC 设置 / RPC Settings
+# 启用 RPC
+enable-rpc=true
+# RPC 监听所有 IP
+rpc-listen-all=true
+# RPC 监听端口
+rpc-listen-port=6800
+# RPC 密钥令牌（建议修改为自己的密码）
+rpc-secret=1145141919810
+# 允许覆盖
+rpc-allow-origin-all=true
+# 允许外部访问
+rpc-secure=false
+
+## BT/PT 下载设置 / BT/PT Download Settings
+# 启用 DHT 功能
+enable-dht=true
+# 启用 DHT IPv6
+enable-dht6=true
+# 打开 IPv6 DHT 功能
+bt-enable-lpd=true
+# 启用本地节点查找
+enable-peer-exchange=true
+# 单个种子最大连接数
+bt-max-peers=128
+# BT 监听端口
+listen-port=6881-6999
+# DHT 监听端口
+dht-listen-port=6881-6999
+# 种子分享率（上传量/下载量的比率，0 表示不限制）
+seed-ratio=1.0
+# 最少做种时间（分钟）
+seed-time=60
+# BT tracker 服务器连接超时时间
+bt-tracker-connect-timeout=10
+# BT tracker 服务器超时时间
+bt-tracker-timeout=10
+# 强制保存会话
+force-save=true
+# BT 校验相关
+bt-hash-check-seed=true
+bt-seed-unverified=true
+bt-save-metadata=true
+# 保存种子文件
+bt-detach-seed-only=true
+
+## 进度保存设置 / Progress Save Settings
+# 从会话文件恢复下载
+input-file=${HOME}/.aria2/aria2.session
+# 保存错误/未完成的下载到会话文件
+save-session=${HOME}/.aria2/aria2.session
+# 定时保存会话（秒）
+save-session-interval=60
+
+## 高级设置 / Advanced Settings
+# 最大同时下载任务数
+max-concurrent-downloads=5
+# 禁用 IPv6
+disable-ipv6=false
+# 代理服务器（如需使用代理，取消注释并配置）
+# all-proxy=http://127.0.0.1:7890
+# 用户代理
+user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
+# 控制台日志级别（debug, info, notice, warn, error）
+console-log-level=notice
+# 文件日志级别
+# log-level=notice
+# 日志文件
+# log=${HOME}/.aria2/aria2.log
+
+## BT Tracker 列表 / BT Tracker List
+# 可以从 https://trackerslist.com/ 或 https://github.com/ngosang/trackerslist 获取最新的 tracker 列表
+bt-tracker=

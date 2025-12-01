@@ -1,0 +1,3 @@
+# Aria2 会话文件 / Aria2 Session File
+# 此文件用于保存下载进度，支持断点续传
+# This file is used to save download progress for resume capability
