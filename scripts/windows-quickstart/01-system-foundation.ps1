@@ -112,6 +112,48 @@ else {
     Write-Host "✓ gsudo 已安装 / gsudo is already installed" -ForegroundColor Green
 }
 
+# 安装 Visual C++ 运行库
+Write-Host "`n=== Visual C++ 运行库 / Visual C++ Redistributables ===" -ForegroundColor Cyan
+
+$installVCRedist = Read-Host "是否安装 Visual C++ 2005-2022 运行库？(Y/n) / Install Visual C++ 2005-2022 Redistributables? (Y/n)"
+if ($installVCRedist -notmatch '^[Nn]$') {
+    $vcRedistPackages = @(
+        @{ Id = "Microsoft.VCRedist.2005.x64"; Name = "VC++ 2005 x64" }
+        @{ Id = "Microsoft.VCRedist.2005.x86"; Name = "VC++ 2005 x86" }
+        @{ Id = "Microsoft.VCRedist.2008.x64"; Name = "VC++ 2008 x64" }
+        @{ Id = "Microsoft.VCRedist.2008.x86"; Name = "VC++ 2008 x86" }
+        @{ Id = "Microsoft.VCRedist.2010.x64"; Name = "VC++ 2010 x64" }
+        @{ Id = "Microsoft.VCRedist.2010.x86"; Name = "VC++ 2010 x86" }
+        @{ Id = "Microsoft.VCRedist.2012.x64"; Name = "VC++ 2012 x64" }
+        @{ Id = "Microsoft.VCRedist.2012.x86"; Name = "VC++ 2012 x86" }
+        @{ Id = "Microsoft.VCRedist.2013.x64"; Name = "VC++ 2013 x64" }
+        @{ Id = "Microsoft.VCRedist.2013.x86"; Name = "VC++ 2013 x86" }
+        @{ Id = "Microsoft.VCRedist.2015+.x64"; Name = "VC++ 2015-2022 x64" }
+        @{ Id = "Microsoft.VCRedist.2015+.x86"; Name = "VC++ 2015-2022 x86" }
+    )
+    
+    Write-Host "正在安装 Visual C++ 运行库... / Installing Visual C++ Redistributables..." -ForegroundColor Yellow
+    
+    foreach ($package in $vcRedistPackages) {
+        $null = winget list --id $package.Id --exact 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  安装 $($package.Name)... / Installing $($package.Name)..." -ForegroundColor Cyan
+            winget install --id $package.Id --exact --silent --accept-source-agreements --accept-package-agreements
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "  ✓ $($package.Name) 安装完成 / $($package.Name) installation completed" -ForegroundColor Green
+            }
+            else {
+                Write-Host "  ✗ $($package.Name) 安装失败 / $($package.Name) installation failed" -ForegroundColor Red
+            }
+        }
+        else {
+            Write-Host "  ✓ $($package.Name) 已安装 / $($package.Name) is already installed" -ForegroundColor Green
+        }
+    }
+    
+    Write-Host "✓ Visual C++ 运行库安装完成 / Visual C++ Redistributables installation completed" -ForegroundColor Green
+}
+
 # 安装 Chezmoi 配置管理工具
 Write-Host "`n=== Chezmoi 配置管理工具 / Chezmoi Configuration Management Tool ===" -ForegroundColor Cyan
 if (-not (Get-Command chezmoi -ErrorAction SilentlyContinue)) {
