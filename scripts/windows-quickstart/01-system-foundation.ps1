@@ -87,7 +87,7 @@ else {
 # 添加 Scoop 常用 buckets
 Write-Host "`n添加 Scoop buckets… / Adding Scoop buckets…" -ForegroundColor Yellow
 
-$buckets = @("extras", "versions", "nerd-fonts")
+$buckets = @("extras", "versions", "nerd-fonts", "sysinternals")
 
 foreach ($bucketName in $buckets) {
     $bucketList = scoop bucket list
