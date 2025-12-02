@@ -157,6 +157,10 @@ $winTools = @{
     "listary"    = @{ Desc = "Listary (文件搜索和启动器 / File search and launcher)"; Global = $true }
     "krokiet"    = @{ Desc = "Krokiet (图片查重工具 / picture duplicate finder)"; Global = $false }
     "autoruns"   = @{ Desc = "Autoruns (启动项管理工具 / Startup manager)"; Global = $true }
+    "ventoy"     = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $true }
+    "rufus"      = @{ Desc = "Rufus (USB 启动盘制作工具 / USB bootable creator)"; Global = $true }
+    "wiztree"    = @{ Desc = "WizTree (磁盘空间分析工具 / Disk space analyzer)"; Global = $false }
+    "spacesniffer" = @{ Desc = "SpaceSniffer (磁盘空间可视化工具 / Disk space visualizer)"; Global = $false }
 }
 
 foreach ($package in $winTools.GetEnumerator()) {
