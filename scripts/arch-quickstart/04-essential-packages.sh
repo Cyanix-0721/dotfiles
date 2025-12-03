@@ -18,15 +18,15 @@ sudo pacman -S --noconfirm neovim python-pynvim lazygit gitui github-cli uv ast-
 paru -S --noconfirm visual-studio-code-bin
 
 echo "安装系统工具… / Installing system tools…"
-sudo pacman -S --noconfirm mako fuzzel ntfs-3g niri isd xwayland-satellite playerctl
-paru -S --noconfirm octopi dms-shell-bin
+sudo pacman -S --noconfirm mako fuzzel ntfs-3g niri isd qt6ct xwayland-satellite playerctl polkit-kde-agent
+paru -S --noconfirm octopi noctalia-shell
 
 echo "安装网络工具… / Installing network tools…"
 paru -S --noconfirm clash-verge-rev-bin
 
 echo "安装日常应用… / Installing daily applications…"
-sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn mpv ffmpeg gimp yazi 7zip dolphin nautilus scrcpy syncthing mpd rmpc kdenlive
-paru -S --noconfirm zen-browser-bin ungoogled-chromium-bin localsend-bin bibata-cursor-theme-bin qt6ct-kde vesktop-bin ayugram-desktop
+sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn mpv ffmpeg gimp yazi 7zip dolphin nautilus scrcpy syncthing mpd rmpc kdenlive cava
+paru -S --noconfirm zen-browser-bin ungoogled-chromium-bin localsend-bin bibata-cursor-theme-bin vesktop-bin ayugram-desktop
 
 # 询问是否安装 Podman
 echo -n "是否安装 Podman 和 podman-compose？[Y/n] / Install Podman and podman-compose? [Y/n]: "
