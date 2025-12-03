@@ -193,7 +193,7 @@
         "manualSunrise": "06:30",
         "manualSunset": "18:30",
         "matugenSchemeType": "scheme-tonal-spot",
-        "predefinedScheme": "Noctalia-default",
+        "predefinedScheme": "Noctalia (default)",
         "schedulingMode": "off",
         "useWallpaperColors": true
     },
@@ -450,7 +450,7 @@
         "hideWallpaperFilenames": false,
         "monitorDirectories": [
         ],
-        "overviewEnabled": false,
+        "overviewEnabled": true,
         "panelPosition": "follow_bar",
         "randomEnabled": false,
         "randomIntervalSec": 300,

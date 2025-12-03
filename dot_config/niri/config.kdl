@@ -260,19 +260,12 @@ layout {
         // top 64
         // bottom 64
     }
-
-    background-color "transparent"
 }
 
+// Set the overview wallpaper on the backdrop.
 layer-rule {
-    match namespace="^quickshell$"
-    place-within-backdrop true
-}
-
-overview {
-    workspace-shadow {
-        off
-    }
+  match namespace="^noctalia-overview*"
+  place-within-backdrop true
 }
 
 // env variables
@@ -323,7 +316,6 @@ cursor {
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
 
-// spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store &"
 spawn-at-startup "/usr/lib/polkit-kde-authentication-agent-1"
 spawn-at-startup "qs" "-c" "noctalia-shell"
 
@@ -370,7 +362,7 @@ animations {
 
 // Enable rounded corners for all windows.
 window-rule {
-    geometry-corner-radius 12
+    geometry-corner-radius 20
     clip-to-geometry true
 }
 
@@ -446,7 +438,7 @@ binds {
     Mod+B hotkey-overlay-title="Run an Application: Zen-Browser" { spawn "zen-browser"; }
     Mod+P hotkey-overlay-title="Run an Application: KeePassXC" { spawn "keepassxc"; }
     Mod+M hotkey-overlay-title="Run an TaskManager: btop" { spawn "kitty" "btop"; }
-    Super+Alt+L hotkey-overlay-title="Lock Screen" { spawn "dms" "ipc" "call" "sessionMenu" "toggle"; }
+    Super+Alt+L hotkey-overlay-title="Lock Screen" { spawn "qs" "-c" "noctalia-shell" "ipc" "call" "sessionMenu" "toggle"; }
     Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "qs" "-c" "noctalia-shell" "ipc" "call" "launcher" "clipboard"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
