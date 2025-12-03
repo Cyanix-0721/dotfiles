@@ -24,7 +24,7 @@ echo "安装网络工具… / Installing network tools…"
 paru -S --noconfirm clash-verge-rev-bin
 
 echo "安装日常应用… / Installing daily applications…"
-sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn mpv ffmpeg gimp yazi 7zip dolphin nautilus scrcpy syncthing mpd rmpc kdenlive cava
+sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn mpv ffmpeg gimp yazi 7zip dolphin nautilus scrcpy syncthing mpd mpd-mpris rmpc kdenlive cava
 paru -S --noconfirm zen-browser-bin ungoogled-chromium-bin localsend-bin bibata-cursor-theme-bin vesktop-bin ayugram-desktop
 
 # 询问是否安装 Podman
@@ -114,6 +114,7 @@ enable_mpd=${enable_mpd:-Y}
 if [[ $enable_mpd =~ ^[Yy]$ ]]; then
   echo "启用 MPD 用户服务… / Enabling MPD user service…"
   systemctl --user enable --now mpd.service
+  systemctl --user enable --now mpd-mpris.service
   echo "✓ MPD 用户服务已启用 / MPD user service enabled"
 else
   echo "跳过 MPD 服务启用 / Skipping MPD service enablement"
