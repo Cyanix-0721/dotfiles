@@ -421,7 +421,7 @@
         "ghostty": false,
         "gtk": true,
         "kcolorscheme": false,
-        "kitty": false,
+        "kitty": true,
         "niri": false,
         "pywalfox": false,
         "qt": true,
