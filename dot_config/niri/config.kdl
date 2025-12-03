@@ -323,9 +323,9 @@ cursor {
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
 
-spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store &"
+// spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store &"
 spawn-at-startup "/usr/lib/polkit-kde-authentication-agent-1"
-spawn-at-startup "dms" "run"
+spawn-at-startup "qs" "-c" "noctalia-shell"
 
 // If using niri newer than 271534e115e5915231c99df287bbfe396185924d (~aug 17 2025)
 // you can add this to disable built in config load errors since dank shell provides this
@@ -446,8 +446,8 @@ binds {
     Mod+B hotkey-overlay-title="Run an Application: Zen-Browser" { spawn "zen-browser"; }
     Mod+P hotkey-overlay-title="Run an Application: KeePassXC" { spawn "keepassxc"; }
     Mod+M hotkey-overlay-title="Run an TaskManager: btop" { spawn "kitty" "btop"; }
-    Super+Alt+L hotkey-overlay-title="Lock Screen" { spawn "dms" "ipc" "call" "lock" "lock"; }
-    Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "dms" "ipc" "call" "clipboard" "toggle"; }
+    Super+Alt+L hotkey-overlay-title="Lock Screen" { spawn "dms" "ipc" "call" "sessionMenu" "toggle"; }
+    Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "qs" "-c" "noctalia-shell" "ipc" "call" "launcher" "clipboard"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
