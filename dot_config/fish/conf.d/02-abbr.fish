@@ -74,6 +74,7 @@ abbr -a x 'chmod +x'
 abbr -a t tmux
 abbr -a tn 'tmux new -s'
 abbr -a ta 'tmux attach -t'
+abbr -a fs fastfetch
 
 abbr -a mntd 'sudo mount /mnt/DDDD'
 abbr -a umntd 'sudo umount /mnt/DDDD'
