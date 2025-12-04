@@ -8,7 +8,7 @@
         ],
         "position": "center",
         "sortByMostUsed": true,
-        "terminalCommand": "xterm -e",
+        "terminalCommand": "kitty -e",
         "useApp2Unit": false,
         "viewMode": "list"
     },
@@ -48,32 +48,6 @@
             ],
             "left": [
                 {
-                    "icon": "rocket",
-                    "id": "CustomButton",
-                    "leftClickExec": "qs -c noctalia-shell ipc call launcher toggle",
-                    "leftClickUpdateText": false,
-                    "maxTextLength": {
-                        "horizontal": 10,
-                        "vertical": 10
-                    },
-                    "middleClickExec": "",
-                    "middleClickUpdateText": false,
-                    "parseJson": false,
-                    "rightClickExec": "",
-                    "rightClickUpdateText": false,
-                    "textCollapse": "",
-                    "textCommand": "",
-                    "textIntervalMs": 3000,
-                    "textStream": false,
-                    "wheelDownExec": "",
-                    "wheelDownUpdateText": false,
-                    "wheelExec": "",
-                    "wheelMode": "unified",
-                    "wheelUpExec": "",
-                    "wheelUpUpdateText": false,
-                    "wheelUpdateText": false
-                },
-                {
                     "customFont": "",
                     "formatHorizontal": "yyyy-MM-dd    HH:mm:ss",
                     "formatVertical": "HH mm ss - yyyy MM dd",
@@ -81,6 +55,30 @@
                     "useCustomFont": false,
                     "usePrimaryColor": false
                 },
+                {
+                    "colorizeIcons": true,
+                    "hideMode": "hidden",
+                    "id": "ActiveWindow",
+                    "maxWidth": 180,
+                    "scrollingMode": "hover",
+                    "showIcon": true,
+                    "useFixedWidth": false
+                },
+                {
+                    "hideMode": "hidden",
+                    "hideWhenIdle": false,
+                    "id": "MediaMini",
+                    "maxWidth": 180,
+                    "scrollingMode": "hover",
+                    "showAlbumArt": false,
+                    "showArtistFirst": true,
+                    "showProgressRing": true,
+                    "showVisualizer": false,
+                    "useFixedWidth": false,
+                    "visualizerType": "linear"
+                }
+            ],
+            "right": [
                 {
                     "diskPath": "/",
                     "id": "SystemMonitor",
@@ -93,36 +91,9 @@
                     "usePrimaryColor": false
                 },
                 {
-                    "colorizeIcons": false,
-                    "hideMode": "hidden",
-                    "id": "ActiveWindow",
-                    "maxWidth": 145,
-                    "scrollingMode": "hover",
-                    "showIcon": true,
-                    "useFixedWidth": false
-                },
-                {
-                    "hideMode": "hidden",
-                    "hideWhenIdle": false,
-                    "id": "MediaMini",
-                    "maxWidth": 145,
-                    "scrollingMode": "hover",
-                    "showAlbumArt": false,
-                    "showArtistFirst": true,
-                    "showProgressRing": true,
-                    "showVisualizer": false,
-                    "useFixedWidth": false,
-                    "visualizerType": "linear"
-                }
-            ],
-            "right": [
-                {
-                    "id": "ScreenRecorder"
-                },
-                {
                     "blacklist": [
                     ],
-                    "colorizeIcons": false,
+                    "colorizeIcons": true,
                     "drawerEnabled": true,
                     "id": "Tray",
                     "pinned": [
@@ -149,12 +120,12 @@
                 },
                 {
                     "colorizeDistroLogo": false,
-                    "colorizeSystemIcon": "none",
+                    "colorizeSystemIcon": "primary",
                     "customIconPath": "",
-                    "enableColorization": false,
+                    "enableColorization": true,
                     "icon": "noctalia",
                     "id": "ControlCenter",
-                    "useDistroLogo": false
+                    "useDistroLogo": true
                 }
             ]
         }
@@ -273,7 +244,7 @@
         "compactLockScreen": false,
         "dimmerOpacity": 0.6,
         "enableShadows": true,
-        "forceBlackScreenCorners": false,
+        "forceBlackScreenCorners": true,
         "language": "zh-CN",
         "lockOnSuspend": true,
         "radiusRatio": 1,
@@ -353,7 +324,7 @@
         "videoSource": "portal"
     },
     "sessionMenu": {
-        "countdownDuration": 10000,
+        "countdownDuration": 5000,
         "enableCountdown": true,
         "position": "center",
         "powerOptions": [
@@ -401,11 +372,11 @@
         "diskWarningThreshold": 80,
         "memCriticalThreshold": 90,
         "memPollingInterval": 3000,
-        "memWarningThreshold": 80,
+        "memWarningThreshold": 75,
         "networkPollingInterval": 3000,
         "tempCriticalThreshold": 90,
         "tempPollingInterval": 3000,
-        "tempWarningThreshold": 80,
+        "tempWarningThreshold": 70,
         "useCustomColors": false,
         "warningColor": ""
     },
@@ -422,7 +393,7 @@
         "gtk": true,
         "kcolorscheme": false,
         "kitty": true,
-        "niri": false,
+        "niri": true,
         "pywalfox": false,
         "qt": true,
         "spicetify": false,
