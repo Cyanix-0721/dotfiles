@@ -24,7 +24,7 @@ scripts/
 .config/fish/
 .config/kitty/
 .config/yazi/
-.config/DankMaterialShell/
+.config/noctalia/
 {{- end }}
 
 # Linux/macOS 系统忽略 Windows 特定配置
