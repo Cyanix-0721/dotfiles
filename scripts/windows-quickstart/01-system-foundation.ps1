@@ -154,6 +154,23 @@ if ($installVCRedist -notmatch '^[Nn]$') {
     Write-Host "✓ Visual C++ 运行库安装完成 / Visual C++ Redistributables installation completed" -ForegroundColor Green
 }
 
+# 安装 Microsoft Edge WebView2 运行时
+Write-Host "`n=== Microsoft Edge WebView2 运行时 / WebView2 Runtime ===" -ForegroundColor Cyan
+$null = winget list --id Microsoft.EdgeWebView2Runtime --exact 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "安装 WebView2 运行时… / Installing WebView2 Runtime…" -ForegroundColor Yellow
+    winget install --id Microsoft.EdgeWebView2Runtime --exact --silent --accept-source-agreements --accept-package-agreements
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✓ WebView2 运行时安装完成 / WebView2 Runtime installation completed" -ForegroundColor Green
+    }
+    else {
+        Write-Host "✗ WebView2 运行时安装失败 / WebView2 Runtime installation failed" -ForegroundColor Red
+    }
+}
+else {
+    Write-Host "✓ WebView2 运行时已安装 / WebView2 Runtime is already installed" -ForegroundColor Green
+}
+
 # 安装 Chezmoi 配置管理工具
 Write-Host "`n=== Chezmoi 配置管理工具 / Chezmoi Configuration Management Tool ===" -ForegroundColor Cyan
 if (-not (Get-Command chezmoi -ErrorAction SilentlyContinue)) {

@@ -345,6 +345,65 @@ foreach ($package in $fonts.GetEnumerator()) {
     }
 }
 
+# 游戏平台
+Write-Host "`n=== 游戏平台 / Game Platforms ===" -ForegroundColor Yellow
+
+$null = winget list --id Valve.Steam --exact 2>$null
+if ($LASTEXITCODE -ne 0) {
+    $installSteam = Read-Host "是否安装 Steam？(Y/n) / Install Steam? (Y/n)"
+    if ($installSteam -notmatch '^[Nn]$') {
+        Write-Host "安装 Steam… / Installing Steam…" -ForegroundColor Yellow
+        winget install --id Valve.Steam --exact --silent --accept-source-agreements --accept-package-agreements
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "✓ Steam 安装完成 / Steam installation completed" -ForegroundColor Green
+        }
+        else {
+            Write-Host "✗ Steam 安装失败 / Steam installation failed" -ForegroundColor Red
+        }
+    }
+}
+else {
+    Write-Host "✓ Steam 已安装 / Steam is already installed" -ForegroundColor Green
+}
+
+# Epic Games Launcher
+$null = winget list --id EpicGames.EpicGamesLauncher --exact 2>$null
+if ($LASTEXITCODE -ne 0) {
+    $installEpic = Read-Host "是否安装 Epic Games Launcher？(Y/n) / Install Epic Games Launcher? (Y/n)"
+    if ($installEpic -notmatch '^[Nn]$') {
+        Write-Host "安装 Epic Games Launcher… / Installing Epic Games Launcher…" -ForegroundColor Yellow
+        winget install --id EpicGames.EpicGamesLauncher --exact --silent --accept-source-agreements --accept-package-agreements
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "✓ Epic Games Launcher 安装完成 / Epic Games Launcher installation completed" -ForegroundColor Green
+        }
+        else {
+            Write-Host "✗ Epic Games Launcher 安装失败 / Epic Games Launcher installation failed" -ForegroundColor Red
+        }
+    }
+}
+else {
+    Write-Host "✓ Epic Games Launcher 已安装 / Epic Games Launcher is already installed" -ForegroundColor Green
+}
+
+# GOG Galaxy
+$null = winget list --id GOG.Galaxy --exact 2>$null
+if ($LASTEXITCODE -ne 0) {
+    $installGOG = Read-Host "是否安装 GOG Galaxy？(Y/n) / Install GOG Galaxy? (Y/n)"
+    if ($installGOG -notmatch '^[Nn]$') {
+        Write-Host "安装 GOG Galaxy… / Installing GOG Galaxy…" -ForegroundColor Yellow
+        winget install --id GOG.Galaxy --exact --silent --accept-source-agreements --accept-package-agreements
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "✓ GOG Galaxy 安装完成 / GOG Galaxy installation completed" -ForegroundColor Green
+        }
+        else {
+            Write-Host "✗ GOG Galaxy 安装失败 / GOG Galaxy installation failed" -ForegroundColor Red
+        }
+    }
+}
+else {
+    Write-Host "✓ GOG Galaxy 已安装 / GOG Galaxy is already installed" -ForegroundColor Green
+}
+
 Write-Host "`n✓ 必备软件包安装完成 / Essential applications installation completed" -ForegroundColor Green
 Write-Host "`n当前已安装的所有应用 / All currently installed applications:" -ForegroundColor Cyan
 scoop list

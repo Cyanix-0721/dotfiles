@@ -302,6 +302,27 @@ foreach ($entry in $devTools.GetEnumerator()) {
     }
 }
 
+# 容器与虚拟化 / Containers and Virtualization
+Write-Host "`n=== 容器与虚拟化 / Containers and Virtualization ===" -ForegroundColor Yellow
+
+$null = winget list --id Docker.DockerDesktop --exact 2>$null
+if ($LASTEXITCODE -ne 0) {
+    $installDocker = Read-Host "是否安装 Docker Desktop？(Y/n) / Install Docker Desktop? (Y/n)"
+    if ($installDocker -notmatch '^[Nn]$') {
+        Write-Host "安装 Docker Desktop… / Installing Docker Desktop…" -ForegroundColor Yellow
+        winget install --id Docker.DockerDesktop --exact --silent --accept-source-agreements --accept-package-agreements
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "✓ Docker Desktop 安装完成 / Docker Desktop installation completed" -ForegroundColor Green
+        }
+        else {
+            Write-Host "✗ Docker Desktop 安装失败 / Docker Desktop installation failed" -ForegroundColor Red
+        }
+    }
+}
+else {
+    Write-Host "✓ Docker Desktop 已安装 / Docker Desktop is already installed" -ForegroundColor Green
+}
+
 Write-Host "`n✓ 开发工具安装完成 / Development tools installation completed" -ForegroundColor Green
 Write-Host "`n当前已安装的开发工具 / Currently installed development tools:" -ForegroundColor Cyan
 scoop list
