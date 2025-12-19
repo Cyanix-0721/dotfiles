@@ -18,7 +18,7 @@ sudo pacman -S --noconfirm neovim python-pynvim lazygit gitui github-cli uv ast-
 paru -S --noconfirm visual-studio-code-bin
 
 echo "安装系统工具… / Installing system tools…"
-sudo pacman -S --noconfirm mako fuzzel ntfs-3g niri isd qt6ct xwayland-satellite playerctl polkit-kde-agent xdg-desktop-portal xdg-desktop-portal-gtk nwg-look cliphist wl-clipboard
+sudo pacman -S --noconfirm mako fuzzel ntfs-3g niri ly isd qt6ct xwayland-satellite playerctl polkit-kde-agent xdg-desktop-portal xdg-desktop-portal-gtk nwg-look cliphist wl-clipboard
 
 echo "安装网络工具… / Installing network tools…"
 paru -S --noconfirm clash-verge-rev-bin
@@ -133,6 +133,38 @@ if [[ $enable_syncthing =~ ^[Yy]$ ]]; then
   echo "  访问 http://127.0.0.1:8384 进行配置 / Access http://127.0.0.1:8384 for configuration"
 else
   echo "跳过 Syncthing 服务启用 / Skipping Syncthing service enablement"
+fi
+
+# 询问是否启用 Ly 显示管理器
+echo -n "是否启用 Ly 显示管理器？[Y/n] / Enable Ly display manager? [Y/n]: "
+read -r enable_ly
+
+enable_ly=${enable_ly:-Y}
+
+if [[ $enable_ly =~ ^[Yy]$ ]]; then
+  echo -n "选择启动 TTY（示例: tty2 或 2）[默认: tty2] / Choose TTY to start Ly (e.g., tty2 or 2) [default: tty2]: "
+  read -r ly_tty
+
+  ly_tty=${ly_tty:-tty2}
+
+  # 若仅输入数字则标准化为 ttyN
+  if [[ $ly_tty =~ ^[0-9]+$ ]]; then
+    ly_tty="tty${ly_tty}"
+  fi
+
+  # 校验范围（tty1-tty12），不合法则回退到 tty2
+  if [[ ! $ly_tty =~ ^tty([1-9]|1[0-2])$ ]]; then
+    echo "无效 TTY，使用默认 tty2 / Invalid TTY, falling back to tty2"
+    ly_tty="tty2"
+  fi
+
+  echo "启用并启动 Ly@${ly_tty}… / Enabling and starting Ly@${ly_tty}…"
+  # 避免与非模板单元冲突
+  sudo systemctl disable ly.service >/dev/null 2>&1 || true
+  sudo systemctl enable --now "ly@${ly_tty}.service"
+  echo "✓ Ly 已在 ${ly_tty} 启动 / Ly started on ${ly_tty}"
+else
+  echo "跳过 Ly 服务启用 / Skipping Ly service enablement"
 fi
 
 echo "✓ 常用软件安装完成 / Common software installation completed"
