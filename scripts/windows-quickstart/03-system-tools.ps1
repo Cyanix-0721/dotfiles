@@ -59,7 +59,7 @@ foreach ($package in $cliTools.GetEnumerator()) {
 Write-Host "`n=== 系统信息和监控工具 / System Info and Monitoring Tools ===" -ForegroundColor Yellow
 
 $monitorTools = @{
-    "fastfetch" = @{ Desc = "fastfetch (系统信息显示 / System information display)"; Global = $true }
+    "fastfetch" = @{ Desc = "fastfetch (系统信息显示 / System information display)"; Global = $false }
 }
 
 foreach ($package in $monitorTools.GetEnumerator()) {
