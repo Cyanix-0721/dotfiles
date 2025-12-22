@@ -140,35 +140,6 @@ foreach ($package in $versionManagers.GetEnumerator()) {
     }
 }
 
-# Node.js 包管理器
-Write-Host "`n=== Node.js 包管理器 / Node.js Package Managers ===" -ForegroundColor Yellow
-
-$nodePackageManagers = @{
-    "pnpm" = @{ Desc = "pnpm"; Global = $true }
-}
-
-foreach ($package in $nodePackageManagers.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
-        if ($install -notmatch '^[Nn]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
-            }
-            else {
-                scoop install $packageName
-                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
-            }
-        }
-    }
-    else {
-        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
-    }
-}
-
 # .NET 运行时和 SDK
 Write-Host "`n=== .NET 运行时和 SDK / .NET Runtime and SDK ===" -ForegroundColor Yellow
 

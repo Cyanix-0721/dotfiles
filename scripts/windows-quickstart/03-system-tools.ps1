@@ -24,7 +24,7 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
 Write-Host "`n=== 命令行增强工具 / Command Line Enhancement Tools ===" -ForegroundColor Yellow
 
 $cliTools = @{
-    "starship" = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $true }
+    "starship" = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false }
     "zoxide"   = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false }
     "fzf"      = @{ Desc = "fzf (模糊查找器 / Fuzzy finder)"; Global = $false }
     "ripgrep"  = @{ Desc = "ripgrep (快速搜索工具 / Fast search tool)"; Global = $false }
@@ -219,7 +219,7 @@ Write-Host "`n=== 网络工具 / Network Tools ===" -ForegroundColor Yellow
 
 $networkTools = @{
     "scrcpy" = @{ Desc = "scrcpy (Android 投屏工具 / Android screen mirroring)"; Global = $true }
-    "mkcert" = @{ Desc = "mkcert (本地 HTTPS 证书 / Local HTTPS certificates)"; Global = $true }
+    "mkcert" = @{ Desc = "mkcert (本地 HTTPS 证书 / Local HTTPS certificates)"; Global = $false }
 }
 
 foreach ($package in $networkTools.GetEnumerator()) {
