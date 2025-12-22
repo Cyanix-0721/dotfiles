@@ -53,8 +53,8 @@ foreach ($package in $editors.GetEnumerator()) {
 Write-Host "`n=== Git 工具 / Git Tools ===" -ForegroundColor Yellow
 
 $gitTools = @{
-    "lazygit" = @{ Desc = "lazygit"; Global = $true }
-    "delta"   = @{ Desc = "delta"; Global = $true }
+    "lazygit" = @{ Desc = "lazygit"; Global = $false }
+    "delta"   = @{ Desc = "delta"; Global = $false }
 }
 
 foreach ($package in $gitTools.GetEnumerator()) {
