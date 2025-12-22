@@ -173,7 +173,8 @@ Write-Host "`n=== 文件同步 / File Synchronization ===" -ForegroundColor Yell
 $syncApps = @{
     "syncthing"     = @{ Desc = "Syncthing (P2P 文件同步 / P2P file sync)"; Global = $false }
     "syncthingtray" = @{ Desc = "Syncthing Tray (系统托盘工具 / System tray utility)"; Global = $false }
-    "localsend"     = @{ Desc = "LocalSend (局域网文件传输 / LAN file transfer)"; Global = $true }
+    "localsend"     = @{ Desc = "LocalSend (局域网文件传输 / LAN file transfer)"; Global = $false }
+    "winscp"        = @{ Desc = "WinSCP (SFTP/FTP 文件传输 / SFTP/FTP file transfer)"; Global = $false }
 }
 
 foreach ($package in $syncApps.GetEnumerator()) {
@@ -280,6 +281,7 @@ foreach ($package in $downloadApps.GetEnumerator()) {
 Write-Host "`n=== 多媒体工具 / Multimedia Tools ===" -ForegroundColor Yellow
 
 $multimediaTools = @{
+    "snipaste"    = @{ Desc = "Snipaste (截图工具 / Screenshot tool)"; Global = $false }
     "imagemagick" = @{ Desc = "ImageMagick (图像处理工具 / Image processing tool)"; Global = $false }
 }
 
