@@ -248,7 +248,7 @@ Write-Host "`n=== 其他开发工具 / Other Development Tools ===" -ForegroundC
 $devTools = @{
     "jq"     = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
     "pandoc" = @{ Desc = "Pandoc (文档转换器 / Document converter)"; Global = $true }
-    "shfmt"  = @{ Desc = "shfmt (Shell 格式化工具 / Shell formatter)"; Global = $true }
+    "shfmt"  = @{ Desc = "shfmt (Shell 格式化工具 / Shell formatter)"; Global = $false }
 }
 
 foreach ($entry in $devTools.GetEnumerator()) {
