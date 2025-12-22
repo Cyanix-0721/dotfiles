@@ -75,10 +75,10 @@ else {
 # 安装 Aria2（加速下载）
 Write-Host "`n配置 Aria2 下载加速… / Configuring Aria2 for faster downloads…" -ForegroundColor Yellow
 if (-not (scoop list | Select-String -Pattern "aria2")) {
-    scoop install aria2 --global
+    scoop install aria2
     scoop config aria2-enabled true
     scoop config aria2-warning-enabled false
-    Write-Host "✓ Aria2 配置完成（全局） / Aria2 configuration completed (global)" -ForegroundColor Green
+    Write-Host "✓ Aria2 配置完成 / Aria2 configuration completed" -ForegroundColor Green
 }
 else {
     Write-Host "✓ Aria2 已安装 / Aria2 is already installed" -ForegroundColor Green

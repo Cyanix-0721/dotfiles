@@ -251,8 +251,8 @@ foreach ($package in $remoteApps.GetEnumerator()) {
 Write-Host "`n=== 下载工具 / Download Tools ===" -ForegroundColor Yellow
 
 $downloadApps = @{
-    "qbittorrent-enhanced" = @{ Desc = "qBittorrent Enhanced (BT 下载 / BT download)"; Global = $true }
-    "ariang-native"        = @{ Desc = "AriaNg Native (Aria2 图形界面 / Aria2 GUI)"; Global = $true }
+    "qbittorrent-enhanced" = @{ Desc = "qBittorrent Enhanced (BT 下载 / BT download)"; Global = $false }
+    "ariang-native"        = @{ Desc = "AriaNg Native (Aria2 图形界面 / Aria2 GUI)"; Global = $false }
 }
 
 foreach ($package in $downloadApps.GetEnumerator()) {
