@@ -197,25 +197,6 @@ foreach ($package in $syncApps.GetEnumerator()) {
     else {
         Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
     }
-
-    # Microsoft OneDrive
-    $null = winget list --id Microsoft.OneDrive --exact 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        $installOneDrive = Read-Host "是否安装 Microsoft OneDrive？(Y/n) / Install Microsoft OneDrive? (Y/n)"
-        if ($installOneDrive -notmatch '^[Nn]$') {
-            Write-Host "安装 Microsoft OneDrive… / Installing Microsoft OneDrive…" -ForegroundColor Yellow
-            winget install --id Microsoft.OneDrive --exact --silent --accept-source-agreements --accept-package-agreements
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "✓ Microsoft OneDrive 安装完成 / Microsoft OneDrive installation completed" -ForegroundColor Green
-            }
-            else {
-                Write-Host "✗ Microsoft OneDrive 安装失败 / Microsoft OneDrive installation failed" -ForegroundColor Red
-            }
-        }
-    }
-    else {
-        Write-Host "✓ Microsoft OneDrive 已安装 / Microsoft OneDrive is already installed" -ForegroundColor Green
-    }
 }
 
 # 远程控制
