@@ -110,15 +110,16 @@ foreach ($package in $svnTools.GetEnumerator()) {
 }
 
 
-# 版本管理工具
-Write-Host "`n=== 版本管理工具 / Version Managers ===" -ForegroundColor Yellow
+# 环境管理
+Write-Host "`n=== 环境管理 / Environment Management ===" -ForegroundColor Yellow
 
-$versionManagers = @{
+# 1. vfox 版本管理器 (必装 / Required)
+Write-Host "`n--- vfox 版本管理器 / vfox Version Manager (Required) ---" -ForegroundColor Yellow
+$versionManager = @{
     "vfox" = @{ Desc = "vfox (多语言版本管理器 / Multi-language version manager)"; Global = $false }
-    "uv"   = @{ Desc = "uv (Python 包管理器 / Python package manager)"; Global = $false }
 }
 
-foreach ($package in $versionManagers.GetEnumerator()) {
+foreach ($package in $versionManager.GetEnumerator()) {
     $packageName = $package.Key
     $packageInfo = $package.Value
     
@@ -140,20 +141,41 @@ foreach ($package in $versionManagers.GetEnumerator()) {
     }
 }
 
-# Python 环境
-Write-Host "`n=== Python 环境 / Python Environment ===" -ForegroundColor Yellow
+# 2. Python 包管理器 (可选一个或都安装，默认 uv / Optional, can install one or both, default uv)
+Write-Host "`n--- Python 包管理器 / Python Package Manager (Optional) ---" -ForegroundColor Yellow
+Write-Host "可以选择安装 uv、miniconda3 或两者都装 / Can install uv, miniconda3, or both" -ForegroundColor Cyan
 
-$pythonTools = @{
-    "miniconda3" = @{ Desc = "Miniconda3 (Python 发行版和包管理器 / Python distribution and package manager)"; Global = $false }
+$pythonPackageManagers = @{
+    "uv" = @{ 
+        Desc = "uv (现代 Python 包管理器，推荐个人开发 / Modern Python package manager, recommended)"
+        Global = $false
+        Default = $true
+    }
+    "miniconda3" = @{ 
+        Desc = "miniconda3 (适用于公司项目或科学计算 / For company projects or scientific computing)"
+        Global = $false
+        Default = $false
+    }
 }
 
-foreach ($package in $pythonTools.GetEnumerator()) {
+foreach ($package in $pythonPackageManagers.GetEnumerator()) {
     $packageName = $package.Key
     $packageInfo = $package.Value
     
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
-        if ($install -match '^[Yy]$') {
+        # uv 默认安装，miniconda 默认不安装
+        if ($packageInfo.Default) {
+            $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
+        }
+        else {
+            $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
+        }
+        
+        $shouldInstall = $false
+        if ($packageInfo.Default -and $install -notmatch '^[Nn]$') { $shouldInstall = $true }
+        if (-not $packageInfo.Default -and $install -match '^[Yy]$') { $shouldInstall = $true }
+        
+        if ($shouldInstall) {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
                 Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
@@ -162,10 +184,26 @@ foreach ($package in $pythonTools.GetEnumerator()) {
                 scoop install $packageName
                 Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
             }
+            
+            # miniconda3 特殊配置
+            if ($packageName -eq "miniconda3") {
+                Write-Host "`n  配置 Miniconda 不自动激活... / Configuring Miniconda to not auto-activate..." -ForegroundColor Yellow
+                Write-Host "  运行以下命令禁用自动激活 / Run the following command to disable auto-activation:" -ForegroundColor Yellow
+                Write-Host "  conda config --set auto_activate false" -ForegroundColor Cyan
+                Write-Host "  " -ForegroundColor Yellow
+                Write-Host "  需要使用时显式激活 / When needed, explicitly activate:" -ForegroundColor Yellow
+                Write-Host "  conda activate <env_name>" -ForegroundColor Cyan
+            }
         }
     }
     else {
         Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+        
+        # miniconda3 特殊提示
+        if ($packageName -eq "miniconda3") {
+            Write-Host "  提示 / Note: 请运行以下命令禁用自动激活 / Please run this command to disable auto-activation:" -ForegroundColor Yellow
+            Write-Host "  conda config --set auto_activate false" -ForegroundColor Cyan
+        }
     }
 }
 
