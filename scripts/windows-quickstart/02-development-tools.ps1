@@ -140,6 +140,35 @@ foreach ($package in $versionManagers.GetEnumerator()) {
     }
 }
 
+# Python 环境
+Write-Host "`n=== Python 环境 / Python Environment ===" -ForegroundColor Yellow
+
+$pythonTools = @{
+    "miniconda3" = @{ Desc = "Miniconda3 (Python 发行版和包管理器 / Python distribution and package manager)"; Global = $false }
+}
+
+foreach ($package in $pythonTools.GetEnumerator()) {
+    $packageName = $package.Key
+    $packageInfo = $package.Value
+    
+    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
+        $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
+        if ($install -match '^[Yy]$') {
+            if ($packageInfo.Global) {
+                scoop install $packageName --global
+                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+            }
+            else {
+                scoop install $packageName
+                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
+            }
+        }
+    }
+    else {
+        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+    }
+}
+
 # .NET 运行时和 SDK
 Write-Host "`n=== .NET 运行时和 SDK / .NET Runtime and SDK ===" -ForegroundColor Yellow
 
