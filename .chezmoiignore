@@ -29,5 +29,6 @@ scripts/
 
 # Linux/macOS 系统忽略 Windows 特定配置
 {{- if ne .chezmoi.os "windows" }}
-# 如果将来有 Windows 特定配置，在这里添加
+# WSL
+.wslconfig
 {{- end }}
