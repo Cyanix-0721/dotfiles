@@ -114,8 +114,8 @@ foreach ($package in $svnTools.GetEnumerator()) {
 Write-Host "`n=== 版本管理工具 / Version Managers ===" -ForegroundColor Yellow
 
 $versionManagers = @{
-    "vfox" = @{ Desc = "vfox (多语言版本管理器 / Multi-language version manager)"; Global = $true }
-    "uv"   = @{ Desc = "uv (Python 包管理器 / Python package manager)"; Global = $true }
+    "vfox" = @{ Desc = "vfox (多语言版本管理器 / Multi-language version manager)"; Global = $false }
+    "uv"   = @{ Desc = "uv (Python 包管理器 / Python package manager)"; Global = $false }
 }
 
 foreach ($package in $versionManagers.GetEnumerator()) {
