@@ -49,34 +49,34 @@ foreach ($package in $browsers.GetEnumerator()) {
     }
 }
 
-# 办公软件
-Write-Host "`n=== 办公软件 / Office Applications ===" -ForegroundColor Yellow
+# 效率工具
+Write-Host "`n=== 效率工具 / Productivity Tools ===" -ForegroundColor Yellow
 
-$officeApps = @{
-    "obsidian" = @{ Desc = "Obsidian (笔记软件 / Note-taking app)"; Global = $false }
-    "draw.io"  = @{ Desc = "Draw.io (流程图绘制 / Diagram drawing)"; Global = $false }
+$productivityApps = @{
+    "obsidian"   = @{ Desc = "Obsidian (笔记软件 / Note-taking app)"; Global = $false }
+    "draw.io"    = @{ Desc = "Draw.io (流程图绘制 / Diagram drawing)"; Global = $false }
     "stranslate" = @{ Desc = "Stranslate (翻译工具 / Translation tool)"; Global = $false }
 }
 
-foreach ($app in $officeApps.GetEnumerator()) {
-    $appName = $app.Key
-    $appInfo = $app.Value
+foreach ($package in $productivityApps.GetEnumerator()) {
+    $packageName = $package.Key
+    $packageInfo = $package.Value
     
-    if (-not (scoop list | Select-String -Pattern "^$appName\s")) {
-        $install = Read-Host "是否安装 $($appInfo.Desc)？(y/N) / Install $($appInfo.Desc)? (y/N)"
+    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
+        $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
-            if ($appInfo.Global) {
-                scoop install extras/$appName --global
-                Write-Host "✓ $appName 安装完成（全局） / $appName installation completed (global)" -ForegroundColor Green
+            if ($packageInfo.Global) {
+                scoop install $packageName --global
+                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
             }
             else {
-                scoop install extras/$appName
-                Write-Host "✓ $appName 安装完成 / $appName installation completed" -ForegroundColor Green
+                scoop install $packageName
+                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
             }
         }
     }
     else {
-        Write-Host "✓ $appName 已安装 / $appName is already installed" -ForegroundColor Green
+        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
     }
 }
 
