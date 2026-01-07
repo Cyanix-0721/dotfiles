@@ -55,6 +55,7 @@ Write-Host "`n=== 办公软件 / Office Applications ===" -ForegroundColor Yello
 $officeApps = @{
     "obsidian" = @{ Desc = "Obsidian (笔记软件 / Note-taking app)"; Global = $false }
     "draw.io"  = @{ Desc = "Draw.io (流程图绘制 / Diagram drawing)"; Global = $false }
+    "stranslate" = @{ Desc = "Stranslate (翻译工具 / Translation tool)"; Global = $false }
 }
 
 foreach ($app in $officeApps.GetEnumerator()) {
