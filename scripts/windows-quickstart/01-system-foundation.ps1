@@ -105,8 +105,8 @@ foreach ($bucketName in $buckets) {
 # 安装 gsudo（类似 Linux 的 sudo）
 Write-Host "`n安装 gsudo… / Installing gsudo…" -ForegroundColor Yellow
 if (-not (Get-Command gsudo -ErrorAction SilentlyContinue)) {
-    scoop install gsudo --global
-    Write-Host "✓ gsudo 安装完成（全局） / gsudo installation completed (global)" -ForegroundColor Green
+    scoop install gsudo
+    Write-Host "✓ gsudo 安装完成 / gsudo installation completed" -ForegroundColor Green
 }
 else {
     Write-Host "✓ gsudo 已安装 / gsudo is already installed" -ForegroundColor Green
