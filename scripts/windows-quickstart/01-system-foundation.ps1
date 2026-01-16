@@ -16,15 +16,85 @@ Write-Host "=== 系统基础环境配置 / System Foundation Setup ===" -Foregro
 
 # 更新 winget 源
 Write-Host "`n更新 winget 源… / Updating winget sources…" -ForegroundColor Yellow
-winget source update
+
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    Write-Host "⚠️ winget 未安装，跳过更新 / winget not installed, skipping source update" -ForegroundColor Yellow
+
+    $openChoice = Read-Host "是否打开安装页面以安装 winget？1) Microsoft Store（推荐） 2) GitHub Releases（下载）；输入 1/2，回车跳过 / Open install page? 1) MS Store (recommended) 2) GitHub Releases (download); enter to skip"
+    switch ($openChoice) {
+        '1' {
+            try {
+                Start-Process "ms-windows-store://pdp/?productid=9NBLGGH4NNS1"
+                Write-Host "已打开 Microsoft Store 页面 / Opened Microsoft Store" -ForegroundColor Cyan
+            }
+            catch {
+                Write-Host "无法打开 Microsoft Store 页面，请手动访问：ms-windows-store://pdp/?productid=9NBLGGH4NNS1" -ForegroundColor Red
+            }
+        }
+        '2' {
+            try {
+                Start-Process "https://github.com/microsoft/winget-cli/releases"
+                Write-Host "已打开 GitHub Releases 页面 / Opened GitHub Releases" -ForegroundColor Cyan
+            }
+            catch {
+                Write-Host "无法打开 GitHub Releases 页面，请手动访问：https://github.com/microsoft/winget-cli/releases" -ForegroundColor Red
+            }
+        }
+        default {
+            Write-Host "跳过 winget 安装页面 / Skipping winget install page" -ForegroundColor Yellow
+        }
+    }
+}
+else {
+    try {
+        winget source update
+    }
+    catch {
+        Write-Host "⚠️ 更新 winget 源失败（非致命），继续执行后续步骤 / Updating winget sources failed (non-fatal), continuing" -ForegroundColor Yellow
+    }
+}
 
 # 检查是否已安装 PowerShell 7
 Write-Host "`n检查 PowerShell 7… / Checking PowerShell 7…" -ForegroundColor Yellow
 if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
-    Write-Host "安装 PowerShell 7… / Installing PowerShell 7…" -ForegroundColor Yellow
-    winget install --id Microsoft.PowerShell --exact --source winget
-    Write-Host "✓ PowerShell 7 安装完成，请重新启动终端并使用 pwsh 运行本脚本 / PowerShell 7 installed, please restart terminal and rerun this script with pwsh" -ForegroundColor Green
-    exit
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Write-Host "⚠️ winget 未安装，无法安装 PowerShell 7，请手动安装 / winget not installed, please install PowerShell manually" -ForegroundColor Yellow
+        exit 1
+    }
+    else {
+        $wingApps = @{ 
+            "Microsoft.PowerShell" = @{ Desc = "PowerShell 7"; InstallArgs = "--exact --source winget" }
+        }
+
+        foreach ($entry in $wingApps.GetEnumerator()) {
+            $appId = $entry.Key
+            $appInfo = $entry.Value
+
+            try {
+                $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
+            }
+            catch {
+                $isInstalled = $null
+            }
+
+            if (-not $isInstalled) {
+                Write-Host "正在通过 winget 安装 $($appInfo.Desc) ($appId)..." -ForegroundColor Cyan
+                winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "✓ $($appInfo.Desc) 安装完成，请重新启动终端并使用 pwsh 运行本脚本 / $($appInfo.Desc) installation completed, please restart terminal and rerun this script with pwsh" -ForegroundColor Green
+                }
+                else {
+                    Write-Host "✗ $($appInfo.Desc) 安装失败 / $($appInfo.Desc) installation failed" -ForegroundColor Red
+                    exit 1
+                }
+            }
+            else {
+                Write-Host "✓ $($appInfo.Desc) 已安装 / $($appInfo.Desc) is already installed" -ForegroundColor Green
+            }
+        }
+
+        exit
+    }
 }
 else {
     Write-Host "✓ PowerShell 7 已安装 / PowerShell 7 is already installed" -ForegroundColor Green
@@ -33,9 +103,35 @@ else {
 # 安装 Windows Terminal
 Write-Host "`n检查 Windows Terminal… / Checking Windows Terminal…" -ForegroundColor Yellow
 if (-not (Get-Command wt -ErrorAction SilentlyContinue)) {
-    Write-Host "安装 Windows Terminal… / Installing Windows Terminal…" -ForegroundColor Yellow
-    winget install --id Microsoft.WindowsTerminal --exact --source winget
-    Write-Host "✓ Windows Terminal 安装完成 / Windows Terminal installation completed" -ForegroundColor Green
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Write-Host "⚠️ winget 未安装，跳过 Windows Terminal 安装 / winget not installed, skipping Windows Terminal installation" -ForegroundColor Yellow
+    }
+    else {
+        $wingApps = @{ 
+            "Microsoft.WindowsTerminal" = @{ Desc = "Windows Terminal"; InstallArgs = "--exact --source winget" }
+        }
+
+        foreach ($entry in $wingApps.GetEnumerator()) {
+            $appId = $entry.Key
+            $appInfo = $entry.Value
+
+            try {
+                $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
+            }
+            catch {
+                $isInstalled = $null
+            }
+
+            if (-not $isInstalled) {
+                Write-Host "正在通过 winget 安装 $($appInfo.Desc) ($appId)..." -ForegroundColor Cyan
+                winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
+                Write-Host "✓ $appId 安装完成 / $appId installation completed" -ForegroundColor Green
+            }
+            else {
+                Write-Host "✓ $appId 已安装 / $appId is already installed" -ForegroundColor Green
+            }
+        }
+    }
 }
 else {
     Write-Host "✓ Windows Terminal 已安装 / Windows Terminal is installed" -ForegroundColor Green
@@ -117,58 +213,93 @@ Write-Host "`n=== Visual C++ 运行库 / Visual C++ Redistributables ===" -Foreg
 
 $installVCRedist = Read-Host "是否安装 Visual C++ 2005-2022 运行库？(Y/n) / Install Visual C++ 2005-2022 Redistributables? (Y/n)"
 if ($installVCRedist -notmatch '^[Nn]$') {
-    $vcRedistPackages = @(
-        @{ Id = "Microsoft.VCRedist.2005.x64"; Name = "VC++ 2005 x64" }
-        @{ Id = "Microsoft.VCRedist.2005.x86"; Name = "VC++ 2005 x86" }
-        @{ Id = "Microsoft.VCRedist.2008.x64"; Name = "VC++ 2008 x64" }
-        @{ Id = "Microsoft.VCRedist.2008.x86"; Name = "VC++ 2008 x86" }
-        @{ Id = "Microsoft.VCRedist.2010.x64"; Name = "VC++ 2010 x64" }
-        @{ Id = "Microsoft.VCRedist.2010.x86"; Name = "VC++ 2010 x86" }
-        @{ Id = "Microsoft.VCRedist.2012.x64"; Name = "VC++ 2012 x64" }
-        @{ Id = "Microsoft.VCRedist.2012.x86"; Name = "VC++ 2012 x86" }
-        @{ Id = "Microsoft.VCRedist.2013.x64"; Name = "VC++ 2013 x64" }
-        @{ Id = "Microsoft.VCRedist.2013.x86"; Name = "VC++ 2013 x86" }
-        @{ Id = "Microsoft.VCRedist.2015+.x64"; Name = "VC++ 2015-2022 x64" }
-        @{ Id = "Microsoft.VCRedist.2015+.x86"; Name = "VC++ 2015-2022 x86" }
-    )
-    
-    Write-Host "正在安装 Visual C++ 运行库... / Installing Visual C++ Redistributables..." -ForegroundColor Yellow
-    
-    foreach ($package in $vcRedistPackages) {
-        $null = winget list --id $package.Id --exact 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "  安装 $($package.Name)... / Installing $($package.Name)..." -ForegroundColor Cyan
-            winget install --id $package.Id --exact --silent --accept-source-agreements --accept-package-agreements
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "  ✓ $($package.Name) 安装完成 / $($package.Name) installation completed" -ForegroundColor Green
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Write-Host "⚠️ winget 未安装，跳过 Visual C++ 运行库安装 / winget not installed, skipping Visual C++ installation" -ForegroundColor Yellow
+    }
+    else {
+        $wingApps = @{ 
+            "Microsoft.VCRedist.2005.x64"  = @{ Name = "VC++ 2005 x64"; InstallArgs = "--exact --silent" }
+            "Microsoft.VCRedist.2005.x86"  = @{ Name = "VC++ 2005 x86"; InstallArgs = "--exact --silent" }
+            "Microsoft.VCRedist.2008.x64"  = @{ Name = "VC++ 2008 x64"; InstallArgs = "--exact --silent" }
+            "Microsoft.VCRedist.2008.x86"  = @{ Name = "VC++ 2008 x86"; InstallArgs = "--exact --silent" }
+            "Microsoft.VCRedist.2010.x64"  = @{ Name = "VC++ 2010 x64"; InstallArgs = "--exact --silent" }
+            "Microsoft.VCRedist.2010.x86"  = @{ Name = "VC++ 2010 x86"; InstallArgs = "--exact --silent" }
+            "Microsoft.VCRedist.2012.x64"  = @{ Name = "VC++ 2012 x64"; InstallArgs = "--exact --silent" }
+            "Microsoft.VCRedist.2012.x86"  = @{ Name = "VC++ 2012 x86"; InstallArgs = "--exact --silent" }
+            "Microsoft.VCRedist.2013.x64"  = @{ Name = "VC++ 2013 x64"; InstallArgs = "--exact --silent" }
+            "Microsoft.VCRedist.2013.x86"  = @{ Name = "VC++ 2013 x86"; InstallArgs = "--exact --silent" }
+            "Microsoft.VCRedist.2015+.x64" = @{ Name = "VC++ 2015-2022 x64"; InstallArgs = "--exact --silent" }
+            "Microsoft.VCRedist.2015+.x86" = @{ Name = "VC++ 2015-2022 x86"; InstallArgs = "--exact --silent" }
+        }
+        
+        Write-Host "正在安装 Visual C++ 运行库... / Installing Visual C++ Redistributables..." -ForegroundColor Yellow
+        
+        foreach ($entry in $wingApps.GetEnumerator()) {
+            $appId = $entry.Key
+            $appInfo = $entry.Value
+
+            try {
+                $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
+            }
+            catch {
+                $isInstalled = $null
+            }
+
+            if (-not $isInstalled) {
+                Write-Host "  安装 $($appInfo.Name)... / Installing $($appInfo.Name)..." -ForegroundColor Cyan
+                winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "  ✓ $($appInfo.Name) 安装完成 / $($appInfo.Name) installation completed" -ForegroundColor Green
+                }
+                else {
+                    Write-Host "  ✗ $($appInfo.Name) 安装失败 / $($appInfo.Name) installation failed" -ForegroundColor Red
+                }
             }
             else {
-                Write-Host "  ✗ $($package.Name) 安装失败 / $($package.Name) installation failed" -ForegroundColor Red
+                Write-Host "  ✓ $($appInfo.Name) 已安装 / $($appInfo.Name) is already installed" -ForegroundColor Green
             }
         }
-        else {
-            Write-Host "  ✓ $($package.Name) 已安装 / $($package.Name) is already installed" -ForegroundColor Green
-        }
+        
+        Write-Host "✓ Visual C++ 运行库安装完成 / Visual C++ Redistributables installation completed" -ForegroundColor Green
     }
-    
-    Write-Host "✓ Visual C++ 运行库安装完成 / Visual C++ Redistributables installation completed" -ForegroundColor Green
 }
 
 # 安装 Microsoft Edge WebView2 运行时
 Write-Host "`n=== Microsoft Edge WebView2 运行时 / WebView2 Runtime ===" -ForegroundColor Cyan
-$null = winget list --id Microsoft.EdgeWebView2Runtime --exact 2>$null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "安装 WebView2 运行时… / Installing WebView2 Runtime…" -ForegroundColor Yellow
-    winget install --id Microsoft.EdgeWebView2Runtime --exact --silent --accept-source-agreements --accept-package-agreements
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✓ WebView2 运行时安装完成 / WebView2 Runtime installation completed" -ForegroundColor Green
-    }
-    else {
-        Write-Host "✗ WebView2 运行时安装失败 / WebView2 Runtime installation failed" -ForegroundColor Red
-    }
+
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    Write-Host "⚠️ winget 未安装，跳过 WebView2 安装 / winget not installed, skipping WebView2 installation" -ForegroundColor Yellow
 }
 else {
-    Write-Host "✓ WebView2 运行时已安装 / WebView2 Runtime is already installed" -ForegroundColor Green
+    $wingApps = @{ 
+        "Microsoft.EdgeWebView2Runtime" = @{ Desc = "WebView2 Runtime"; InstallArgs = "--exact --silent" }
+    }
+
+    foreach ($entry in $wingApps.GetEnumerator()) {
+        $appId = $entry.Key
+        $appInfo = $entry.Value
+
+        try {
+            $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
+        }
+        catch {
+            $isInstalled = $null
+        }
+
+        if (-not $isInstalled) {
+            Write-Host "安装 $($appInfo.Desc)… / Installing $($appInfo.Desc)…" -ForegroundColor Yellow
+            winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "✓ $($appInfo.Desc) 安装完成 / $($appInfo.Desc) installation completed" -ForegroundColor Green
+            }
+            else {
+                Write-Host "✗ $($appInfo.Desc) 安装失败 / $($appInfo.Desc) installation failed" -ForegroundColor Red
+            }
+        }
+        else {
+            Write-Host "✓ $($appInfo.Desc) 已安装 / $($appInfo.Desc) is already installed" -ForegroundColor Green
+        }
+    }
 }
 
 # 安装 Chezmoi 配置管理工具
