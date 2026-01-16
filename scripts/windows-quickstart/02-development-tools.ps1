@@ -146,14 +146,14 @@ Write-Host "`n--- Python 包管理器 / Python Package Manager (Optional) ---" -
 Write-Host "可以选择安装 uv、miniconda3 或两者都装 / Can install uv, miniconda3, or both" -ForegroundColor Cyan
 
 $pythonPackageManagers = @{
-    "uv" = @{ 
-        Desc = "uv (现代 Python 包管理器，推荐个人开发 / Modern Python package manager, recommended)"
-        Global = $false
+    "uv"         = @{ 
+        Desc    = "uv (现代 Python 包管理器，推荐个人开发 / Modern Python package manager, recommended)"
+        Global  = $false
         Default = $true
     }
     "miniconda3" = @{ 
-        Desc = "miniconda3 (适用于公司项目或科学计算 / For company projects or scientific computing)"
-        Global = $false
+        Desc    = "miniconda3 (适用于公司项目或科学计算 / For company projects or scientific computing)"
+        Global  = $false
         Default = $false
     }
 }
@@ -238,7 +238,8 @@ else {
             foreach ($appId in $toInstall) {
                 try {
                     $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
-                } catch { $isInstalled = $null }
+                }
+                catch { $isInstalled = $null }
 
                 if (-not $isInstalled) {
                     Write-Host "正在通过 winget 安装 $appId..." -ForegroundColor Yellow
@@ -295,6 +296,7 @@ $devTools = @{
     "jq"     = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
     "pandoc" = @{ Desc = "Pandoc (文档转换器 / Document converter)"; Global = $true }
     "shfmt"  = @{ Desc = "shfmt (Shell 格式化工具 / Shell formatter)"; Global = $false }
+    "adb"    = @{ Desc = "adb (Android Debug Bridge)"; Global = $false }
 }
 
 foreach ($entry in $devTools.GetEnumerator()) {
