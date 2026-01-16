@@ -299,16 +299,16 @@ $devTools = @{
     "adb"    = @{ Desc = "adb (Android Debug Bridge)"; Global = $false }
 }
 
-foreach ($entry in $devTools.GetEnumerator()) {
-    $toolName = $entry.Key
-    $toolInfo = $entry.Value
+foreach ($package in $devTools.GetEnumerator()) {
+    $packageName = $package.Key
+    $packageInfo = $package.Value
     
-    if (-not (scoop list | Select-String -Pattern "^$toolName\s")) {
-        $install = Read-Host "是否安装 $($toolInfo.Desc)？(y/N) / Install $($toolInfo.Desc)? (y/N)"
+    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
+        $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
-            if ($toolInfo.Global) {
-                scoop install $toolName --global
-                Write-Host "✓ $toolName 安装完成（全局） / $toolName installation completed (global)" -ForegroundColor Green
+            if ($packageInfo.Global) {
+                scoop install $packageName --global
+                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
             }
             else {
                 scoop install $toolName
