@@ -186,6 +186,39 @@ foreach ($package in $winTools.GetEnumerator()) {
     }
 }
 
+# OpenHashTab (文件哈希右键扩展)
+Write-Host "`n=== OpenHashTab (文件哈希右键扩展) / OpenHashTab (File Hash Context Menu) ===" -ForegroundColor Yellow
+
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    Write-Host "⚠️ winget 未安装，跳过 OpenHashTab 安装 / winget not installed, skipping OpenHashTab installation" -ForegroundColor Yellow
+}
+else {
+    $wingApps = @{ 
+        "namazso.OpenHashTab" = @{ Desc = "OpenHashTab (文件哈希右键扩展 / File Hash Context Menu)"; InstallArgs = "--exact --silent" }
+    }
+
+    foreach ($entry in $wingApps.GetEnumerator()) {
+        $appId = $entry.Key
+        $appInfo = $entry.Value
+
+        try {
+            $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
+        }
+        catch {
+            $isInstalled = $null
+        }
+
+        if (-not $isInstalled) {
+            Write-Host "正在通过 winget 安装 $($appInfo.Desc) ($appId)..." -ForegroundColor Cyan
+            winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
+            Write-Host "✓ $appId 安装完成 / $appId installation completed" -ForegroundColor Green
+        }
+        else {
+            Write-Host "✓ $appId 已安装 / $appId is already installed" -ForegroundColor Green
+        }
+    }
+}
+
 # 终端工具
 Write-Host "`n=== 终端增强 / Terminal Enhancement ===" -ForegroundColor Yellow
 

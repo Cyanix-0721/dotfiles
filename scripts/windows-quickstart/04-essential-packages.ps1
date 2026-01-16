@@ -351,60 +351,41 @@ foreach ($package in $fonts.GetEnumerator()) {
 # 游戏平台
 Write-Host "`n=== 游戏平台 / Game Platforms ===" -ForegroundColor Yellow
 
-$null = winget list --id Valve.Steam --exact 2>$null
-if ($LASTEXITCODE -ne 0) {
-    $installSteam = Read-Host "是否安装 Steam？(Y/n) / Install Steam? (Y/n)"
-    if ($installSteam -notmatch '^[Nn]$') {
-        Write-Host "安装 Steam… / Installing Steam…" -ForegroundColor Yellow
-        winget install --id Valve.Steam --exact --silent --accept-source-agreements --accept-package-agreements
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ Steam 安装完成 / Steam installation completed" -ForegroundColor Green
-        }
-        else {
-            Write-Host "✗ Steam 安装失败 / Steam installation failed" -ForegroundColor Red
-        }
-    }
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    Write-Host "⚠️ winget 未安装，跳过游戏平台安装 / winget not installed, skipping game platforms installation" -ForegroundColor Yellow
 }
 else {
-    Write-Host "✓ Steam 已安装 / Steam is already installed" -ForegroundColor Green
-}
+    $wingApps = @{ 
+        "Valve.Steam"                 = @{ Desc = "Steam (游戏平台 / Steam)"; InstallArgs = "--exact --silent" }
+        "EpicGames.EpicGamesLauncher" = @{ Desc = "Epic Games Launcher"; InstallArgs = "--exact --silent" }
+        "GOG.Galaxy"                  = @{ Desc = "GOG Galaxy"; InstallArgs = "--exact --silent" }
+    }
 
-# Epic Games Launcher
-$null = winget list --id EpicGames.EpicGamesLauncher --exact 2>$null
-if ($LASTEXITCODE -ne 0) {
-    $installEpic = Read-Host "是否安装 Epic Games Launcher？(Y/n) / Install Epic Games Launcher? (Y/n)"
-    if ($installEpic -notmatch '^[Nn]$') {
-        Write-Host "安装 Epic Games Launcher… / Installing Epic Games Launcher…" -ForegroundColor Yellow
-        winget install --id EpicGames.EpicGamesLauncher --exact --silent --accept-source-agreements --accept-package-agreements
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ Epic Games Launcher 安装完成 / Epic Games Launcher installation completed" -ForegroundColor Green
-        }
-        else {
-            Write-Host "✗ Epic Games Launcher 安装失败 / Epic Games Launcher installation failed" -ForegroundColor Red
-        }
-    }
-}
-else {
-    Write-Host "✓ Epic Games Launcher 已安装 / Epic Games Launcher is already installed" -ForegroundColor Green
-}
+    foreach ($entry in $wingApps.GetEnumerator()) {
+        $appId = $entry.Key
+        $appInfo = $entry.Value
 
-# GOG Galaxy
-$null = winget list --id GOG.Galaxy --exact 2>$null
-if ($LASTEXITCODE -ne 0) {
-    $installGOG = Read-Host "是否安装 GOG Galaxy？(Y/n) / Install GOG Galaxy? (Y/n)"
-    if ($installGOG -notmatch '^[Nn]$') {
-        Write-Host "安装 GOG Galaxy… / Installing GOG Galaxy…" -ForegroundColor Yellow
-        winget install --id GOG.Galaxy --exact --silent --accept-source-agreements --accept-package-agreements
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ GOG Galaxy 安装完成 / GOG Galaxy installation completed" -ForegroundColor Green
+        try {
+            $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
+        }
+        catch {
+            $isInstalled = $null
+        }
+
+        if (-not $isInstalled) {
+            Write-Host "正在通过 winget 安装 $($appInfo.Desc) ($appId)..." -ForegroundColor Cyan
+            winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "✓ $appId 安装完成 / $appId installation completed" -ForegroundColor Green
+            }
+            else {
+                Write-Host "✗ $appId 安装失败 / $appId installation failed" -ForegroundColor Red
+            }
         }
         else {
-            Write-Host "✗ GOG Galaxy 安装失败 / GOG Galaxy installation failed" -ForegroundColor Red
+            Write-Host "✓ $appId 已安装 / $appId is already installed" -ForegroundColor Green
         }
     }
-}
-else {
-    Write-Host "✓ GOG Galaxy 已安装 / GOG Galaxy is already installed" -ForegroundColor Green
 }
 
 Write-Host "`n✓ 必备软件包安装完成 / Essential applications installation completed" -ForegroundColor Green

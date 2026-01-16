@@ -210,70 +210,49 @@ foreach ($package in $pythonPackageManagers.GetEnumerator()) {
 # .NET 运行时和 SDK
 Write-Host "`n=== .NET 运行时和 SDK / .NET Runtime and SDK ===" -ForegroundColor Yellow
 
-$dotnetVersions = @(5, 6, 7, 8, 9, 10)
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    Write-Host "⚠️ winget 未安装，跳过 .NET 安装 / winget not installed, skipping .NET installation" -ForegroundColor Yellow
+}
+else {
+    $dotnetVersions = @(5, 6, 7, 8, 9, 10)
 
-foreach ($version in $dotnetVersions) {
-    $installDotNet = Read-Host "是否安装 .NET $version.0？(y/N) / Install .NET $version.0? (y/N)"
-    if ($installDotNet -match '^[Yy]$') {
-        Write-Host "请选择安装类型 / Please select installation type:" -ForegroundColor Cyan
-        Write-Host "1. 仅运行时 / Runtime only (默认 / default)" -ForegroundColor Yellow
-        Write-Host "2. 仅 SDK / SDK only" -ForegroundColor Yellow
-        Write-Host "3. 运行时 + SDK / Runtime + SDK" -ForegroundColor Yellow
-        
-        $choice = Read-Host "请输入选项 (1/2/3，默认 1) / Enter option (1/2/3, default 1)"
-        if ([string]::IsNullOrWhiteSpace($choice)) {
-            $choice = "1"
-        }
-        
-        switch ($choice) {
-            "1" {
-                # 仅安装运行时
-                $null = winget list --id "Microsoft.DotNet.Runtime.$version" --exact 2>$null
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Host "安装 .NET $version.0 运行时... / Installing .NET $version.0 Runtime..." -ForegroundColor Yellow
-                    winget install --id "Microsoft.DotNet.Runtime.$version" --exact --silent
-                    Write-Host "✓ .NET $version.0 运行时安装完成 / .NET $version.0 Runtime installation completed" -ForegroundColor Green
-                }
-                else {
-                    Write-Host "✓ .NET $version.0 运行时已安装 / .NET $version.0 Runtime is already installed" -ForegroundColor Green
-                }
+    foreach ($version in $dotnetVersions) {
+        $installDotNet = Read-Host "是否安装 .NET $version.0？(y/N) / Install .NET $version.0? (y/N)"
+        if ($installDotNet -match '^[Yy]$') {
+            Write-Host "请选择安装类型 / Please select installation type:" -ForegroundColor Cyan
+            Write-Host "1. 仅运行时 / Runtime only (默认 / default)" -ForegroundColor Yellow
+            Write-Host "2. 仅 SDK / SDK only" -ForegroundColor Yellow
+            Write-Host "3. 运行时 + SDK / Runtime + SDK" -ForegroundColor Yellow
+
+            $choice = Read-Host "请输入选项 (1/2/3，默认 1) / Enter option (1/2/3, default 1)"
+            if ([string]::IsNullOrWhiteSpace($choice)) { $choice = "1" }
+
+            $toInstall = @()
+            switch ($choice) {
+                "1" { $toInstall += "Microsoft.DotNet.Runtime.$version" }
+                "2" { $toInstall += "Microsoft.DotNet.SDK.$version" }
+                "3" { $toInstall += "Microsoft.DotNet.Runtime.$version"; $toInstall += "Microsoft.DotNet.SDK.$version" }
+                default { Write-Host "无效选项，跳过 .NET $version.0 安装 / Invalid option, skipping .NET $version.0 installation" -ForegroundColor Red }
             }
-            "2" {
-                # 仅安装 SDK
-                $null = winget list --id "Microsoft.DotNet.SDK.$version" --exact 2>$null
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Host "安装 .NET $version.0 SDK... / Installing .NET $version.0 SDK..." -ForegroundColor Yellow
-                    winget install --id "Microsoft.DotNet.SDK.$version" --exact --silent
-                    Write-Host "✓ .NET $version.0 SDK 安装完成 / .NET $version.0 SDK installation completed" -ForegroundColor Green
+
+            foreach ($appId in $toInstall) {
+                try {
+                    $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
+                } catch { $isInstalled = $null }
+
+                if (-not $isInstalled) {
+                    Write-Host "正在通过 winget 安装 $appId..." -ForegroundColor Yellow
+                    winget install --id $appId --exact --silent --accept-source-agreements --accept-package-agreements
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "✓ $appId 安装完成 / $appId installation completed" -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "✗ $appId 安装失败 / $appId installation failed" -ForegroundColor Red
+                    }
                 }
                 else {
-                    Write-Host "✓ .NET $version.0 SDK 已安装 / .NET $version.0 SDK is already installed" -ForegroundColor Green
+                    Write-Host "✓ $appId 已安装 / $appId is already installed" -ForegroundColor Green
                 }
-            }
-            "3" {
-                # 安装运行时和 SDK
-                $null = winget list --id "Microsoft.DotNet.Runtime.$version" --exact 2>$null
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Host "安装 .NET $version.0 运行时... / Installing .NET $version.0 Runtime..." -ForegroundColor Yellow
-                    winget install --id "Microsoft.DotNet.Runtime.$version" --exact --silent
-                    Write-Host "✓ .NET $version.0 运行时安装完成 / .NET $version.0 Runtime installation completed" -ForegroundColor Green
-                }
-                else {
-                    Write-Host "✓ .NET $version.0 运行时已安装 / .NET $version.0 Runtime is already installed" -ForegroundColor Green
-                }
-                
-                $null = winget list --id "Microsoft.DotNet.SDK.$version" --exact 2>$null
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Host "安装 .NET $version.0 SDK... / Installing .NET $version.0 SDK..." -ForegroundColor Yellow
-                    winget install --id "Microsoft.DotNet.SDK.$version" --exact --silent
-                    Write-Host "✓ .NET $version.0 SDK 安装完成 / .NET $version.0 SDK installation completed" -ForegroundColor Green
-                }
-                else {
-                    Write-Host "✓ .NET $version.0 SDK 已安装 / .NET $version.0 SDK is already installed" -ForegroundColor Green
-                }
-            }
-            default {
-                Write-Host "无效选项，跳过 .NET $version.0 安装 / Invalid option, skipping .NET $version.0 installation" -ForegroundColor Red
             }
         }
     }
@@ -343,22 +322,42 @@ foreach ($entry in $devTools.GetEnumerator()) {
 # 容器与虚拟化 / Containers and Virtualization
 Write-Host "`n=== 容器与虚拟化 / Containers and Virtualization ===" -ForegroundColor Yellow
 
-$null = winget list --id Docker.DockerDesktop --exact 2>$null
-if ($LASTEXITCODE -ne 0) {
-    $installDocker = Read-Host "是否安装 Docker Desktop？(Y/n) / Install Docker Desktop? (Y/n)"
-    if ($installDocker -notmatch '^[Nn]$') {
-        Write-Host "安装 Docker Desktop… / Installing Docker Desktop…" -ForegroundColor Yellow
-        winget install --id Docker.DockerDesktop --exact --silent --accept-source-agreements --accept-package-agreements
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ Docker Desktop 安装完成 / Docker Desktop installation completed" -ForegroundColor Green
-        }
-        else {
-            Write-Host "✗ Docker Desktop 安装失败 / Docker Desktop installation failed" -ForegroundColor Red
-        }
-    }
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    Write-Host "⚠️ winget 未安装，跳过 Docker Desktop 安装 / winget not installed, skipping Docker Desktop installation" -ForegroundColor Yellow
 }
 else {
-    Write-Host "✓ Docker Desktop 已安装 / Docker Desktop is already installed" -ForegroundColor Green
+    $wingApps = @{ 
+        "Docker.DockerDesktop" = @{ Desc = "Docker Desktop"; InstallArgs = "--exact --silent" }
+    }
+
+    foreach ($entry in $wingApps.GetEnumerator()) {
+        $appId = $entry.Key
+        $appInfo = $entry.Value
+
+        try {
+            $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
+        }
+        catch {
+            $isInstalled = $null
+        }
+
+        if (-not $isInstalled) {
+            $installDocker = Read-Host "是否安装 $($appInfo.Desc)？(Y/n) / Install $($appInfo.Desc)? (Y/n)"
+            if ($installDocker -notmatch '^[Nn]$') {
+                Write-Host "安装 $($appInfo.Desc)… / Installing $($appInfo.Desc)…" -ForegroundColor Yellow
+                winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "✓ $appId 安装完成 / $appId installation completed" -ForegroundColor Green
+                }
+                else {
+                    Write-Host "✗ $appId 安装失败 / $appId installation failed" -ForegroundColor Red
+                }
+            }
+        }
+        else {
+            Write-Host "✓ $appId 已安装 / $appId is already installed" -ForegroundColor Green
+        }
+    }
 }
 
 Write-Host "`n✓ 开发工具安装完成 / Development tools installation completed" -ForegroundColor Green
