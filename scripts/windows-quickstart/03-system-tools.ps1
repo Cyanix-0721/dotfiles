@@ -252,8 +252,9 @@ foreach ($tool in $termTools.GetEnumerator()) {
 Write-Host "`n=== 网络工具 / Network Tools ===" -ForegroundColor Yellow
 
 $networkTools = @{
-    "scrcpy" = @{ Desc = "scrcpy (Android 投屏工具 / Android screen mirroring)"; Global = $true }
-    "mkcert" = @{ Desc = "mkcert (本地 HTTPS 证书 / Local HTTPS certificates)"; Global = $false }
+    "scrcpy"  = @{ Desc = "scrcpy (Android 投屏工具 / Android screen mirroring)"; Global = $true }
+    "escrcpy" = @{ Desc = "escrcpy (Windows GUI for scrcpy / scrcpy Windows 窗口管理)"; Global = $false }
+    "mkcert"  = @{ Desc = "mkcert (本地 HTTPS 证书 / Local HTTPS certificates)"; Global = $false }
 }
 
 foreach ($package in $networkTools.GetEnumerator()) {
