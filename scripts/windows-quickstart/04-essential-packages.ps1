@@ -295,6 +295,7 @@ Write-Host "`n=== 阅读器 / Readers ===" -ForegroundColor Yellow
 
 $readerApps = @{
     "kavita" = @{ Desc = "Kavita (漫画/电子书服务器 / Comic/E-book server)"; Global = $false }
+    "mrrss"  = @{ Desc = "MrRSS (RSS 阅读器 / RSS reader)"; Global = $false }
 }
 
 foreach ($package in $readerApps.GetEnumerator()) {
