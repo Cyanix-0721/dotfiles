@@ -56,6 +56,7 @@ $productivityApps = @{
     "obsidian"   = @{ Desc = "Obsidian (笔记软件 / Note-taking app)"; Global = $false }
     "draw.io"    = @{ Desc = "Draw.io (流程图绘制 / Diagram drawing)"; Global = $false }
     "stranslate" = @{ Desc = "Stranslate (翻译工具 / Translation tool)"; Global = $false }
+    "umi-ocr"    = @{ Desc = "Umi OCR (OCR 工具 / OCR tool)"; Global = $false }
 }
 
 foreach ($package in $productivityApps.GetEnumerator()) {
