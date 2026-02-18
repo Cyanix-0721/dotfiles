@@ -59,7 +59,10 @@ foreach ($package in $cliTools.GetEnumerator()) {
 Write-Host "`n=== 系统信息和监控工具 / System Info and Monitoring Tools ===" -ForegroundColor Yellow
 
 $monitorTools = @{
-    "fastfetch" = @{ Desc = "fastfetch (系统信息显示 / System information display)"; Global = $false }
+    "fastfetch"      = @{ Desc = "fastfetch (系统信息显示 / System information display)"; Global = $false }
+    "trafficmonitor" = @{ Desc = "TrafficMonitor (网速监控悬浮窗 / Network traffic monitor)"; Global = $false }
+    "sysmon"         = @{ Desc = "Sysmon (系统监视器 / System Monitor)"; Global = $true }
+    "handle"         = @{ Desc = "Handle (句柄查看工具 / View open handles)"; Global = $true }
 }
 
 foreach ($package in $monitorTools.GetEnumerator()) {
@@ -152,13 +155,13 @@ foreach ($entry in $compressionTools.GetEnumerator()) {
 Write-Host "`n=== Windows 增强工具 / Windows Enhancement Tools ===" -ForegroundColor Yellow
 
 $winTools = @{
-    "powertoys"      = @{ Desc = "PowerToys (微软官方工具集 / Microsoft official utilities)"; Global = $true }
-    "everything"     = @{ Desc = "Everything (快速文件搜索 / Fast file search)"; Global = $true }
-    "listary"        = @{ Desc = "Listary (文件搜索和启动器 / File search and launcher)"; Global = $true }
+    "powertoys"      = @{ Desc = "PowerToys (微软官方工具集 / Microsoft official utilities)"; Global = $false }
+    "everything"     = @{ Desc = "Everything (快速文件搜索 / Fast file search)"; Global = $false }
+    "listary"        = @{ Desc = "Listary (文件搜索和启动器 / File search and launcher)"; Global = $false }
     "krokiet"        = @{ Desc = "Krokiet (图片查重工具 / picture duplicate finder)"; Global = $false }
     "autoruns"       = @{ Desc = "Autoruns (启动项管理工具 / Startup manager)"; Global = $true }
-    "ventoy"         = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $true }
-    "rufus"          = @{ Desc = "Rufus (USB 启动盘制作工具 / USB bootable creator)"; Global = $true }
+    "ventoy"         = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $false }
+    "rufus"          = @{ Desc = "Rufus (USB 启动盘制作工具 / USB bootable creator)"; Global = $false }
     "wiztree"        = @{ Desc = "WizTree (磁盘空间分析工具 / Disk space analyzer)"; Global = $false }
     "spacesniffer"   = @{ Desc = "SpaceSniffer (磁盘空间可视化工具 / Disk space visualizer)"; Global = $false }
     "memreduct"      = @{ Desc = "Mem Reduct (内存优化工具 / Memory optimizer)"; Global = $false }
