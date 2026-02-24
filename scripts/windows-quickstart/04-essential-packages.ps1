@@ -177,6 +177,7 @@ $syncApps = @{
     "syncthingtray" = @{ Desc = "Syncthing Tray (系统托盘工具 / System tray utility)"; Global = $false }
     "localsend"     = @{ Desc = "LocalSend (局域网文件传输 / LAN file transfer)"; Global = $false }
     "winscp"        = @{ Desc = "WinSCP (SFTP/FTP 文件传输 / SFTP/FTP file transfer)"; Global = $false }
+    "hfs"           = @{ Desc = "HFS (HTTP File Server / HTTP 文件服务器)"; Global = $false }
 }
 
 foreach ($package in $syncApps.GetEnumerator()) {
