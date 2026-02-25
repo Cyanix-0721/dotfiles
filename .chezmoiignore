@@ -30,4 +30,6 @@ scripts/
 {{- if ne .chezmoi.os "windows" }}
 # WSL
 .wslconfig
+# PowerShell 配置
+.config/powershell/
 {{- end }}
