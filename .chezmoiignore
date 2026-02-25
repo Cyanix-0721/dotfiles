@@ -23,7 +23,6 @@ scripts/
 # Linux shell 配置
 .config/fish/
 .config/kitty/
-.config/yazi/
 .config/noctalia/
 {{- end }}
 
