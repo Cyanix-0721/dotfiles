@@ -1,0 +1,44 @@
+$ErrorActionPreference = 'Stop'
+
+# 定义我们希望在 Profile 中看到的加载代码
+$loaderCode = @'
+# Load the main profile managed by chezmoi
+$userProfileConfig = "$HOME\.config\powershell\user_profile.ps1"
+if (Test-Path $userProfileConfig) {
+    . $userProfileConfig
+} else {
+    Write-Warning "Chezmoi user profile not found at $userProfileConfig"
+}
+'@
+
+# 获取当前用户的 PowerShell Profile 路径 (AllHosts - 适用于所有环境，如 Terminal, VS Code 等)
+$docPath = [Environment]::GetFolderPath('MyDocuments')
+$profileDir = Join-Path $docPath "PowerShell"
+$profilePath = Join-Path $profileDir "profile.ps1"
+
+# 备用路径：无需备用，profile.ps1 是最通用的标准路径
+
+Write-Host "Configuring PowerShell profile at: $profilePath"
+
+# 确保目录存在
+if (-not (Test-Path $profileDir)) {
+    New-Item -ItemType Directory -Path $profileDir -Force | Out-Null
+}
+
+# 检查文件是否存在
+if (Test-Path $profilePath) {
+    $currentContent = Get-Content -Path $profilePath -Raw -ErrorAction SilentlyContinue
+    if ($currentContent -match "user_profile.ps1") {
+        Write-Host "PowerShell profile already configured."
+        exit 0
+    }
+    
+    # 追加模式，保留用户可能存在的其他手写配置
+    Add-Content -Path $profilePath -Value "`n$loaderCode"
+    Write-Host "Appended configuration loader to existing profile."
+}
+else {
+    # 创建新文件
+    Set-Content -Path $profilePath -Value $loaderCode
+    Write-Host "Created new PowerShell profile with configuration loader."
+}
