@@ -2,5 +2,10 @@ Host github.com
     HostName github.com
     User git
 
+
+Host serv00
+    HostName s9.serv00.com
+    User cosmoszero
+
 Host *
     AddKeysToAgent yes
