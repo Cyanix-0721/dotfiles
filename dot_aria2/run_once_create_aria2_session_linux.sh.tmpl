@@ -1,0 +1,15 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/bin/bash
+
+SESSION_FILE="$HOME/.aria2/aria2.session"
+SESSION_DIR=$(dirname "$SESSION_FILE")
+
+if [ ! -d "$SESSION_DIR" ]; then
+    mkdir -p "$SESSION_DIR"
+fi
+
+if [ ! -f "$SESSION_FILE" ]; then
+    touch "$SESSION_FILE"
+    echo "Created empty aria2.session at $SESSION_FILE"
+fi
+{{ end -}}

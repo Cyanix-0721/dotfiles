@@ -1,0 +1,14 @@
+{{- if eq .chezmoi.os "windows" -}}
+$sessionFile = Join-Path $env:USERPROFILE ".aria2\aria2.session"
+
+# Ensure parent directory exists
+$parentDir = Split-Path $sessionFile -Parent
+if (-not (Test-Path $parentDir)) {
+    New-Item -Path $parentDir -ItemType Directory -Force | Out-Null
+}
+
+if (-not (Test-Path $sessionFile)) {
+    New-Item -Path $sessionFile -ItemType File -Force | Out-Null
+    Write-Host "Created empty aria2.session at $sessionFile"
+}
+{{ end -}}
