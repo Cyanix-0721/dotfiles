@@ -199,6 +199,7 @@ $winTools = @{
     "memreduct"      = @{ Desc = "Mem Reduct (内存优化工具 / Memory optimizer)"; Global = $false }
     "msiafterburner" = @{ Desc = "MSI Afterburner (GPU 超频与监控 / GPU overclocking and monitoring)"; Global = $true }
     "rtss"           = @{ Desc = "RivaTuner Statistics Server (OSD & FPS 限制 / OSD & FPS limiter)"; Global = $true }
+    "ddu"            = @{ Desc = "Display Driver Uninstaller (显卡驱动清理工具 / GPU driver cleaner)"; Global = $false }
 }
 
 foreach ($package in $winTools.GetEnumerator()) {
