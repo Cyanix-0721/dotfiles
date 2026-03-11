@@ -289,7 +289,7 @@ header "备份工具 / Backup Tools"
 read -p "安装备份工具？[Y/n] / Install backup tools? [Y/n]: " install_backup_tools
 if [[ ! $install_backup_tools =~ ^[Nn]$ ]]; then
 	step "安装备份工具 / Installing backup tools"
-	sudo pacman -S --noconfirm snapper btrfs-assistant
+	sudo pacman -S --noconfirm snapper btrfs-assistant snap-pac
 	ok "备份工具安装完成 / Backup tools installed"
 else
 	note "跳过备份工具安装 / Skipping backup tools"
