@@ -294,6 +294,7 @@ $networkTools = @{
     "escrcpy" = @{ Desc = "escrcpy (Windows GUI for scrcpy / scrcpy Windows 窗口管理)"; Global = $false }
     "mkcert"  = @{ Desc = "mkcert (本地 HTTPS 证书 / Local HTTPS certificates)"; Global = $false }
     "wireshark" = @{ Desc = "Wireshark (网络协议分析器 / Network protocol analyzer)"; Global = $false }
+    "proxybrige" = @{ Desc = "ProxyBridge (全局代理工具 / Global proxy tool)"; Global = $false }
 }
 
 foreach ($package in $networkTools.GetEnumerator()) {
