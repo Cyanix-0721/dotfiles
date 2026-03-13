@@ -30,7 +30,7 @@ $editors = @{
 foreach ($package in $editors.GetEnumerator()) {
     $packageName = $package.Key
     $packageInfo = $package.Value
-    
+
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
         $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
         if ($install -notmatch '^[Nn]$') {
@@ -55,12 +55,13 @@ Write-Host "`n=== Git 工具 / Git Tools ===" -ForegroundColor Yellow
 $gitTools = @{
     "lazygit" = @{ Desc = "lazygit"; Global = $false }
     "delta"   = @{ Desc = "delta"; Global = $false }
+    "gh"      = @{ Desc = "gh (GitHub CLI)"; Global = $false }
 }
 
 foreach ($package in $gitTools.GetEnumerator()) {
     $packageName = $package.Key
     $packageInfo = $package.Value
-    
+
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
         $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
         if ($install -notmatch '^[Nn]$') {
@@ -90,7 +91,7 @@ $svnTools = @{
 foreach ($package in $svnTools.GetEnumerator()) {
     $packageName = $package.Key
     $packageInfo = $package.Value
-    
+
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
         $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
@@ -122,7 +123,7 @@ $versionManager = @{
 foreach ($package in $versionManager.GetEnumerator()) {
     $packageName = $package.Key
     $packageInfo = $package.Value
-    
+
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
         $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
         if ($install -notmatch '^[Nn]$') {
@@ -146,12 +147,12 @@ Write-Host "`n--- Python 包管理器 / Python Package Manager (Optional) ---" -
 Write-Host "可以选择安装 uv、miniconda3 或两者都装 / Can install uv, miniconda3, or both" -ForegroundColor Cyan
 
 $pythonPackageManagers = @{
-    "uv"         = @{ 
+    "uv"         = @{
         Desc    = "uv (现代 Python 包管理器，推荐个人开发 / Modern Python package manager, recommended)"
         Global  = $false
         Default = $true
     }
-    "miniconda3" = @{ 
+    "miniconda3" = @{
         Desc    = "miniconda3 (适用于公司项目或科学计算 / For company projects or scientific computing)"
         Global  = $false
         Default = $false
@@ -161,7 +162,7 @@ $pythonPackageManagers = @{
 foreach ($package in $pythonPackageManagers.GetEnumerator()) {
     $packageName = $package.Key
     $packageInfo = $package.Value
-    
+
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
         # uv 默认安装，miniconda 默认不安装
         if ($packageInfo.Default) {
@@ -170,11 +171,11 @@ foreach ($package in $pythonPackageManagers.GetEnumerator()) {
         else {
             $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         }
-        
+
         $shouldInstall = $false
         if ($packageInfo.Default -and $install -notmatch '^[Nn]$') { $shouldInstall = $true }
         if (-not $packageInfo.Default -and $install -match '^[Yy]$') { $shouldInstall = $true }
-        
+
         if ($shouldInstall) {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -184,7 +185,7 @@ foreach ($package in $pythonPackageManagers.GetEnumerator()) {
                 scoop install $packageName
                 Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
             }
-            
+
             # miniconda3 特殊配置
             if ($packageName -eq "miniconda3") {
                 Write-Host "`n  配置 Miniconda 不自动激活... / Configuring Miniconda to not auto-activate..." -ForegroundColor Yellow
@@ -198,7 +199,7 @@ foreach ($package in $pythonPackageManagers.GetEnumerator()) {
     }
     else {
         Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
-        
+
         # miniconda3 特殊提示
         if ($packageName -eq "miniconda3") {
             Write-Host "  提示 / Note: 请运行以下命令禁用自动激活 / Please run this command to disable auto-activation:" -ForegroundColor Yellow
@@ -270,7 +271,7 @@ $apiTools = @{
 foreach ($package in $apiTools.GetEnumerator()) {
     $packageName = $package.Key
     $packageInfo = $package.Value
-    
+
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
         $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
@@ -302,7 +303,7 @@ $devTools = @{
 foreach ($package in $devTools.GetEnumerator()) {
     $packageName = $package.Key
     $packageInfo = $package.Value
-    
+
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
         $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
@@ -328,7 +329,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Host "⚠️ winget 未安装，跳过 Docker Desktop 安装 / winget not installed, skipping Docker Desktop installation" -ForegroundColor Yellow
 }
 else {
-    $wingApps = @{ 
+    $wingApps = @{
         "Docker.DockerDesktop" = @{ Desc = "Docker Desktop"; InstallArgs = "--exact --silent" }
     }
 
