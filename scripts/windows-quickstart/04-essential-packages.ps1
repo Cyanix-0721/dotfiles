@@ -267,6 +267,7 @@ Write-Host "`n=== 多媒体工具 / Multimedia Tools ===" -ForegroundColor Yello
 $multimediaTools = @{
     "snipaste"    = @{ Desc = "Snipaste (截图工具 / Screenshot tool)"; Global = $false }
     "imagemagick" = @{ Desc = "ImageMagick (图像处理工具 / Image processing tool)"; Global = $false }
+    "ffmpeg"      = @{ Desc = "FFmpeg (多媒体处理工具 / Multimedia processing tool)"; Global = $false }
 }
 
 foreach ($package in $multimediaTools.GetEnumerator()) {
