@@ -1,0 +1,37 @@
+{{- if eq .chezmoi.os "windows" -}}
+$ErrorActionPreference = "Stop"
+
+$sourceDir = "$HOME\.config\nushell"
+$appDataDir = "$env:APPDATA\nushell"
+
+# 确保 AppData\nushell 目录存在
+if (-not (Test-Path $appDataDir)) {
+    New-Item -ItemType Directory -Path $appDataDir -Force | Out-Null
+}
+
+# 为配置文件创建符号链接
+$files = @("config.nu", "env.nu")
+foreach ($file in $files) {
+    $source = Join-Path $sourceDir $file
+    $target = Join-Path $appDataDir $file
+
+    if (-not (Test-Path $source)) {
+        continue
+    }
+
+    # 如果目标已存在且不是符号链接，先删除
+    if (Test-Path $target) {
+        $item = Get-Item $target -Force
+        if ($item.LinkType -ne "SymbolicLink") {
+            Remove-Item $target -Force
+            Write-Host "Replaced existing $file with symlink."
+        } else {
+            Write-Host "Symlink for $file already exists."
+            continue
+        }
+    }
+
+    New-Item -ItemType SymbolicLink -Path $target -Target $source | Out-Null
+    Write-Host "Created symlink: $target -> $source"
+}
+{{- end -}}

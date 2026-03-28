@@ -66,6 +66,7 @@ $cliTools = @{
     "fd"       = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false }
     "bat"      = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false }
     "eza"      = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false }
+    "nu"       = @{ Desc = "Nushell (现代 Shell / Modern shell)"; Global = $false }
 }
 
 foreach ($package in $cliTools.GetEnumerator()) {
@@ -261,7 +262,8 @@ else {
 Write-Host "`n=== 终端增强 / Terminal Enhancement ===" -ForegroundColor Yellow
 
 $termTools = @{
-    "dark" = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true }
+    "dark"            = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true }
+    "wezterm-nightly" = @{ Desc = "WezTerm (GPU 加速终端 / GPU-accelerated terminal)"; Global = $false }
 }
 
 foreach ($tool in $termTools.GetEnumerator()) {
