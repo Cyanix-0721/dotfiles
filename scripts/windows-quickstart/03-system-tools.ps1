@@ -292,10 +292,11 @@ foreach ($tool in $termTools.GetEnumerator()) {
 Write-Host "`n=== 网络工具 / Network Tools ===" -ForegroundColor Yellow
 
 $networkTools = @{
-    "scrcpy"  = @{ Desc = "scrcpy (Android 投屏工具 / Android screen mirroring)"; Global = $true }
-    "escrcpy" = @{ Desc = "escrcpy (Windows GUI for scrcpy / scrcpy Windows 窗口管理)"; Global = $false }
-    "mkcert"  = @{ Desc = "mkcert (本地 HTTPS 证书 / Local HTTPS certificates)"; Global = $false }
-    "wireshark" = @{ Desc = "Wireshark (网络协议分析器 / Network protocol analyzer)"; Global = $false }
+    "nmap"       = @{ Desc = "nmap (网络扫描工具，含 ncat / Network scanner, includes ncat)"; Global = $false }
+    "scrcpy"     = @{ Desc = "scrcpy (Android 投屏工具 / Android screen mirroring)"; Global = $true }
+    "escrcpy"    = @{ Desc = "escrcpy (Windows GUI for scrcpy / scrcpy Windows 窗口管理)"; Global = $false }
+    "mkcert"     = @{ Desc = "mkcert (本地 HTTPS 证书 / Local HTTPS certificates)"; Global = $false }
+    "wireshark"  = @{ Desc = "Wireshark (网络协议分析器 / Network protocol analyzer)"; Global = $false }
     "proxybrige" = @{ Desc = "ProxyBridge (全局代理工具 / Global proxy tool)"; Global = $false }
 }
 

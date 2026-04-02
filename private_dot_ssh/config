@@ -1,11 +1,13 @@
 Host github.com
     HostName github.com
     User git
-
+    ProxyCommand ncat --proxy 127.0.0.1:7898 --proxy-type socks5 %h %p
 
 Host serv00
     HostName s9.serv00.com
     User cosmoszero
-
+    ProxyCommand ncat --proxy 127.0.0.1:7898 --proxy-type socks5 %h %p
+    
 Host *
     AddKeysToAgent yes
+    ProxyCommand none

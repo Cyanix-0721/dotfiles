@@ -37,6 +37,7 @@ sudo pacman -S --noconfirm mako fuzzel ntfs-3g niri lysd qt6ct xwayland-satellit
 paru -S --noconfirm systemd-manager-tui
 
 step "安装网络工具 / Installing network tools"
+sudo pacman -S --noconfirm nmap
 paru -S --noconfirm clash-verge-rev-bin
 
 step "安装日常应用 / Installing daily applications"
