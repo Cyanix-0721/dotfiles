@@ -30,5 +30,7 @@ vfox activate nushell $nu.default-config-dir | save --append $nu.config-path
 
 # proxy
 let clash_port = 7897
-let-env HTTP_PROXY = $"http://127.0.0.1:($clash_port)"
-let-env HTTPS_PROXY = $"http://127.0.0.1:($clash_port)"
+
+$env.HTTP_PROXY = $"http://127.0.0.1:($clash_port)"
+$env.HTTPS_PROXY = $"http://127.0.0.1:($clash_port)"
+$env.ALL_PROXY = $"http://127.0.0.1:($clash_port)"
