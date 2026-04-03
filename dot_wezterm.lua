@@ -18,4 +18,13 @@ config.font_rules = {
   },
 }
 
+config.enable_link_runtime_controls = true
+config.mouse_bindings = {
+  {
+    event = { Up = { streak = 1, button = 'Left' } }
+    mods = 'CTRL'
+    action = 'OpenLinkUnderMouseCursor'
+  }
+}
+
 return config
