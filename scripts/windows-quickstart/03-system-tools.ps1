@@ -12,16 +12,19 @@
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== 系统工具安装 / System Tools Installation ===" -ForegroundColor Cyan
+# 加载公共函数
+. "$PSScriptRoot/00-common.ps1"
+
+Write-Header "系统工具安装 / System Tools Installation"
 
 # 检查 Scoop
 if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
-    Write-Error "Scoop 未安装，请先运行系统基础环境配置脚本 / Scoop not installed, please run the system foundation setup script first"
+    Write-Err "Scoop 未安装，请先运行系统基础环境配置脚本 / Scoop not installed, please run the system foundation setup script first"
     exit 1
 }
 
 # Sysinternals 工具集
-Write-Host "`n=== Sysinternals 工具集 / Sysinternals Suite ===" -ForegroundColor Yellow
+Write-Header "Sysinternals 工具集 / Sysinternals Suite"
 
 $sysinternalsTools = @{
     "sysmon"           = @{ Desc = "Sysmon (系统监视器 / System Monitor)"; Global = $true }
@@ -42,23 +45,24 @@ foreach ($package in $sysinternalsTools.GetEnumerator()) {
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
             }
             else {
                 scoop install $packageName
-                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成 / $packageName installation completed"
             }
         }
     }
     else {
-        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+        Write-Ok "$packageName 已安装 / $packageName is already installed"
     }
 }
 
 # 命令行增强工具
-Write-Host "`n=== 命令行增强工具 / Command Line Enhancement Tools ===" -ForegroundColor Yellow
+Write-Header "命令行增强工具 / Command Line Enhancement Tools"
 
 $cliTools = @{
+    "less"     = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false }
     "starship" = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false }
     "zoxide"   = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false }
     "fzf"      = @{ Desc = "fzf (模糊查找器 / Fuzzy finder)"; Global = $false }
@@ -78,21 +82,21 @@ foreach ($package in $cliTools.GetEnumerator()) {
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
             }
             else {
                 scoop install $packageName
-                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成 / $packageName installation completed"
             }
         }
     }
     else {
-        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+        Write-Ok "$packageName 已安装 / $packageName is already installed"
     }
 }
 
 # 系统信息和监控工具
-Write-Host "`n=== 系统信息和监控工具 / System Info and Monitoring Tools ===" -ForegroundColor Yellow
+Write-Header "系统信息和监控工具 / System Info and Monitoring Tools"
 
 $monitorTools = @{
     "fastfetch"      = @{ Desc = "fastfetch (系统信息显示 / System information display)"; Global = $false }
@@ -108,21 +112,21 @@ foreach ($package in $monitorTools.GetEnumerator()) {
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
             }
             else {
                 scoop install $packageName
-                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成 / $packageName installation completed"
             }
         }
     }
     else {
-        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+        Write-Ok "$packageName 已安装 / $packageName is already installed"
     }
 }
 
 # 文件管理器
-Write-Host "`n=== 文件管理器 / File Managers ===" -ForegroundColor Yellow
+Write-Header "文件管理器 / File Managers"
 
 $fileManagers = @{
     "yazi" = @{ Desc = "Yazi (终端文件管理器 / Terminal file manager)"; Global = $false }
@@ -137,26 +141,26 @@ foreach ($package in $fileManagers.GetEnumerator()) {
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
             }
             else {
                 scoop install $packageName
-                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成 / $packageName installation completed"
             }
             
             # Yazi 会自动触发依赖安装
             if ($packageName -eq "yazi") {
-                Write-Host "提示：Yazi 会自动安装以下依赖：imagemagick, poppler, resvg" -ForegroundColor Cyan
+                Write-Note "提示：Yazi 会自动安装以下依赖：imagemagick, poppler, resvg"
             }
         }
     }
     else {
-        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+        Write-Ok "$packageName 已安装 / $packageName is already installed"
     }
 }
 
 # 压缩工具
-Write-Host "`n=== 压缩工具 / Compression Tools ===" -ForegroundColor Yellow
+Write-Header "压缩工具 / Compression Tools"
 
 $compressionTools = @{
     "7zip"    = @{ Desc = "7zip (压缩/解压工具 / Archive utility)"; Global = $true }
@@ -172,21 +176,21 @@ foreach ($entry in $compressionTools.GetEnumerator()) {
         if ($install -notmatch '^[Nn]$') {
             if ($toolInfo.Global) {
                 scoop install $toolName --global
-                Write-Host "✓ $toolName 安装完成（全局） / $toolName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$toolName 安装完成（全局） / $toolName installation completed (global)"
             }
             else {
                 scoop install $toolName
-                Write-Host "✓ $toolName 安装完成 / $toolName installation completed" -ForegroundColor Green
+                Write-Ok "$toolName 安装完成 / $toolName installation completed"
             }
         }
     }
     else {
-        Write-Host "✓ $toolName 已安装 / $toolName is already installed" -ForegroundColor Green
+        Write-Ok "$toolName 已安装 / $toolName is already installed"
     }
 }
 
 # Windows 增强工具
-Write-Host "`n=== Windows 增强工具 / Windows Enhancement Tools ===" -ForegroundColor Yellow
+Write-Header "Windows 增强工具 / Windows Enhancement Tools"
 
 $winTools = @{
     "powertoys"      = @{ Desc = "PowerToys (微软官方工具集 / Microsoft official utilities)"; Global = $false }
@@ -212,24 +216,24 @@ foreach ($package in $winTools.GetEnumerator()) {
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
             }
             else {
                 scoop install $packageName
-                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成 / $packageName installation completed"
             }
         }
     }
     else {
-        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+        Write-Ok "$packageName 已安装 / $packageName is already installed"
     }
 }
 
 # OpenHashTab (文件哈希右键扩展)
-Write-Host "`n=== OpenHashTab (文件哈希右键扩展) / OpenHashTab (File Hash Context Menu) ===" -ForegroundColor Yellow
+Write-Header "OpenHashTab (文件哈希右键扩展) / OpenHashTab (File Hash Context Menu)"
 
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    Write-Host "⚠️ winget 未安装，跳过 OpenHashTab 安装 / winget not installed, skipping OpenHashTab installation" -ForegroundColor Yellow
+    Write-Warn "winget 未安装，跳过 OpenHashTab 安装 / winget not installed, skipping OpenHashTab installation"
 }
 else {
     $wingApps = @{ 
@@ -248,18 +252,18 @@ else {
         }
 
         if (-not $isInstalled) {
-            Write-Host "正在通过 winget 安装 $($appInfo.Desc) ($appId)..." -ForegroundColor Cyan
+            Write-Step "通过 winget 安装 $($appInfo.Desc) ($appId)"
             winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
-            Write-Host "✓ $appId 安装完成 / $appId installation completed" -ForegroundColor Green
+            Write-Ok "$appId 安装完成 / $appId installation completed"
         }
         else {
-            Write-Host "✓ $appId 已安装 / $appId is already installed" -ForegroundColor Green
+            Write-Ok "$appId 已安装 / $appId is already installed"
         }
     }
 }
 
 # 终端工具
-Write-Host "`n=== 终端增强 / Terminal Enhancement ===" -ForegroundColor Yellow
+Write-Header "终端增强 / Terminal Enhancement"
 
 $termTools = @{
     "dark"            = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true }
@@ -275,21 +279,21 @@ foreach ($tool in $termTools.GetEnumerator()) {
         if ($install -match '^[Yy]$') {
             if ($toolInfo.Global) {
                 scoop install $toolName --global
-                Write-Host "✓ $toolName 安装完成（全局） / $toolName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$toolName 安装完成（全局） / $toolName installation completed (global)"
             }
             else {
                 scoop install $toolName
-                Write-Host "✓ $toolName 安装完成 / $toolName installation completed" -ForegroundColor Green
+                Write-Ok "$toolName 安装完成 / $toolName installation completed"
             }
         }
     }
     else {
-        Write-Host "✓ $toolName 已安装 / $toolName is already installed" -ForegroundColor Green
+        Write-Ok "$toolName 已安装 / $toolName is already installed"
     }
 }
 
 # 网络工具
-Write-Host "`n=== 网络工具 / Network Tools ===" -ForegroundColor Yellow
+Write-Header "网络工具 / Network Tools"
 
 $networkTools = @{
     "nmap"       = @{ Desc = "nmap (网络扫描工具，含 ncat / Network scanner, includes ncat)"; Global = $false }
@@ -309,19 +313,19 @@ foreach ($package in $networkTools.GetEnumerator()) {
         if ($install -match '^[Yy]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
             }
             else {
                 scoop install $packageName
-                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成 / $packageName installation completed"
             }
         }
     }
     else {
-        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+        Write-Ok "$packageName 已安装 / $packageName is already installed"
     }
 }
 
-Write-Host "`n✓ 系统工具安装完成 / System tools installation completed" -ForegroundColor Green
-Write-Host "`n全局安装的应用 / Globally installed apps:" -ForegroundColor Cyan
+Write-Header "系统工具安装完成 / System tools installation completed"
+Write-Note "全局安装的应用 / Globally installed apps:"
 scoop list | Select-String "Global"

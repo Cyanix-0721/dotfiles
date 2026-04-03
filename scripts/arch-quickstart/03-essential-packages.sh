@@ -2,20 +2,8 @@
 
 set -e
 
-# 统一日志输出样式（仅影响提示，不改变脚本行为）
-if [ -t 1 ]; then
-	RESET="\033[0m"; BOLD="\033[1m"; DIM="\033[2m";
-	RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"; BLUE="\033[34m"; CYAN="\033[36m";
-else
-	RESET=""; BOLD=""; DIM=""; RED=""; GREEN=""; YELLOW=""; BLUE=""; CYAN="";
-fi
-
-header() { printf "\n%s%s==> %s%s\n" "$BOLD" "$BLUE" "$1" "$RESET"; }
-step()   { printf "%s→ %s…%s\n" "$CYAN" "$1" "$RESET"; }
-ok()     { printf "%s✓ %s%s\n" "$GREEN" "$1" "$RESET"; }
-warn()   { printf "%s⚠ %s%s\n" "$YELLOW" "$1" "$RESET"; }
-err()    { printf "%s✗ %s%s\n" "$RED" "$1" "$RESET"; }
-note()   { printf "%s∙ %s%s\n" "$DIM" "$1" "$RESET"; }
+# 加载公共函数
+. "$(dirname "$0")/00-common.sh"
 
 header "安装常用软件 / Installing Common Software"
 
@@ -26,7 +14,7 @@ if ! command -v paru &>/dev/null; then
 fi
 
 step "安装命令行工具 / Installing command line tools"
-sudo pacman -S --noconfirm fzf zoxide ripgrep fd eza bat stow btop fastfetch dex viu
+sudo pacman -S --noconfirm fzf zoxide ripgrep fd eza bat stow btop fastfetch dex viu less
 
 step "安装开发工具 / Installing development tools"
 sudo pacman -S --noconfirm neovim python-pynvim lazygit gitui github-cli uv ast-grep git-delta poppler resvg imagemagick jq luarocks ruff

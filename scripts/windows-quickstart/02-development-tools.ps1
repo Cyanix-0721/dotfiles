@@ -12,16 +12,19 @@
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== 开发工具安装 / Development Tools Installation ===" -ForegroundColor Cyan
+# 加载公共函数
+. "$PSScriptRoot/00-common.ps1"
+
+Write-Header "开发工具安装 / Development Tools Installation"
 
 # 检查 Scoop
 if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
-    Write-Error "Scoop 未安装，请先运行系统基础环境配置脚本 / Scoop not installed, please run the system foundation setup script first"
+    Write-Err "Scoop 未安装，请先运行系统基础环境配置脚本 / Scoop not installed, please run the system foundation setup script first"
     exit 1
 }
 
 # 编辑器和 IDE
-Write-Host "`n=== 编辑器和 IDE / Editors and IDEs ===" -ForegroundColor Yellow
+Write-Header "编辑器 / Editors and IDEs"
 
 $editors = @{
     "vscode" = @{ Desc = "Visual Studio Code"; Global = $false }
@@ -36,21 +39,21 @@ foreach ($package in $editors.GetEnumerator()) {
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
             }
             else {
                 scoop install $packageName
-                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成 / $packageName installation completed"
             }
         }
     }
     else {
-        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+        Write-Ok "$packageName 已安装 / $packageName is already installed"
     }
 }
 
 # Git 工具
-Write-Host "`n=== Git 工具 / Git Tools ===" -ForegroundColor Yellow
+Write-Header "Git 工具 / Git Tools"
 
 $gitTools = @{
     "lazygit" = @{ Desc = "lazygit"; Global = $false }
@@ -67,21 +70,21 @@ foreach ($package in $gitTools.GetEnumerator()) {
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
             }
             else {
                 scoop install $packageName
-                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成 / $packageName installation completed"
             }
         }
     }
     else {
-        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+        Write-Ok "$packageName 已安装 / $packageName is already installed"
     }
 }
 
 # SVN 客户端
-Write-Host "`n=== SVN 客户端 / SVN Clients ===" -ForegroundColor Yellow
+Write-Header "SVN 客户端 / SVN Clients"
 
 $svnTools = @{
     "sliksvn"     = @{ Desc = "SlikSVN (命令行 / Command-line)"; Global = $true }
@@ -97,25 +100,25 @@ foreach ($package in $svnTools.GetEnumerator()) {
         if ($install -match '^[Yy]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
             }
             else {
                 scoop install $packageName
-                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成 / $packageName installation completed"
             }
         }
     }
     else {
-        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+        Write-Ok "$packageName 已安装 / $packageName is already installed"
     }
 }
 
 
 # 环境管理
-Write-Host "`n=== 环境管理 / Environment Management ===" -ForegroundColor Yellow
+Write-Header "环境管理 / Environment Management"
 
 # 1. vfox 版本管理器 (必装 / Required)
-Write-Host "`n--- vfox 版本管理器 / vfox Version Manager (Required) ---" -ForegroundColor Yellow
+Write-Step "vfox 版本管理器 / vfox Version Manager (Required)"
 $versionManager = @{
     "vfox" = @{ Desc = "vfox (多语言版本管理器 / Multi-language version manager)"; Global = $false }
 }
@@ -129,22 +132,22 @@ foreach ($package in $versionManager.GetEnumerator()) {
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
             }
             else {
                 scoop install $packageName
-                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成 / $packageName installation completed"
             }
         }
     }
     else {
-        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+        Write-Ok "$packageName 已安装 / $packageName is already installed"
     }
 }
 
 # 2. Python 包管理器 (可选一个或都安装，默认 uv / Optional, can install one or both, default uv)
-Write-Host "`n--- Python 包管理器 / Python Package Manager (Optional) ---" -ForegroundColor Yellow
-Write-Host "可以选择安装 uv、miniconda3 或两者都装 / Can install uv, miniconda3, or both" -ForegroundColor Cyan
+Write-Step "Python 包管理器 / Python Package Manager (Optional)"
+Write-Note "可以选择安装 uv、miniconda3 或两者都装 / Can install uv, miniconda3, or both"
 
 $pythonPackageManagers = @{
     "uv"         = @{
@@ -179,40 +182,36 @@ foreach ($package in $pythonPackageManagers.GetEnumerator()) {
         if ($shouldInstall) {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
             }
             else {
                 scoop install $packageName
-                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成 / $packageName installation completed"
             }
 
             # miniconda3 特殊配置
             if ($packageName -eq "miniconda3") {
-                Write-Host "`n  配置 Miniconda 不自动激活... / Configuring Miniconda to not auto-activate..." -ForegroundColor Yellow
-                Write-Host "  运行以下命令禁用自动激活 / Run the following command to disable auto-activation:" -ForegroundColor Yellow
-                Write-Host "  conda config --set auto_activate false" -ForegroundColor Cyan
-                Write-Host "  " -ForegroundColor Yellow
-                Write-Host "  需要使用时显式激活 / When needed, explicitly activate:" -ForegroundColor Yellow
-                Write-Host "  conda activate <env_name>" -ForegroundColor Cyan
+                Write-Note "配置 Miniconda 不自动激活... / Configuring Miniconda to not auto-activate..."
+                Write-Note "运行以下命令禁用自动激活 / Run the following command to disable auto-activation: conda config --set auto_activate false"
+                Write-Note "需要使用时显式激活 / When needed, explicitly activate: conda activate <env_name>"
             }
         }
     }
     else {
-        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+        Write-Ok "$packageName 已安装 / $packageName is already installed"
 
         # miniconda3 特殊提示
         if ($packageName -eq "miniconda3") {
-            Write-Host "  提示 / Note: 请运行以下命令禁用自动激活 / Please run this command to disable auto-activation:" -ForegroundColor Yellow
-            Write-Host "  conda config --set auto_activate false" -ForegroundColor Cyan
+            Write-Note "请运行以下命令禁用自动激活 / Please run this command to disable auto-activation: conda config --set auto_activate false"
         }
     }
 }
 
 # .NET 运行时和 SDK
-Write-Host "`n=== .NET 运行时和 SDK / .NET Runtime and SDK ===" -ForegroundColor Yellow
+Write-Header ".NET 运行时和 SDK / .NET Runtime and SDK"
 
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    Write-Host "⚠️ winget 未安装，跳过 .NET 安装 / winget not installed, skipping .NET installation" -ForegroundColor Yellow
+    Write-Warn "winget 未安装，跳过 .NET 安装 / winget not installed, skipping .NET installation"
 }
 else {
     $dotnetVersions = @(5, 6, 7, 8, 9, 10)
@@ -220,7 +219,7 @@ else {
     foreach ($version in $dotnetVersions) {
         $installDotNet = Read-Host "是否安装 .NET $version.0？(y/N) / Install .NET $version.0? (y/N)"
         if ($installDotNet -match '^[Yy]$') {
-            Write-Host "请选择安装类型 / Please select installation type:" -ForegroundColor Cyan
+            Write-Step "安装 .NET $version.0 / Installing .NET $version.0"
             Write-Host "1. 仅运行时 / Runtime only (默认 / default)" -ForegroundColor Yellow
             Write-Host "2. 仅 SDK / SDK only" -ForegroundColor Yellow
             Write-Host "3. 运行时 + SDK / Runtime + SDK" -ForegroundColor Yellow
@@ -233,7 +232,7 @@ else {
                 "1" { $toInstall += "Microsoft.DotNet.Runtime.$version" }
                 "2" { $toInstall += "Microsoft.DotNet.SDK.$version" }
                 "3" { $toInstall += "Microsoft.DotNet.Runtime.$version"; $toInstall += "Microsoft.DotNet.SDK.$version" }
-                default { Write-Host "无效选项，跳过 .NET $version.0 安装 / Invalid option, skipping .NET $version.0 installation" -ForegroundColor Red }
+                default { Write-Warn "无效选项，跳过 .NET $version.0 安装 / Invalid option, skipping .NET $version.0 installation" }
             }
 
             foreach ($appId in $toInstall) {
@@ -243,17 +242,17 @@ else {
                 catch { $isInstalled = $null }
 
                 if (-not $isInstalled) {
-                    Write-Host "正在通过 winget 安装 $appId..." -ForegroundColor Yellow
+                    Write-Step "通过 winget 安装 $appId / Installing $appId via winget"
                     winget install --id $appId --exact --silent --accept-source-agreements --accept-package-agreements
                     if ($LASTEXITCODE -eq 0) {
-                        Write-Host "✓ $appId 安装完成 / $appId installation completed" -ForegroundColor Green
+                        Write-Ok "$appId 安装完成 / $appId installation completed"
                     }
                     else {
-                        Write-Host "✗ $appId 安装失败 / $appId installation failed" -ForegroundColor Red
+                        Write-Err "$appId 安装失败 / $appId installation failed"
                     }
                 }
                 else {
-                    Write-Host "✓ $appId 已安装 / $appId is already installed" -ForegroundColor Green
+                    Write-Ok "$appId 已安装 / $appId is already installed"
                 }
             }
         }
@@ -261,7 +260,7 @@ else {
 }
 
 # API 开发工具
-Write-Host "`n=== API 开发工具 / API Development Tools ===" -ForegroundColor Yellow
+Write-Header "API 开发工具 / API Development Tools"
 
 $apiTools = @{
     "postman"    = @{ Desc = "Postman"; Global = $false }
@@ -277,21 +276,21 @@ foreach ($package in $apiTools.GetEnumerator()) {
         if ($install -match '^[Yy]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
             }
             else {
                 scoop install $packageName
-                Write-Host "✓ $packageName 安装完成 / $packageName installation completed" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成 / $packageName installation completed"
             }
         }
     }
     else {
-        Write-Host "✓ $packageName 已安装 / $packageName is already installed" -ForegroundColor Green
+        Write-Ok "$packageName 已安装 / $packageName is already installed"
     }
 }
 
 # 其他开发工具
-Write-Host "`n=== 其他开发工具 / Other Development Tools ===" -ForegroundColor Yellow
+Write-Header "其他开发工具 / Other Development Tools"
 
 $devTools = @{
     "jq"     = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
@@ -309,24 +308,24 @@ foreach ($package in $devTools.GetEnumerator()) {
         if ($install -match '^[Yy]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
-                Write-Host "✓ $packageName 安装完成（全局） / $packageName installation completed (global)" -ForegroundColor Green
+                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
             }
             else {
-                scoop install $toolName
-                Write-Host "✓ $toolName 安装完成 / $toolName installation completed" -ForegroundColor Green
+                scoop install $packageName
+                Write-Ok "$packageName 安装完成 / $packageName installation completed"
             }
         }
     }
     else {
-        Write-Host "✓ $toolName 已安装 / $toolName is already installed" -ForegroundColor Green
+        Write-Ok "$packageName 已安装 / $packageName is already installed"
     }
 }
 
 # 容器与虚拟化 / Containers and Virtualization
-Write-Host "`n=== 容器与虚拟化 / Containers and Virtualization ===" -ForegroundColor Yellow
+Write-Header "容器与虚拟化 / Containers and Virtualization"
 
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    Write-Host "⚠️ winget 未安装，跳过 Docker Desktop 安装 / winget not installed, skipping Docker Desktop installation" -ForegroundColor Yellow
+    Write-Warn "winget 未安装，跳过 Docker Desktop 安装 / winget not installed, skipping Docker Desktop installation"
 }
 else {
     $wingApps = @{
@@ -347,22 +346,22 @@ else {
         if (-not $isInstalled) {
             $installDocker = Read-Host "是否安装 $($appInfo.Desc)？(Y/n) / Install $($appInfo.Desc)? (Y/n)"
             if ($installDocker -notmatch '^[Nn]$') {
-                Write-Host "安装 $($appInfo.Desc)… / Installing $($appInfo.Desc)…" -ForegroundColor Yellow
+                Write-Step "安装 $($appInfo.Desc) / Installing $($appInfo.Desc)"
                 winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
                 if ($LASTEXITCODE -eq 0) {
-                    Write-Host "✓ $appId 安装完成 / $appId installation completed" -ForegroundColor Green
+                    Write-Ok "$appId 安装完成 / $appId installation completed"
                 }
                 else {
-                    Write-Host "✗ $appId 安装失败 / $appId installation failed" -ForegroundColor Red
+                    Write-Err "$appId 安装失败 / $appId installation failed"
                 }
             }
         }
         else {
-            Write-Host "✓ $appId 已安装 / $appId is already installed" -ForegroundColor Green
+            Write-Ok "$appId 已安装 / $appId is already installed"
         }
     }
 }
 
-Write-Host "`n✓ 开发工具安装完成 / Development tools installation completed" -ForegroundColor Green
-Write-Host "`n当前已安装的开发工具 / Currently installed development tools:" -ForegroundColor Cyan
+Write-Header "开发工具安装完成 / Development tools installation completed"
+Write-Note "当前已安装的开发工具 / Currently installed development tools:"
 scoop list
