@@ -3,6 +3,10 @@
 # Nushell configuration
 # See https://www.nushell.sh/book/configuration.html
 
+$env.config = {
+  show_banner: false
+}
+
 # env
 source-env ($nu.env-path)
 
