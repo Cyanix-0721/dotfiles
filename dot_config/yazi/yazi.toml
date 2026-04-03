@@ -1,3 +1,6 @@
+[mgr]
+show_hidden = false
+
 [opener]
 edit = [
 	{ run = "${EDITOR:-vi} %s", desc = "$EDITOR",      for = "unix", block = true },
