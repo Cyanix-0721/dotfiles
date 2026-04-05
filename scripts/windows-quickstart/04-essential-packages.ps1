@@ -269,6 +269,7 @@ Write-Header "多媒体工具 / Multimedia Tools"
 
 $multimediaTools = @{
     "snipaste"    = @{ Desc = "Snipaste (截图工具 / Screenshot tool)"; Global = $false }
+    "screentogif" = @{ Desc = "ScreenToGif (屏幕录制 GIF 工具 / Screen recording GIF tool)"; Global = $false }
     "imagemagick" = @{ Desc = "ImageMagick (图像处理工具 / Image processing tool)"; Global = $false }
     "ffmpeg"      = @{ Desc = "FFmpeg (多媒体处理工具 / Multimedia processing tool)"; Global = $false }
 }
