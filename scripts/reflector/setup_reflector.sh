@@ -7,21 +7,20 @@ usage() {
 用法: $(basename "$0") [选项]
 
 选项:
-  --setup    安装并配置 reflector 服务（默认）
+  --setup    安装并配置 reflector 服务
   --run      手动触发一次镜像列表更新
   -h, --help 显示此帮助
+
+不指定参数时显示此帮助信息
 EOF
 }
 
-MODE=""
+MODE="help"
 while [ "$#" -gt 0 ]; do
 	case "$1" in
 	--setup) MODE="setup" ;;
 	--run) MODE="run" ;;
-	-h | --help)
-		usage
-		exit 0
-		;;
+	-h | --help) MODE="help" ;;
 	*)
 		usage
 		exit 1
@@ -30,7 +29,10 @@ while [ "$#" -gt 0 ]; do
 	shift
 done
 
-: "${MODE:=setup}"
+if [ "$MODE" = "help" ]; then
+	usage
+	exit 0
+fi
 
 check_root() {
 	if [ "$(id -u)" -ne 0 ]; then
