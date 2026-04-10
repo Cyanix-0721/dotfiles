@@ -1,22 +1,58 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
-# 检查root权限
-if [[ $EUID -ne 0 ]]; then
-  echo "错误：请以root权限运行此脚本"
-  exit 1
-fi
+usage() {
+	cat <<EOF
+用法: $(basename "$0") [选项]
 
-# 检查并安装reflector
-if ! command -v reflector &>/dev/null; then
-  echo "检测到reflector未安装，正在安装..."
-  pacman -Sy reflector --noconfirm
-  echo "reflector安装完成！"
-fi
+选项:
+  --setup    安装并配置 reflector 服务（默认）
+  --run      手动触发一次镜像列表更新
+  -h, --help 显示此帮助
+EOF
+}
 
-# 创建Reflector服务文件
-cat >/etc/systemd/system/reflector.service <<'EOF'
+MODE=""
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+	--setup) MODE="setup" ;;
+	--run) MODE="run" ;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	*)
+		usage
+		exit 1
+		;;
+	esac
+	shift
+done
+
+: "${MODE:=setup}"
+
+check_root() {
+	if [ "$(id -u)" -ne 0 ]; then
+		echo "错误: 请以 root 权限运行此脚本" >&2
+		exit 1
+	fi
+}
+
+install_reflector() {
+	if ! command -v reflector &>/dev/null; then
+		echo "正在安装 reflector..."
+		pacman -Sy reflector --noconfirm
+	fi
+}
+
+setup_service() {
+	check_root
+
+	local -r service_file="/etc/systemd/system/reflector.service"
+	local -r timer_file="/etc/systemd/system/reflector.timer"
+
+	cat >"$service_file" <<'EOF'
 [Unit]
 Description=Pacman mirrorlist update with Reflector
 Wants=network-online.target
@@ -31,8 +67,7 @@ User=root
 WantedBy=multi-user.target
 EOF
 
-# 创建Reflector定时器文件
-cat >/etc/systemd/system/reflector.timer <<'EOF'
+	cat >"$timer_file" <<'EOF'
 [Unit]
 Description=Run reflector weekly to update mirrorlist
 Requires=reflector.service
@@ -45,16 +80,57 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
-# 重新加载Systemd配置
-systemctl daemon-reload
+	systemctl daemon-reload
+	systemctl enable reflector.timer
+	systemctl start reflector.timer
 
-# 启用并启动定时器
-systemctl enable reflector.timer
-systemctl start reflector.timer
+	echo "✓ Reflector 服务已配置"
+}
 
-echo "Reflector定时任务配置完成！"
+run_reflector() {
+	check_root
 
-# 调用启动脚本进行首次更新
-echo "正在执行首次镜像列表更新..."
-SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-"$SCRIPT_DIR/start_reflector.sh"
+	echo "正在更新镜像列表..."
+	if systemctl start reflector.service; then
+		echo "✓ 镜像列表更新成功"
+
+		local total_servers
+		total_servers=$(grep -c '^Server' /etc/pacman.d/mirrorlist)
+
+		echo -e "\n当前镜像服务器数量: $total_servers"
+		echo -e "\n前10个镜像服务器:"
+		echo "=========================================="
+		grep '^Server' /etc/pacman.d/mirrorlist | head -10 | nl -w2
+		echo "=========================================="
+	else
+		echo "✗ 镜像列表更新失败" >&2
+		exit 1
+	fi
+}
+
+show_status() {
+	check_root
+
+	local total_servers
+	total_servers=$(grep -c '^Server' /etc/pacman.d/mirrorlist)
+
+	echo "=========================================="
+	echo "Reflector 定时任务状态:"
+	systemctl status reflector.timer --no-pager || true
+	echo -e "\n当前镜像服务器数量: $total_servers"
+	echo -e "\n前10个镜像服务器:"
+	grep '^Server' /etc/pacman.d/mirrorlist | head -10 | nl -w2
+	echo "=========================================="
+}
+
+case "$MODE" in
+setup)
+	install_reflector
+	setup_service
+	run_reflector
+	show_status
+	;;
+run)
+	run_reflector
+	;;
+esac
