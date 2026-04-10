@@ -1,1 +1,1 @@
-# Windows-specific script dependencies / Windows 专用脚本依赖
+# Empty - file-sync now uses Syncthing + copyparty

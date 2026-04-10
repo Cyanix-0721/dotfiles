@@ -1,4 +1,4 @@
-# Dependencies for utility scripts / 工具脚本依赖列表
-asyncssh
-pyftpdlib
-cryptography
+# Dependencies for utility scripts
+# Main sync: use Syncthing (built-in)
+# Auxiliary sync: use copyparty (standalone)
+# rsync script uses standard library only

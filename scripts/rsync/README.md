@@ -46,8 +46,8 @@ Automated file synchronization tool supporting Linux/Windows cross-platform sync
 No installation required, run the script directly.
 
 ```bash
-cd scripts/file-sync/rsync
-python sync.py
+cd scripts/rsync
+python rsync.py
 ```
 
 ## 配置文件 / Configuration
@@ -141,7 +141,7 @@ destination: "/home/user/Music/"
 Run script directly to enter interactive menu:
 
 ```bash
-python sync.py
+python rsync.py
 ```
 
 ### 命令行模式 / CLI Mode
@@ -153,31 +153,31 @@ Execute sync directly with command-line arguments:
 ```bash
 # 基本用法：使用预设1，镜像同步
 # Basic usage: Use preset 1, mirror sync
-python sync.py -p 1
+python rsync.py -p 1
 
 # 模拟运行（不实际执行）
 # Dry run (do not execute)
-python sync.py -p 1 --dry-run
+python rsync.py -p 1 --dry-run
 
 # 详细输出
 # Verbose output
-python sync.py -p 1 --verbose
+python rsync.py -p 1 --verbose
 
 # 增量更新模式（不删除目标中的文件）
 # Update mode (do not delete files in destination)
-python sync.py -p 1 --mode update
+python rsync.py -p 1 --mode update
 
 # 不排除空文件夹
 # Do not exclude empty directories
-python sync.py -p 1 --no-exclude-empty
+python rsync.py -p 1 --no-exclude-empty
 
 # 自动创建目标目录
 # Auto-create destination directory
-python sync.py -p 1 --auto-create-dest
+python rsync.py -p 1 --auto-create-dest
 
 # 组合使用
 # Combined usage
-python sync.py -p 1 --mode mirror --dry-run --verbose
+python rsync.py -p 1 --mode mirror --dry-run --verbose
 ```
 
 ### 命令行参数 / CLI Arguments
@@ -276,7 +276,7 @@ A: Yes. Whitelist has higher priority. If both specified, whitelist is applied f
 ```
 
 ```bash
-python sync.py -p 1 --mode mirror --dry-run
+python rsync.py -p 1 --mode mirror --dry-run
 ```
 
 ### 场景2: 安全的增量备份 / Scenario 2: Safe Incremental Backup
@@ -284,7 +284,7 @@ python sync.py -p 1 --mode mirror --dry-run
 ```bash
 # 只添加新文件，不覆盖已存在的文件
 # Only add new files, don't overwrite existing
-python sync.py -p 1 --mode safe
+python rsync.py -p 1 --mode safe
 ```
 
 ### 场景3: 同步特定文件夹 / Scenario 3: Sync Specific Folders
