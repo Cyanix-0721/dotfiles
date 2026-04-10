@@ -76,9 +76,8 @@ abbr -a tn 'tmux new -s'
 abbr -a ta 'tmux attach -t'
 abbr -a fs fastfetch
 
-abbr -a mntd 'sudo mount /mnt/DDDD'
-abbr -a umntd 'sudo umount /mnt/DDDD'
-abbr -a mntall 'sudo mount -a'
+abbr -a mntd 'udisksctl mount -b /dev/nvme0n1p4'
+abbr -a umntd 'udisksctl unmount -b /dev/nvme0n1p4'
 
 # -----------------------------------------------------------------------------
 # Development shortcuts
