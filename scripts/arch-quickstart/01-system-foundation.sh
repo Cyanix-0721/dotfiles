@@ -19,10 +19,52 @@ step "更新系统 / Updating system"
 sudo pacman -Syu --noconfirm
 ok "系统更新完成 / System update completed"
 
-# 安装 git、svn 和基础开发工具 / Install git, svn and basic development tools
-step "安装 git、svn 和基础开发工具 / Installing git, svn and basic dev tools"
+# 安装基础工具 / Install basic tools
+step "安装基础工具 / Installing basic tools"
 sudo pacman -S --needed --noconfirm git subversion base-devel
-ok "git、svn 和基础开发工具安装完成 / Tools installed"
+ok "基础工具安装完成 / Basic tools installed"
+
+# 安装终端模拟器 / Install terminal emulator
+header "终端模拟器 / Terminal Emulator"
+echo "选择终端模拟器 / Select terminal emulator:"
+echo "  1) kitty (默认/default)"
+echo "  2) alacritty"
+echo "  3) wezterm"
+echo "  4) 全部安装 / Install all"
+read -p "输入选择 (1-4) [1]: " terminal_choice
+
+case $terminal_choice in
+2) term_packages="alacritty" ;;
+3) term_packages="wezterm" ;;
+4) term_packages="kitty alacritty wezterm" ;;
+*) term_packages="kitty" ;;
+esac
+
+if [[ -n "$term_packages" ]]; then
+	step "安装终端模拟器: $term_packages / Installing: $term_packages"
+	sudo pacman -S --noconfirm $term_packages
+	ok "终端模拟器安装完成 / Terminal emulator installed"
+fi
+
+# 安装 Shell / Install Shell
+header "Shell"
+echo "选择 Shell / Select shell:"
+echo "  1) fish (默认/default)"
+echo "  2) zsh"
+echo "  3) 全部安装 / Install all"
+read -p "输入选择 (1-3) [1]: " shell_choice
+
+case $shell_choice in
+2) shell_packages="zsh" ;;
+3) shell_packages="fish zsh" ;;
+*) shell_packages="fish" ;;
+esac
+
+if [[ -n "$shell_packages" ]]; then
+	step "安装 Shell: $shell_packages / Installing: $shell_packages"
+	sudo pacman -S --noconfirm $shell_packages
+	ok "Shell 安装完成 / Shell installed"
+fi
 
 # 安装 pacman 工具 / Install pacman tools
 step "安装 pacman-contrib 与 reflector / Installing pacman-contrib and reflector"
@@ -142,8 +184,10 @@ ok "ssh-agent 用户服务已启用 / ssh-agent service enabled"
 # 提示用户配置环境变量
 echo
 note "提示 / Note"
-note "请在 Fish 中添加环境变量 / Add to Fish:"
-note "set -Ux SSH_AUTH_SOCK \"$XDG_RUNTIME_DIR/ssh-agent.socket\""
+note "SSH Agent 环境变量 / SSH Agent environment variable:"
+note "  Fish: set -Ux SSH_AUTH_SOCK \"\$XDG_RUNTIME_DIR/ssh-agent.socket\""
+note "  Bash: export SSH_AUTH_SOCK=\"\$XDG_RUNTIME_DIR/ssh-agent.socket\""
+note "  Zsh:  export SSH_AUTH_SOCK=\"\$XDG_RUNTIME_DIR/ssh-agent.socket\""
 echo
 
 # rEFInd 引导管理器
