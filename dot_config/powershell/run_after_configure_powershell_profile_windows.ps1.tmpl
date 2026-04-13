@@ -2,34 +2,18 @@
 $ErrorActionPreference = "Stop"
 
 $source = "$HOME\.config\powershell\user_profile.ps1"
-
-# 获取 PowerShell Profile 路径 (AllHosts)
-$docPath = [Environment]::GetFolderPath("MyDocuments")
-$profileDir = Join-Path $docPath "PowerShell"
-$target = Join-Path $profileDir "profile.ps1"
+$target = $PROFILE.CurrentUserAllHosts
 
 if (-not (Test-Path $source)) {
     Write-Warning "Source file not found: $source"
     exit 0
 }
 
-# 确保目录存在
+$profileDir = Split-Path $target -Parent
 if (-not (Test-Path $profileDir)) {
     New-Item -ItemType Directory -Path $profileDir -Force | Out-Null
 }
 
-# 如果目标已存在且不是符号链接，先删除
-if (Test-Path $target) {
-    $item = Get-Item $target -Force
-    if ($item.LinkType -ne "SymbolicLink") {
-        Remove-Item $target -Force
-        Write-Host "Replaced existing profile.ps1 with symlink."
-    } else {
-        Write-Host "Symlink for profile.ps1 already exists."
-        exit 0
-    }
-}
-
-New-Item -ItemType SymbolicLink -Path $target -Target $source | Out-Null
-Write-Host "Created symlink: $target -> $source"
+Copy-Item $source $target -Force
+Write-Host "Copied profile to: $target"
 {{- end -}}
