@@ -70,7 +70,6 @@ $cliTools = @{
     "fd"       = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false }
     "bat"      = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false }
     "eza"      = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false }
-    "nu"       = @{ Desc = "Nushell (现代 Shell / Modern shell)"; Global = $false }
 }
 
 foreach ($package in $cliTools.GetEnumerator()) {
