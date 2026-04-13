@@ -1,5 +1,8 @@
 # Python bytecode cache directories / Python 字节码缓存目录
 __pycache__/
 
+# Ruff cache / Ruff 缓存
+.ruff_cache/
+
 # Local virtual environments / 本地虚拟环境目录
 .venv/
