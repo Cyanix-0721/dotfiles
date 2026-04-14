@@ -318,6 +318,9 @@ cursor {
 
 spawn-at-startup "/usr/lib/polkit-kde-authentication-agent-1"
 spawn-at-startup "qs" "-c" "noctalia-shell"
+spawn-at-startup "wl-clip-persist" "--clipboard" "both"
+spawn-at-startup "sh" "-c" "wl-paste --type text --watch cliphist store"
+spawn-at-startup "sh" "-c" "wl-paste --type image --watch cliphist store"
 
 // If using niri newer than 271534e115e5915231c99df287bbfe396185924d (~aug 17 2025)
 // you can add this to disable built in config load errors since dank shell provides this
@@ -438,7 +441,7 @@ binds {
     Mod+B hotkey-overlay-title="Run an Application: Zen-Browser" { spawn "zen-browser"; }
     Mod+P hotkey-overlay-title="Run an Application: KeePassXC" { spawn "keepassxc"; }
     Mod+M hotkey-overlay-title="Run an TaskManager: btop" { spawn "kitty" "btop"; }
-    Mod+V hotkey-overlay-title="Clipboard" { spawn "sh" "-c" "cliphist list | fuzzel --dmenu | cliphist decode | wl-copy"; }
+    Mod+V hotkey-overlay-title="Clipboard" { spawn "sh" "-c" "cliphist list | fuzzel --dmenu --with-nth 2 | cliphist decode | wl-copy"; }
     Super+Alt+L hotkey-overlay-title="sessionMenu" { spawn "qs" "-c" "noctalia-shell" "ipc" "call" "sessionMenu" "toggle"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
