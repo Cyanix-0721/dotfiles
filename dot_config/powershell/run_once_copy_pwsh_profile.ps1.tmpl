@@ -1,0 +1,37 @@
+{{- $wt := .chezmoi.workingTree -}}
+{{- if eq .chezmoi.os "windows" -}}
+$ErrorActionPreference = "Stop"
+
+$source = Join-Path "{{ $wt }}" "dot_config/powershell/Microsoft.PowerShell_profile.ps1"
+$target = $PROFILE
+
+if (-not (Test-Path $source)) {
+    Write-Warning "Source file not found: $source"
+    exit 0
+}
+
+if (Test-Path $target) {
+    $item = Get-Item $target
+    if ($item.LinkType -eq "SymbolicLink") {
+        Remove-Item $target -Force
+    } else {
+        $targetResolved = (Resolve-Path -LiteralPath $target).Path
+        $sourceResolved = (Resolve-Path -LiteralPath $source).Path
+        if ($targetResolved -eq $sourceResolved) {
+            Write-Host "Source and target are the same, skipping copy"
+            exit 0
+        }
+        Copy-Item $source $target -Force
+        Write-Host "Copied profile to: $target"
+        exit 0
+    }
+}
+
+$targetDir = Split-Path $target -Parent
+if (-not (Test-Path $targetDir)) {
+    New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+}
+
+Copy-Item $source $target -Force
+Write-Host "Copied profile to: $target"
+{{- end -}}
