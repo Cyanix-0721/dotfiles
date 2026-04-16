@@ -1,5 +1,4 @@
 #!/usr/bin/env pwsh
-#Requires -Version 7.0
 
 <#
 .SYNOPSIS
@@ -55,89 +54,6 @@ else {
     catch {
         Write-Warn "更新 winget 源失败（非致命），继续执行后续步骤 / Updating winget sources failed (non-fatal), continuing"
     }
-}
-
-# 检查是否已安装 PowerShell 7
-Write-Step "检查 PowerShell 7 / Checking PowerShell 7"
-if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
-    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-        Write-Err "winget 未安装，无法安装 PowerShell 7，请手动安装 / winget not installed, please install PowerShell manually"
-        exit 1
-    }
-    else {
-        $wingApps = @{ 
-            "Microsoft.PowerShell" = @{ Desc = "PowerShell 7"; InstallArgs = "--exact --source winget" }
-        }
-
-        foreach ($entry in $wingApps.GetEnumerator()) {
-            $appId = $entry.Key
-            $appInfo = $entry.Value
-
-            try {
-                $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
-            }
-            catch {
-                $isInstalled = $null
-            }
-
-            if (-not $isInstalled) {
-                Write-Step "正在通过 winget 安装 $($appInfo.Desc) ($appId)..."
-                winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Ok "$($appInfo.Desc) 安装完成，请重新启动终端并使用 pwsh 运行本脚本 / $($appInfo.Desc) installation completed, please restart terminal and rerun this script with pwsh"
-                }
-                else {
-                    Write-Err "$($appInfo.Desc) 安装失败 / $($appInfo.Desc) installation failed"
-                    exit 1
-                }
-            }
-            else {
-                Write-Ok "$($appInfo.Desc) 已安装 / $($appInfo.Desc) is already installed"
-            }
-        }
-
-        exit
-    }
-}
-else {
-    Write-Ok "PowerShell 7 已安装 / PowerShell 7 is already installed"
-}
-
-# 安装 Windows Terminal
-Write-Step "检查 Windows Terminal / Checking Windows Terminal"
-if (-not (Get-Command wt -ErrorAction SilentlyContinue)) {
-    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-        Write-Warn "winget 未安装，跳过 Windows Terminal 安装 / winget not installed, skipping Windows Terminal installation"
-    }
-    else {
-        $wingApps = @{ 
-            "Microsoft.WindowsTerminal" = @{ Desc = "Windows Terminal"; InstallArgs = "--exact --source winget" }
-        }
-
-        foreach ($entry in $wingApps.GetEnumerator()) {
-            $appId = $entry.Key
-            $appInfo = $entry.Value
-
-            try {
-                $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
-            }
-            catch {
-                $isInstalled = $null
-            }
-
-            if (-not $isInstalled) {
-                Write-Step "正在通过 winget 安装 $($appInfo.Desc) ($appId)..."
-                winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
-                Write-Ok "$appId 安装完成 / $appId installation completed"
-            }
-            else {
-                Write-Ok "$appId 已安装 / $appId is already installed"
-            }
-        }
-    }
-}
-else {
-    Write-Ok "Windows Terminal 已安装 / Windows Terminal is installed"
 }
 
 # 检查并安装 Scoop
@@ -209,6 +125,17 @@ if (-not (Get-Command gsudo -ErrorAction SilentlyContinue)) {
 }
 else {
     Write-Ok "gsudo 已安装 / gsudo is already installed"
+}
+
+# 通过 Scoop 安装 PowerShell 7
+Write-Step "安装 PowerShell 7 / Installing PowerShell 7"
+if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
+    scoop install pwsh
+    Write-Ok "PowerShell 7 安装完成，请重新启动终端并使用 pwsh 运行本脚本 / PowerShell 7 installation completed, please restart terminal and rerun this script with pwsh"
+    exit
+}
+else {
+    Write-Ok "PowerShell 7 已安装 / PowerShell 7 is already installed"
 }
 
 # 安装 Visual C++ 运行库
