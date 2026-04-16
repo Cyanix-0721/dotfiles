@@ -21,9 +21,6 @@ if (Test-Path $target) {
             Write-Host "Source and target are the same, skipping copy"
             exit 0
         }
-        Copy-Item $source $target -Force
-        Write-Host "Copied profile to: $target"
-        exit 0
     }
 }
 
