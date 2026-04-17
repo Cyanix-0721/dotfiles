@@ -57,42 +57,6 @@ foreach ($package in $sysinternalsTools.GetEnumerator()) {
     }
 }
 
-# 命令行增强工具
-Write-Header "命令行增强工具 / Command Line Enhancement Tools"
-
-$cliTools = @{
-    "less"     = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false }
-    "starship" = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false }
-    "zoxide"   = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false }
-    "fzf"      = @{ Desc = "fzf (模糊查找器 / Fuzzy finder)"; Global = $false }
-    "ripgrep"  = @{ Desc = "ripgrep (快速搜索工具 / Fast search tool)"; Global = $false }
-    "fd"       = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false }
-    "bat"      = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false }
-    "eza"      = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false }
-}
-
-foreach ($package in $cliTools.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
-        if ($install -notmatch '^[Nn]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
-
 # 系统信息和监控工具
 Write-Header "系统信息和监控工具 / System Info and Monitoring Tools"
 
@@ -260,12 +224,22 @@ else {
     }
 }
 
-# 终端工具
-Write-Header "终端增强 / Terminal Enhancement"
+# 终端与命令行工具
+Write-Header "终端与命令行工具 / Terminal & CLI Tools"
 
 $termTools = @{
-    "dark"            = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true }
     "wezterm-nightly" = @{ Desc = "WezTerm (GPU 加速终端 / GPU-accelerated terminal)"; Global = $false }
+    "pwsh"           = @{ Desc = "PowerShell 7"; Global = $false }
+    "nu"             = @{ Desc = "Nushell"; Global = $false }
+    "less"           = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false }
+    "starship"       = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false }
+    "zoxide"         = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false }
+    "fzf"            = @{ Desc = "fzf (模糊查找器 / Fuzzy finder)"; Global = $false }
+    "ripgrep"        = @{ Desc = "ripgrep (快速搜索工具 / Fast search tool)"; Global = $false }
+    "fd"             = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false }
+    "bat"            = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false }
+    "eza"            = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false }
+    "dark"           = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true }
 }
 
 foreach ($tool in $termTools.GetEnumerator()) {
@@ -273,8 +247,8 @@ foreach ($tool in $termTools.GetEnumerator()) {
     $toolInfo = $tool.Value
     
     if (-not (scoop list | Select-String -Pattern "^$toolName\s")) {
-        $install = Read-Host "是否安装 $($toolInfo.Desc)？(y/N) / Install $($toolInfo.Desc)? (y/N)"
-        if ($install -match '^[Yy]$') {
+        $install = Read-Host "是否安装 $($toolInfo.Desc)？(Y/n) / Install $($toolInfo.Desc)? (Y/n)"
+        if ($install -notmatch '^[Nn]$') {
             if ($toolInfo.Global) {
                 scoop install $toolName --global
                 Write-Ok "$toolName 安装完成（全局） / $toolName installation completed (global)"

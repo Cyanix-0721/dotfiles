@@ -127,17 +127,6 @@ else {
     Write-Ok "gsudo 已安装 / gsudo is already installed"
 }
 
-# 通过 Scoop 安装 PowerShell 7
-Write-Step "安装 PowerShell 7 / Installing PowerShell 7"
-if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
-    scoop install pwsh
-    Write-Ok "PowerShell 7 安装完成，请重新启动终端并使用 pwsh 运行本脚本 / PowerShell 7 installation completed, please restart terminal and rerun this script with pwsh"
-    exit
-}
-else {
-    Write-Ok "PowerShell 7 已安装 / PowerShell 7 is already installed"
-}
-
 # 安装 Visual C++ 运行库
 Write-Header "Visual C++ 运行库 / Visual C++ Redistributables"
 
