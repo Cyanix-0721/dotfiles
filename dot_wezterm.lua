@@ -2,7 +2,7 @@ local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
 local is_windows = wezterm.target_triple:find('windows') ~= nil
-config.default_prog = is_windows and { 'pwsh' } or { 'fish' }
+config.default_prog = is_windows and { 'nu' } or { 'fish' }
 
 config.color_scheme = 'Tokyo Night'
 
