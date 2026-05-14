@@ -298,7 +298,6 @@ Write-Header "阅读器 / Readers"
 
 $readerApps = @{
     "kavita"     = @{ Desc = "Kavita (漫画/电子书服务器 / Comic/E-book server)"; Global = $false }
-    "mrrss"      = @{ Desc = "MrRSS (RSS 阅读器 / RSS reader)"; Global = $false }
     "sumatrapdf" = @{ Desc = "SumatraPDF (PDF 阅读器 / PDF reader)"; Global = $false }
 }
 
