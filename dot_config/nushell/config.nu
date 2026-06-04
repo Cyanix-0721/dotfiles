@@ -30,10 +30,3 @@ def --env y [...args] {
 
 # vfox initialization
 eval (vfox activate nushell | str trim)
-
-# proxy
-let clash_port = 7897
-
-$env.HTTP_PROXY = $"http://127.0.0.1:($clash_port)"
-$env.HTTPS_PROXY = $"http://127.0.0.1:($clash_port)"
-$env.ALL_PROXY = $"http://127.0.0.1:($clash_port)"
