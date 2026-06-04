@@ -1,0 +1,25 @@
+{{- if eq .chezmoi.os "windows" }}
+Host github.com
+    HostName github.com
+    User git
+    ProxyCommand cmd /c %USERPROFILE%\.local\bin\ssh-proxy-wrapper.cmd %h %p
+
+Host serv00
+    HostName s9.serv00.com
+    User cosmoszero
+    ProxyCommand cmd /c %USERPROFILE%\.local\bin\ssh-proxy-wrapper.cmd %h %p
+{{- else }}
+Host github.com
+    HostName github.com
+    User git
+    ProxyCommand ~/.local/bin/ssh-proxy-wrapper.sh %h %p
+
+Host serv00
+    HostName s9.serv00.com
+    User cosmoszero
+    ProxyCommand ~/.local/bin/ssh-proxy-wrapper.sh %h %p
+{{- end }}
+    
+Host *
+    AddKeysToAgent yes
+    ProxyCommand none
