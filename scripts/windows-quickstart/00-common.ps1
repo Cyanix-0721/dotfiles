@@ -1,4 +1,4 @@
-#!/usr/bin/env pwsh
+﻿#!/usr/bin/env pwsh
 
 # 统一日志输出样式（供其他脚本加载）
 $Script:CommonLoaded = $true

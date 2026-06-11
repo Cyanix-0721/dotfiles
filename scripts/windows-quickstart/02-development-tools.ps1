@@ -1,4 +1,4 @@
-#!/usr/bin/env pwsh
+﻿#!/usr/bin/env pwsh
 
 <#
 .SYNOPSIS
@@ -217,42 +217,40 @@ else {
 
     foreach ($version in $dotnetVersions) {
         $installDotNet = Read-Host "是否安装 .NET $version.0？(y/N) / Install .NET $version.0? (y/N)"
-        if ($installDotNet -match '^[Yy]$') {
-            Write-Step "安装 .NET $version.0 / Installing .NET $version.0"
-            Write-Host "1. 仅运行时 / Runtime only (默认 / default)" -ForegroundColor Yellow
-            Write-Host "2. 仅 SDK / SDK only" -ForegroundColor Yellow
-            Write-Host "3. 运行时 + SDK / Runtime + SDK" -ForegroundColor Yellow
+        if ($installDotNet -notmatch '^[Yy]$') { continue }
 
-            $choice = Read-Host "请输入选项 (1/2/3，默认 1) / Enter option (1/2/3, default 1)"
-            if ([string]::IsNullOrWhiteSpace($choice)) { $choice = "1" }
+        Write-Step "安装 .NET $version.0 / Installing .NET $version.0"
+        Write-Host "1. 仅 SDK (包含运行时) / SDK only (includes runtime) (默认 / default)" -ForegroundColor Yellow
+        Write-Host "2. 仅运行时 / Runtime only" -ForegroundColor Yellow
 
-            $toInstall = @()
-            switch ($choice) {
-                "1" { $toInstall += "Microsoft.DotNet.Runtime.$version" }
-                "2" { $toInstall += "Microsoft.DotNet.SDK.$version" }
-                "3" { $toInstall += "Microsoft.DotNet.Runtime.$version"; $toInstall += "Microsoft.DotNet.SDK.$version" }
-                default { Write-Warn "无效选项，跳过 .NET $version.0 安装 / Invalid option, skipping .NET $version.0 installation" }
+        $choice = Read-Host "请输入选项 (1/2，默认 1) / Enter option (1/2, default 1)"
+        if ([string]::IsNullOrWhiteSpace($choice)) { $choice = "1" }
+
+        $toInstall = @()
+        switch ($choice) {
+            "1" { $toInstall += "Microsoft.DotNet.SDK.$version" }
+            "2" { $toInstall += "Microsoft.DotNet.Runtime.$version" }
+            default { Write-Warn "无效选项，跳过 .NET $version.0 安装 / Invalid option, skipping .NET $version.0 installation" }
+        }
+
+        foreach ($appId in $toInstall) {
+            try {
+                $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
             }
+            catch { $isInstalled = $null }
 
-            foreach ($appId in $toInstall) {
-                try {
-                    $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
-                }
-                catch { $isInstalled = $null }
-
-                if (-not $isInstalled) {
-                    Write-Step "通过 winget 安装 $appId / Installing $appId via winget"
-                    winget install --id $appId --exact --silent --accept-source-agreements --accept-package-agreements
-                    if ($LASTEXITCODE -eq 0) {
-                        Write-Ok "$appId 安装完成 / $appId installation completed"
-                    }
-                    else {
-                        Write-Err "$appId 安装失败 / $appId installation failed"
-                    }
+            if (-not $isInstalled) {
+                Write-Step "通过 winget 安装 $appId / Installing $appId via winget"
+                winget install --id $appId --exact --silent --accept-source-agreements --accept-package-agreements
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Ok "$appId 安装完成 / $appId installation completed"
                 }
                 else {
-                    Write-Ok "$appId 已安装 / $appId is already installed"
+                    Write-Err "$appId 安装失败 / $appId installation failed"
                 }
+            }
+            else {
+                Write-Ok "$appId 已安装 / $appId is already installed"
             }
         }
     }
