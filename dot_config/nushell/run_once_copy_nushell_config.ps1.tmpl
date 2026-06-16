@@ -37,4 +37,15 @@ foreach ($file in $files) {
     Copy-Item $source $target -Force
     Write-Host "Copied $file to: $target"
 }
+
+# 确保 ~/.zoxide.nu 存在（Nushell 的 source 在解析时需要文件存在）
+$zoxideNu = "$env:USERPROFILE\.zoxide.nu"
+if (Get-Command zoxide -ErrorAction SilentlyContinue) {
+    & zoxide init nushell | Set-Content $zoxideNu -Force
+    Write-Host "Generated $zoxideNu from zoxide"
+}
+elseif (-not (Test-Path $zoxideNu)) {
+    Set-Content $zoxideNu -Value "" -Force
+    Write-Host "Created empty placeholder: $zoxideNu"
+}
 {{- end -}}
