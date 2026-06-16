@@ -13,9 +13,11 @@ source-env ($nu.env-path)
 mkdir ($nu.data-dir | path join "vendor/autoload")
 starship init nu | save -f ($nu.data-dir | path join "vendor/autoload/starship.nu")
 
-# zoxide
-zoxide init nushell | save -f ~/.zoxide.nu
-source ~/.zoxide.nu
+# zoxide (only if installed)
+if (which zoxide | is-not-empty) {
+    zoxide init nushell | save -f ~/.zoxide.nu
+    source ~/.zoxide.nu
+}
 
 # yazi
 def --env y [...args] {
