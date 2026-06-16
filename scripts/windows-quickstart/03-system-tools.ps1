@@ -291,7 +291,6 @@ $networkTools = @{
     "scrcpy"     = @{ Desc = "scrcpy (Android 投屏工具 / Android screen mirroring)"; Global = $true }
     "mkcert"     = @{ Desc = "mkcert (本地 HTTPS 证书 / Local HTTPS certificates)"; Global = $false }
     "wireshark"  = @{ Desc = "Wireshark (网络协议分析器 / Network protocol analyzer)"; Global = $false }
-    "proxybrige" = @{ Desc = "ProxyBridge (全局代理工具 / Global proxy tool)"; Global = $false }
 }
 
 foreach ($package in $networkTools.GetEnumerator()) {
