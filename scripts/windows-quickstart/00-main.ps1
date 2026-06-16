@@ -34,6 +34,7 @@ function Invoke-Script {
     )
     
     $scriptName = ""
+    $autoYes = $false
     
     switch ($ScriptNumber) {
         "0" { 
@@ -41,11 +42,22 @@ function Invoke-Script {
             exit 0
         }
         "1" {
+            $autoYesChoice = Read-Host "是否全选 Y（自动确认所有安装）？(Y/n) / Select all Y (auto-confirm all installations)? (Y/n)"
+            if ($autoYesChoice -notmatch '^[Nn]$') {
+                $autoYes = $true
+                Write-Note "自动确认模式已启用 / Auto-yes mode enabled"
+            }
+            
             Write-Step "开始完整配置 / Starting complete setup"
-            $scripts = Get-ChildItem -Path $Script:ScriptDir -Filter "0[1-5]-*.ps1" -Exclude "00-main.ps1" | Sort-Object Name
+            $scripts = Get-ChildItem -Path "$Script:ScriptDir/0[1-5]-*.ps1" -Exclude "*00-main.ps1" | Sort-Object Name
             foreach ($script in $scripts) {
                 Write-Step "执行 $($script.Name) / Executing $($script.Name)"
-                & $script.FullName
+                if ($autoYes) {
+                    & $script.FullName -AutoYes
+                }
+                else {
+                    & $script.FullName
+                }
                 if ($LASTEXITCODE -ne 0 -and $null -ne $LASTEXITCODE) {
                     Write-Warn "脚本 $($script.Name) 执行失败 / Script $($script.Name) execution failed"
                     Read-Host "按回车键继续… / Press Enter to continue…"

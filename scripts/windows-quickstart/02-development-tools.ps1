@@ -9,10 +9,29 @@
     Install common development tools and programming language environments
 #>
 
+param(
+    [switch]$AutoYes
+)
+
 $ErrorActionPreference = "Stop"
 
 # 加载公共函数
 . "$PSScriptRoot/00-common.ps1"
+
+# 初始化自动确认模式
+if ($AutoYes) {
+    Write-Note "自动确认模式已启用 / Auto-yes mode enabled"
+}
+else {
+    $autoYesChoice = Read-Host "是否全选 Y（自动确认所有安装）？(y/N) / Select all Y (auto-confirm all installations)? (y/N)"
+    if ($autoYesChoice -match '^[Yy]$') { $AutoYes = $true }
+}
+
+function Confirm-Install {
+    param([string]$Prompt)
+    if ($AutoYes) { return "Y" }
+    return Read-Host $Prompt
+}
 
 Write-Header "开发工具安装 / Development Tools Installation"
 
@@ -34,7 +53,7 @@ foreach ($package in $editors.GetEnumerator()) {
     $packageInfo = $package.Value
 
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -65,7 +84,7 @@ foreach ($package in $gitTools.GetEnumerator()) {
     $packageInfo = $package.Value
 
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -95,7 +114,7 @@ foreach ($package in $svnTools.GetEnumerator()) {
     $packageInfo = $package.Value
 
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -127,7 +146,7 @@ foreach ($package in $versionManager.GetEnumerator()) {
     $packageInfo = $package.Value
 
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -168,10 +187,10 @@ foreach ($package in $pythonPackageManagers.GetEnumerator()) {
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
         # uv 默认安装，miniconda 默认不安装
         if ($packageInfo.Default) {
-            $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
+            $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
         }
         else {
-            $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
+            $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         }
 
         $shouldInstall = $false
@@ -216,15 +235,20 @@ else {
     $dotnetVersions = @(5, 6, 7, 8, 9, 10)
 
     foreach ($version in $dotnetVersions) {
-        $installDotNet = Read-Host "是否安装 .NET $version.0？(y/N) / Install .NET $version.0? (y/N)"
+        $installDotNet = Confirm-Install "是否安装 .NET $version.0？(y/N) / Install .NET $version.0? (y/N)"
         if ($installDotNet -notmatch '^[Yy]$') { continue }
 
         Write-Step "安装 .NET $version.0 / Installing .NET $version.0"
         Write-Host "1. 仅 SDK (包含运行时) / SDK only (includes runtime) (默认 / default)" -ForegroundColor Yellow
         Write-Host "2. 仅运行时 / Runtime only" -ForegroundColor Yellow
 
-        $choice = Read-Host "请输入选项 (1/2，默认 1) / Enter option (1/2, default 1)"
-        if ([string]::IsNullOrWhiteSpace($choice)) { $choice = "1" }
+        if ($AutoYes) {
+            $choice = "1"
+        }
+        else {
+            $choice = Read-Host "请输入选项 (1/2，默认 1) / Enter option (1/2, default 1)"
+            if ([string]::IsNullOrWhiteSpace($choice)) { $choice = "1" }
+        }
 
         $toInstall = @()
         switch ($choice) {
@@ -269,7 +293,7 @@ foreach ($package in $apiTools.GetEnumerator()) {
     $packageInfo = $package.Value
 
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -301,7 +325,7 @@ foreach ($package in $devTools.GetEnumerator()) {
     $packageInfo = $package.Value
 
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -326,7 +350,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 }
 else {
     $wingApps = @{
-        "Docker.DockerDesktop" = @{ Desc = "Docker Desktop"; InstallArgs = "--exact --silent" }
+        "Docker.DockerDesktop" = @{ Desc = "Docker Desktop"; InstallArgs = @("--exact", "--silent") }
     }
 
     foreach ($entry in $wingApps.GetEnumerator()) {
@@ -341,10 +365,10 @@ else {
         }
 
         if (-not $isInstalled) {
-            $installDocker = Read-Host "是否安装 $($appInfo.Desc)？(Y/n) / Install $($appInfo.Desc)? (Y/n)"
+            $installDocker = Confirm-Install "是否安装 $($appInfo.Desc)？(Y/n) / Install $($appInfo.Desc)? (Y/n)"
             if ($installDocker -notmatch '^[Nn]$') {
                 Write-Step "安装 $($appInfo.Desc) / Installing $($appInfo.Desc)"
-                winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
+                winget install --id $appId @($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
                 if ($LASTEXITCODE -eq 0) {
                     Write-Ok "$appId 安装完成 / $appId installation completed"
                 }

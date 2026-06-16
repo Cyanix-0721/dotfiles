@@ -9,10 +9,29 @@
     Install daily use applications
 #>
 
+param(
+    [switch]$AutoYes
+)
+
 $ErrorActionPreference = "Stop"
 
 # 加载公共函数
 . "$PSScriptRoot/00-common.ps1"
+
+# 初始化自动确认模式
+if ($AutoYes) {
+    Write-Note "自动确认模式已启用 / Auto-yes mode enabled"
+}
+else {
+    $autoYesChoice = Read-Host "是否全选 Y（自动确认所有安装）？(y/N) / Select all Y (auto-confirm all installations)? (y/N)"
+    if ($autoYesChoice -match '^[Yy]$') { $AutoYes = $true }
+}
+
+function Confirm-Install {
+    param([string]$Prompt)
+    if ($AutoYes) { return "Y" }
+    return Read-Host $Prompt
+}
 
 Write-Header "必备软件包安装 / Essential Applications Installation"
 
@@ -34,7 +53,7 @@ foreach ($package in $browsers.GetEnumerator()) {
     $packageInfo = $package.Value
     
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -66,7 +85,7 @@ foreach ($package in $productivityApps.GetEnumerator()) {
     $packageInfo = $package.Value
     
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -95,7 +114,7 @@ foreach ($package in $passwordManagers.GetEnumerator()) {
     $packageInfo = $package.Value
     
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -124,7 +143,7 @@ foreach ($package in $emailClients.GetEnumerator()) {
     $packageInfo = $package.Value
     
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -154,7 +173,7 @@ foreach ($package in $commApps.GetEnumerator()) {
     $packageInfo = $package.Value
     
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -186,7 +205,7 @@ foreach ($package in $syncApps.GetEnumerator()) {
     $packageInfo = $package.Value
     
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -215,7 +234,7 @@ foreach ($package in $remoteApps.GetEnumerator()) {
     $packageInfo = $package.Value
     
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -244,7 +263,7 @@ foreach ($package in $downloadApps.GetEnumerator()) {
     $packageInfo = $package.Value
     
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -276,7 +295,7 @@ foreach ($package in $multimediaTools.GetEnumerator()) {
     $packageInfo = $package.Value
     
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -306,7 +325,7 @@ foreach ($package in $readerApps.GetEnumerator()) {
     $packageInfo = $package.Value
     
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
         if ($install -match '^[Yy]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -336,7 +355,7 @@ foreach ($package in $fonts.GetEnumerator()) {
     $packageInfo = $package.Value
     
     if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Read-Host "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
+        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
         if ($install -notmatch '^[Nn]$') {
             if ($packageInfo.Global) {
                 scoop install $packageName --global
@@ -361,9 +380,9 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 }
 else {
     $wingApps = @{ 
-        "Valve.Steam"                 = @{ Desc = "Steam (游戏平台 / Steam)"; InstallArgs = "--exact --silent" }
-        "EpicGames.EpicGamesLauncher" = @{ Desc = "Epic Games Launcher"; InstallArgs = "--exact --silent" }
-        "GOG.Galaxy"                  = @{ Desc = "GOG Galaxy"; InstallArgs = "--exact --silent" }
+        "Valve.Steam"                 = @{ Desc = "Steam (游戏平台 / Steam)"; InstallArgs = @("--exact", "--silent") }
+        "EpicGames.EpicGamesLauncher" = @{ Desc = "Epic Games Launcher"; InstallArgs = @("--exact", "--silent") }
+        "GOG.Galaxy"                  = @{ Desc = "GOG Galaxy"; InstallArgs = @("--exact", "--silent") }
     }
 
     foreach ($entry in $wingApps.GetEnumerator()) {
@@ -379,7 +398,7 @@ else {
 
         if (-not $isInstalled) {
             Write-Step "通过 winget 安装 $($appInfo.Desc) ($appId)"
-            winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
+            winget install --id $appId @($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
             if ($LASTEXITCODE -eq 0) {
                 Write-Ok "$appId 安装完成 / $appId installation completed"
             }

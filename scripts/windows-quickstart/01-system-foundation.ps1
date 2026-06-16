@@ -9,10 +9,29 @@
     Install and configure Scoop package manager and basic development tools
 #>
 
+param(
+    [switch]$AutoYes
+)
+
 $ErrorActionPreference = "Stop"
 
 # 加载公共函数
 . "$PSScriptRoot/00-common.ps1"
+
+# 初始化自动确认模式
+if ($AutoYes) {
+    Write-Note "自动确认模式已启用 / Auto-yes mode enabled"
+}
+else {
+    $autoYesChoice = Read-Host "是否全选 Y（自动确认所有安装）？(y/N) / Select all Y (auto-confirm all installations)? (y/N)"
+    if ($autoYesChoice -match '^[Yy]$') { $AutoYes = $true }
+}
+
+function Confirm-Install {
+    param([string]$Prompt)
+    if ($AutoYes) { return "Y" }
+    return Read-Host $Prompt
+}
 
 Write-Header "系统基础环境配置 / System Foundation Setup"
 
@@ -22,7 +41,7 @@ Write-Step "更新 winget 源 / Updating winget sources"
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过更新 / winget not installed, skipping source update"
 
-    $openChoice = Read-Host "是否打开安装页面以安装 winget？1) Microsoft Store（推荐） 2) GitHub Releases（下载）；输入 1/2，回车跳过 / Open install page? 1) MS Store (recommended) 2) GitHub Releases (download); enter to skip"
+    $openChoice = Confirm-Install "是否打开安装页面以安装 winget？1) Microsoft Store（推荐） 2) GitHub Releases（下载）；输入 1/2，回车跳过 / Open install page? 1) MS Store (recommended) 2) GitHub Releases (download); enter to skip"
     switch ($openChoice) {
         '1' {
             try {
@@ -130,25 +149,25 @@ else {
 # 安装 Visual C++ 运行库
 Write-Header "Visual C++ 运行库 / Visual C++ Redistributables"
 
-$installVCRedist = Read-Host "是否安装 Visual C++ 2005-2022 运行库？(Y/n) / Install Visual C++ 2005-2022 Redistributables? (Y/n)"
+$installVCRedist = Confirm-Install "是否安装 Visual C++ 2005-2022 运行库？(Y/n) / Install Visual C++ 2005-2022 Redistributables? (Y/n)"
 if ($installVCRedist -notmatch '^[Nn]$') {
     if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         Write-Warn "winget 未安装，跳过 Visual C++ 运行库安装 / winget not installed, skipping Visual C++ installation"
     }
     else {
         $wingApps = @{ 
-            "Microsoft.VCRedist.2005.x64"  = @{ Name = "VC++ 2005 x64"; InstallArgs = "--exact --silent" }
-            "Microsoft.VCRedist.2005.x86"  = @{ Name = "VC++ 2005 x86"; InstallArgs = "--exact --silent" }
-            "Microsoft.VCRedist.2008.x64"  = @{ Name = "VC++ 2008 x64"; InstallArgs = "--exact --silent" }
-            "Microsoft.VCRedist.2008.x86"  = @{ Name = "VC++ 2008 x86"; InstallArgs = "--exact --silent" }
-            "Microsoft.VCRedist.2010.x64"  = @{ Name = "VC++ 2010 x64"; InstallArgs = "--exact --silent" }
-            "Microsoft.VCRedist.2010.x86"  = @{ Name = "VC++ 2010 x86"; InstallArgs = "--exact --silent" }
-            "Microsoft.VCRedist.2012.x64"  = @{ Name = "VC++ 2012 x64"; InstallArgs = "--exact --silent" }
-            "Microsoft.VCRedist.2012.x86"  = @{ Name = "VC++ 2012 x86"; InstallArgs = "--exact --silent" }
-            "Microsoft.VCRedist.2013.x64"  = @{ Name = "VC++ 2013 x64"; InstallArgs = "--exact --silent" }
-            "Microsoft.VCRedist.2013.x86"  = @{ Name = "VC++ 2013 x86"; InstallArgs = "--exact --silent" }
-            "Microsoft.VCRedist.2015+.x64" = @{ Name = "VC++ 2015-2022 x64"; InstallArgs = "--exact --silent" }
-            "Microsoft.VCRedist.2015+.x86" = @{ Name = "VC++ 2015-2022 x86"; InstallArgs = "--exact --silent" }
+            "Microsoft.VCRedist.2005.x64"  = @{ Name = "VC++ 2005 x64"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2005.x86"  = @{ Name = "VC++ 2005 x86"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2008.x64"  = @{ Name = "VC++ 2008 x64"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2008.x86"  = @{ Name = "VC++ 2008 x86"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2010.x64"  = @{ Name = "VC++ 2010 x64"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2010.x86"  = @{ Name = "VC++ 2010 x86"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2012.x64"  = @{ Name = "VC++ 2012 x64"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2012.x86"  = @{ Name = "VC++ 2012 x86"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2013.x64"  = @{ Name = "VC++ 2013 x64"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2013.x86"  = @{ Name = "VC++ 2013 x86"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2015+.x64" = @{ Name = "VC++ 2015-2022 x64"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2015+.x86" = @{ Name = "VC++ 2015-2022 x86"; InstallArgs = @("--exact", "--silent") }
         }
         
         Write-Step "正在安装 Visual C++ 运行库... / Installing Visual C++ Redistributables..."
@@ -166,7 +185,7 @@ if ($installVCRedist -notmatch '^[Nn]$') {
 
             if (-not $isInstalled) {
                 Write-Step "安装 $($appInfo.Name) / Installing $($appInfo.Name)..."
-                winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
+                winget install --id $appId @($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
                 if ($LASTEXITCODE -eq 0) {
                     Write-Ok "$($appInfo.Name) 安装完成 / $($appInfo.Name) installation completed"
                 }
@@ -191,7 +210,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 }
 else {
     $wingApps = @{ 
-        "Microsoft.EdgeWebView2Runtime" = @{ Desc = "WebView2 Runtime"; InstallArgs = "--exact --silent" }
+        "Microsoft.EdgeWebView2Runtime" = @{ Desc = "WebView2 Runtime"; InstallArgs = @("--exact", "--silent") }
     }
 
     foreach ($entry in $wingApps.GetEnumerator()) {
@@ -207,7 +226,7 @@ else {
 
         if (-not $isInstalled) {
             Write-Step "安装 $($appInfo.Desc) / Installing $($appInfo.Desc)..."
-            winget install --id $appId $($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
+            winget install --id $appId @($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
             if ($LASTEXITCODE -eq 0) {
                 Write-Ok "$($appInfo.Desc) 安装完成 / $($appInfo.Desc) installation completed"
             }
@@ -224,12 +243,12 @@ else {
 # 安装 Chezmoi 配置管理工具
 Write-Header "Chezmoi 配置管理工具 / Chezmoi Configuration Management Tool"
 if (-not (Get-Command chezmoi -ErrorAction SilentlyContinue)) {
-    $installChezmoi = Read-Host "是否安装 Chezmoi？(Y/n) / Install Chezmoi? (Y/n)"
+    $installChezmoi = Confirm-Install "是否安装 Chezmoi？(Y/n) / Install Chezmoi? (Y/n)"
     if ($installChezmoi -notmatch '^[Nn]$') {
         scoop install chezmoi
         Write-Ok "Chezmoi 安装完成 / Chezmoi installation completed"
         
-        $initChezmoi = Read-Host "是否初始化 dotfiles 配置？(Y/n) / Initialize dotfiles configuration? (Y/n)"
+        $initChezmoi = Confirm-Install "是否初始化 dotfiles 配置？(Y/n) / Initialize dotfiles configuration? (Y/n)"
         if ($initChezmoi -notmatch '^[Nn]$') {
             chezmoi init https://github.com/Cyanix-0721/dotfiles.git --apply
             Write-Ok "dotfiles 配置初始化完成 / dotfiles configuration initialized"
