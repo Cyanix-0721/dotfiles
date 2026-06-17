@@ -2,12 +2,12 @@
 Host github.com
     HostName github.com
     User git
-    ProxyCommand cmd /c %USERPROFILE%\.local\bin\ssh-proxy-wrapper.cmd %h %p
+    ProxyCommand cmd /c %%USERPROFILE%%\.local\bin\ssh-proxy-wrapper.cmd %h %p
 
 Host serv00
     HostName s9.serv00.com
     User cosmoszero
-    ProxyCommand cmd /c %USERPROFILE%\.local\bin\ssh-proxy-wrapper.cmd %h %p
+    ProxyCommand cmd /c %%USERPROFILE%%\.local\bin\ssh-proxy-wrapper.cmd %h %p
 {{- else }}
 Host github.com
     HostName github.com
