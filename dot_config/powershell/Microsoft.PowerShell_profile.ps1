@@ -26,3 +26,34 @@ If (Test-Path "C:\Users\Administrator\scoop\apps\miniconda3\current\Scripts\cond
 }
 #endregion
 
+# ---------------------------------------------------------------------------
+# Auto-switch Python: vfox (global) vs conda (d:\work)
+# When entering d:\work, activate conda base to use miniconda's Python.
+# When leaving d:\work, deactivate conda to restore vfox-managed Python.
+# ---------------------------------------------------------------------------
+$script:PythonEnvLastDir = $null
+
+# Save original prompt (set by starship) and wrap it
+$script:OriginalPrompt = $function:prompt
+function prompt {
+    $dir = (Get-Location).Path
+    if ($dir -ne $script:PythonEnvLastDir) {
+        $script:PythonEnvLastDir = $dir
+        if ($dir -like "D:\work*") {
+            # Entering d:\work → use conda
+            conda activate base 2>$null
+        } else {
+            # Leaving d:\work → restore vfox
+            if (Test-Path env:CONDA_DEFAULT_ENV) {
+                conda deactivate 2>$null
+            }
+        }
+    }
+    & $script:OriginalPrompt
+}
+
+# Apply on profile load
+if ((Get-Location).Path -like "D:\work*") {
+    conda activate base 2>$null
+}
+

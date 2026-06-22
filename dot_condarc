@@ -1,5 +1,7 @@
 channels:
-  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
   - defaults
 show_channel_urls: true
 auto_activate: false
+proxy_servers:
+  http: http://127.0.0.1:7897
+  https: http://127.0.0.1:7897

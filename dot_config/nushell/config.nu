@@ -30,5 +30,9 @@ def --env y [...args] {
 	rm -fp $tmp
 }
 
-# vfox initialization
-eval (vfox activate nushell | str trim)
+# vfox configuration
+const vfox_script = ($nu.default-config-dir | path join "vfox.nu")
+source $vfox_script
+
+# Fix deprecated `get -i` → `get -o` in auto-generated vfox.nu (deprecated since 0.106)
+try { open $vfox_script | str replace 'get -i hooks.pre_prompt' 'get -o hooks.pre_prompt' | save -f $vfox_script }
