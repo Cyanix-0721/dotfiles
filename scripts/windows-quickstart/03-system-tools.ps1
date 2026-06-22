@@ -145,7 +145,7 @@ Write-Header "压缩工具 / Compression Tools"
 
 $compressionTools = @{
     "7zip"    = @{ Desc = "7zip (压缩/解压工具 / Archive utility)"; Global = $true }
-    "peazip"   = @{ Desc = "PeaZip (压缩/解压工具 / Archive utility)"; Global = $false }
+    "peazip"   = @{ Desc = "PeaZip (压缩/解压工具 / Archive utility)"; Global = $true }
     "innounp" = @{ Desc = "innounp (Inno Setup 解包工具 / Inno Setup unpacker)"; Global = $true }
 }
 
