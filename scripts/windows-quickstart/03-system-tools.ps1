@@ -145,6 +145,7 @@ Write-Header "压缩工具 / Compression Tools"
 
 $compressionTools = @{
     "7zip"    = @{ Desc = "7zip (压缩/解压工具 / Archive utility)"; Global = $true }
+    "peazip"   = @{ Desc = "PeaZip (压缩/解压工具 / Archive utility)"; Global = $false }
     "innounp" = @{ Desc = "innounp (Inno Setup 解包工具 / Inno Setup unpacker)"; Global = $true }
 }
 
@@ -176,7 +177,7 @@ Write-Header "Windows 增强工具 / Windows Enhancement Tools"
 $winTools = @{
     "powertoys"      = @{ Desc = "PowerToys (微软官方工具集 / Microsoft official utilities)"; Global = $false }
     "everything"     = @{ Desc = "Everything (快速文件搜索 / Fast file search)"; Global = $false }
-    "listary"        = @{ Desc = "Listary (文件搜索和启动器 / File search and launcher)"; Global = $false }
+    "flow-launcher"  = @{ Desc = "Flow Launcher (文件搜索和启动器 / File search and launcher)"; Global = $false }
     "krokiet"        = @{ Desc = "Krokiet (图片查重工具 / picture duplicate finder)"; Global = $false }
     "ventoy"         = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $false }
     "rufus"          = @{ Desc = "Rufus (USB 启动盘制作工具 / USB bootable creator)"; Global = $false }
@@ -248,17 +249,16 @@ Write-Header "终端与命令行工具 / Terminal & CLI Tools"
 
 $termTools = @{
     "wezterm-nightly" = @{ Desc = "WezTerm (GPU 加速终端 / GPU-accelerated terminal)"; Global = $false }
-    "pwsh"           = @{ Desc = "PowerShell 7"; Global = $false }
-    "nu"             = @{ Desc = "Nushell"; Global = $false }
-    "less"           = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false }
-    "starship"       = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false }
-    "zoxide"         = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false }
-    "fzf"            = @{ Desc = "fzf (模糊查找器 / Fuzzy finder)"; Global = $false }
-    "ripgrep"        = @{ Desc = "ripgrep (快速搜索工具 / Fast search tool)"; Global = $false }
-    "fd"             = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false }
-    "bat"            = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false }
-    "eza"            = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false }
-    "dark"           = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true }
+    "nu"              = @{ Desc = "Nushell"; Global = $false }
+    "less"            = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false }
+    "starship"        = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false }
+    "zoxide"          = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false }
+    "fzf"             = @{ Desc = "fzf (模糊查找器 / Fuzzy finder)"; Global = $false }
+    "ripgrep"         = @{ Desc = "ripgrep (快速搜索工具 / Fast search tool)"; Global = $false }
+    "fd"              = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false }
+    "bat"             = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false }
+    "eza"             = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false }
+    "dark"            = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true }
 }
 
 foreach ($tool in $termTools.GetEnumerator()) {
@@ -287,10 +287,10 @@ foreach ($tool in $termTools.GetEnumerator()) {
 Write-Header "网络工具 / Network Tools"
 
 $networkTools = @{
-    "nmap"       = @{ Desc = "nmap (网络扫描工具，含 ncat / Network scanner, includes ncat)"; Global = $false }
-    "scrcpy"     = @{ Desc = "scrcpy (Android 投屏工具 / Android screen mirroring)"; Global = $true }
-    "mkcert"     = @{ Desc = "mkcert (本地 HTTPS 证书 / Local HTTPS certificates)"; Global = $false }
-    "wireshark"  = @{ Desc = "Wireshark (网络协议分析器 / Network protocol analyzer)"; Global = $false }
+    "nmap"      = @{ Desc = "nmap (网络扫描工具，含 ncat / Network scanner, includes ncat)"; Global = $false }
+    "scrcpy"    = @{ Desc = "scrcpy (Android 投屏工具 / Android screen mirroring)"; Global = $true }
+    "mkcert"    = @{ Desc = "mkcert (本地 HTTPS 证书 / Local HTTPS certificates)"; Global = $false }
+    "wireshark" = @{ Desc = "Wireshark (网络协议分析器 / Network protocol analyzer)"; Global = $false }
 }
 
 foreach ($package in $networkTools.GetEnumerator()) {
