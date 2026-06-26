@@ -178,6 +178,7 @@ $winTools = @{
     "powertoys"      = @{ Desc = "PowerToys (微软官方工具集 / Microsoft official utilities)"; Global = $false }
     "everything"     = @{ Desc = "Everything (快速文件搜索 / Fast file search)"; Global = $false }
     "fancontrol"     = @{ Desc = "FanControl (风扇控制工具 / Fan control utility)"; Global = $false }
+    "hwinfo"         = @{ Desc = "HWiNFO (系统信息与诊断工具 / System information and diagnostics)"; Global = $false }
     "flow-launcher"  = @{ Desc = "Flow Launcher (文件搜索和启动器 / File search and launcher)"; Global = $false }
     "krokiet"        = @{ Desc = "Krokiet (图片查重工具 / picture duplicate finder)"; Global = $false }
     "ventoy"         = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $false }
