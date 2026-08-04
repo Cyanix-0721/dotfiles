@@ -19,19 +19,7 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot/00-common.ps1"
 
 # 初始化自动确认模式
-if ($AutoYes) {
-    Write-Note "自动确认模式已启用 / Auto-yes mode enabled"
-}
-else {
-    $autoYesChoice = Read-Host "是否全选 Y（自动确认所有安装）？(y/N) / Select all Y (auto-confirm all installations)? (y/N)"
-    if ($autoYesChoice -match '^[Yy]$') { $AutoYes = $true }
-}
-
-function Confirm-Install {
-    param([string]$Prompt)
-    if ($AutoYes) { return "Y" }
-    return Read-Host $Prompt
-}
+Initialize-AutoYes
 
 Write-Header "系统基础环境配置 / System Foundation Setup"
 
@@ -108,7 +96,7 @@ else {
 
 # 安装 Aria2（加速下载）
 Write-Step "配置 Aria2 下载加速 / Configuring Aria2 for faster downloads"
-if (-not (scoop list | Select-String -Pattern "aria2")) {
+if (-not (Test-ScoopInstalled "aria2")) {
     scoop install aria2
     scoop config aria2-enabled true
     scoop config aria2-warning-enabled false
@@ -123,9 +111,9 @@ Write-Step "添加 Scoop buckets / Adding Scoop buckets"
 
 $buckets = @("extras", "versions", "nerd-fonts", "sysinternals")
 
+$bucketList = scoop bucket list
+
 foreach ($bucketName in $buckets) {
-    $bucketList = scoop bucket list
-    
     if ($bucketList -match $bucketName) {
         Write-Ok "Bucket '$bucketName' 已添加 / Bucket '$bucketName' already added"
     }
@@ -156,47 +144,22 @@ if ($installVCRedist -notmatch '^[Nn]$') {
     }
     else {
         $wingApps = @{ 
-            "Microsoft.VCRedist.2005.x64"  = @{ Name = "VC++ 2005 x64"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2005.x86"  = @{ Name = "VC++ 2005 x86"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2008.x64"  = @{ Name = "VC++ 2008 x64"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2008.x86"  = @{ Name = "VC++ 2008 x86"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2010.x64"  = @{ Name = "VC++ 2010 x64"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2010.x86"  = @{ Name = "VC++ 2010 x86"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2012.x64"  = @{ Name = "VC++ 2012 x64"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2012.x86"  = @{ Name = "VC++ 2012 x86"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2013.x64"  = @{ Name = "VC++ 2013 x64"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2013.x86"  = @{ Name = "VC++ 2013 x86"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2015+.x64" = @{ Name = "VC++ 2015-2022 x64"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2015+.x86" = @{ Name = "VC++ 2015-2022 x86"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2005.x64"  = @{ Desc = "VC++ 2005 x64"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2005.x86"  = @{ Desc = "VC++ 2005 x86"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2008.x64"  = @{ Desc = "VC++ 2008 x64"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2008.x86"  = @{ Desc = "VC++ 2008 x86"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2010.x64"  = @{ Desc = "VC++ 2010 x64"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2010.x86"  = @{ Desc = "VC++ 2010 x86"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2012.x64"  = @{ Desc = "VC++ 2012 x64"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2012.x86"  = @{ Desc = "VC++ 2012 x86"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2013.x64"  = @{ Desc = "VC++ 2013 x64"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2013.x86"  = @{ Desc = "VC++ 2013 x86"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2015+.x64" = @{ Desc = "VC++ 2015-2022 x64"; InstallArgs = @("--exact", "--silent") }
+            "Microsoft.VCRedist.2015+.x86" = @{ Desc = "VC++ 2015-2022 x86"; InstallArgs = @("--exact", "--silent") }
         }
         
         Write-Step "正在安装 Visual C++ 运行库... / Installing Visual C++ Redistributables..."
-        
-        foreach ($entry in $wingApps.GetEnumerator()) {
-            $appId = $entry.Key
-            $appInfo = $entry.Value
-
-            try {
-                $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
-            }
-            catch {
-                $isInstalled = $null
-            }
-
-            if (-not $isInstalled) {
-                Write-Step "安装 $($appInfo.Name) / Installing $($appInfo.Name)..."
-                winget install --id $appId @($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Ok "$($appInfo.Name) 安装完成 / $($appInfo.Name) installation completed"
-                }
-                else {
-                    Write-Err "$($appInfo.Name) 安装失败 / $($appInfo.Name) installation failed"
-                }
-            }
-            else {
-                Write-Ok "$($appInfo.Name) 已安装 / $($appInfo.Name) is already installed"
-            }
-        }
+        Install-WingetApps $wingApps -Force
         
         Write-Ok "Visual C++ 运行库安装完成 / Visual C++ Redistributables installation completed"
     }
@@ -212,32 +175,7 @@ else {
     $wingApps = @{ 
         "Microsoft.EdgeWebView2Runtime" = @{ Desc = "WebView2 Runtime"; InstallArgs = @("--exact", "--silent") }
     }
-
-    foreach ($entry in $wingApps.GetEnumerator()) {
-        $appId = $entry.Key
-        $appInfo = $entry.Value
-
-        try {
-            $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
-        }
-        catch {
-            $isInstalled = $null
-        }
-
-        if (-not $isInstalled) {
-            Write-Step "安装 $($appInfo.Desc) / Installing $($appInfo.Desc)..."
-            winget install --id $appId @($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
-            if ($LASTEXITCODE -eq 0) {
-                Write-Ok "$($appInfo.Desc) 安装完成 / $($appInfo.Desc) installation completed"
-            }
-            else {
-                Write-Err "$($appInfo.Desc) 安装失败 / $($appInfo.Desc) installation failed"
-            }
-        }
-        else {
-            Write-Ok "$($appInfo.Desc) 已安装 / $($appInfo.Desc) is already installed"
-        }
-    }
+    Install-WingetApps $wingApps -Force
 }
 
 # 安装 Chezmoi 配置管理工具

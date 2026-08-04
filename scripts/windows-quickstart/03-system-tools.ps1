@@ -19,199 +19,82 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot/00-common.ps1"
 
 # 初始化自动确认模式
-if ($AutoYes) {
-    Write-Note "自动确认模式已启用 / Auto-yes mode enabled"
-}
-else {
-    $autoYesChoice = Read-Host "是否全选 Y（自动确认所有安装）？(y/N) / Select all Y (auto-confirm all installations)? (y/N)"
-    if ($autoYesChoice -match '^[Yy]$') { $AutoYes = $true }
-}
-
-function Confirm-Install {
-    param([string]$Prompt)
-    if ($AutoYes) { return "Y" }
-    return Read-Host $Prompt
-}
+Initialize-AutoYes
 
 Write-Header "系统工具安装 / System Tools Installation"
 
 # 检查 Scoop
 if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
     Write-Err "Scoop 未安装，请先运行系统基础环境配置脚本 / Scoop not installed, please run the system foundation setup script first"
-    exit 1
+    throw "Scoop 未安装 / Scoop not installed"
 }
 
 # Sysinternals 工具集
 Write-Header "Sysinternals 工具集 / Sysinternals Suite"
 
 $sysinternalsTools = @{
-    "sysmon"           = @{ Desc = "Sysmon (系统监视器 / System Monitor)"; Global = $true }
-    "handle"           = @{ Desc = "Handle (句柄查看工具 / View open handles)"; Global = $true }
-    "autoruns"         = @{ Desc = "Autoruns (启动项管理工具 / Startup manager)"; Global = $true }
-    "process-explorer" = @{ Desc = "Process Explorer (高级任务管理器 / Advanced Task Manager)"; Global = $true }
-    "procmon"          = @{ Desc = "Process Monitor (文件/注册表监视 / File & Registry monitor)"; Global = $true }
-    "tcpview"          = @{ Desc = "TCPView (网络连接查看 / TCP/UDP connection viewer)"; Global = $true }
-    "sigcheck"         = @{ Desc = "Sigcheck (文件签名检查 / File signature checker)"; Global = $true }
+    "sysmon"           = @{ Desc = "Sysmon (系统监视器 / System Monitor)"; Global = $true; Default = $true }
+    "handle"           = @{ Desc = "Handle (句柄查看工具 / View open handles)"; Global = $true; Default = $true }
+    "autoruns"         = @{ Desc = "Autoruns (启动项管理工具 / Startup manager)"; Global = $true; Default = $true }
+    "process-explorer" = @{ Desc = "Process Explorer (高级任务管理器 / Advanced Task Manager)"; Global = $true; Default = $true }
+    "procmon"          = @{ Desc = "Process Monitor (文件/注册表监视 / File & Registry monitor)"; Global = $true; Default = $true }
+    "tcpview"          = @{ Desc = "TCPView (网络连接查看 / TCP/UDP connection viewer)"; Global = $true; Default = $true }
+    "sigcheck"         = @{ Desc = "Sigcheck (文件签名检查 / File signature checker)"; Global = $true; Default = $true }
 }
 
-foreach ($package in $sysinternalsTools.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
-        if ($install -notmatch '^[Nn]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $sysinternalsTools
 
 # 系统信息和监控工具
 Write-Header "系统信息和监控工具 / System Info and Monitoring Tools"
 
 $monitorTools = @{
-    "fastfetch"      = @{ Desc = "fastfetch (系统信息显示 / System information display)"; Global = $false }
-    "trafficmonitor" = @{ Desc = "TrafficMonitor (网速监控悬浮窗 / Network traffic monitor)"; Global = $false }
+    "fastfetch"      = @{ Desc = "fastfetch (系统信息显示 / System information display)"; Global = $false; Default = $true }
+    "trafficmonitor" = @{ Desc = "TrafficMonitor (网速监控悬浮窗 / Network traffic monitor)"; Global = $false; Default = $true }
 }
 
-foreach ($package in $monitorTools.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
-        if ($install -notmatch '^[Nn]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $monitorTools
 
 # 文件管理器
 Write-Header "文件管理器 / File Managers"
 
 $fileManagers = @{
-    "yazi" = @{ Desc = "Yazi (终端文件管理器 / Terminal file manager)"; Global = $false }
+    "yazi" = @{ Desc = "Yazi (终端文件管理器 / Terminal file manager)"; Global = $false; Default = $true; PostNote = @("提示：Yazi 会自动安装以下依赖：imagemagick, poppler, resvg / Note: Yazi auto-installs deps: imagemagick, poppler, resvg") }
 }
 
-foreach ($package in $fileManagers.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
-        if ($install -notmatch '^[Nn]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-            
-            # Yazi 会自动触发依赖安装
-            if ($packageName -eq "yazi") {
-                Write-Note "提示：Yazi 会自动安装以下依赖：imagemagick, poppler, resvg"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $fileManagers
 
 # 压缩工具
 Write-Header "压缩工具 / Compression Tools"
 
 $compressionTools = @{
-    "7zip"    = @{ Desc = "7zip (压缩/解压工具 / Archive utility)"; Global = $false }
-    "peazip"  = @{ Desc = "PeaZip (压缩/解压工具 / Archive utility)"; Global = $false }
-    "innounp" = @{ Desc = "innounp (Inno Setup 解包工具 / Inno Setup unpacker)"; Global = $true }
+    "7zip"    = @{ Desc = "7zip (压缩/解压工具 / Archive utility)"; Global = $false; Default = $true }
+    "peazip"  = @{ Desc = "PeaZip (压缩/解压工具 / Archive utility)"; Global = $false; Default = $true }
+    "innounp" = @{ Desc = "innounp (Inno Setup 解包工具 / Inno Setup unpacker)"; Global = $true; Default = $true }
 }
 
-foreach ($entry in $compressionTools.GetEnumerator()) {
-    $toolName = $entry.Key
-    $toolInfo = $entry.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$toolName\s")) {
-        $install = Confirm-Install "是否安装 $($toolInfo.Desc)？(Y/n) / Install $($toolInfo.Desc)? (Y/n)"
-        if ($install -notmatch '^[Nn]$') {
-            if ($toolInfo.Global) {
-                scoop install $toolName --global
-                Write-Ok "$toolName 安装完成（全局） / $toolName installation completed (global)"
-            }
-            else {
-                scoop install $toolName
-                Write-Ok "$toolName 安装完成 / $toolName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$toolName 已安装 / $toolName is already installed"
-    }
-}
+Install-ScoopPackages $compressionTools
 
 # Windows 增强工具
 Write-Header "Windows 增强工具 / Windows Enhancement Tools"
 
 $winTools = @{
-    "powertoys"       = @{ Desc = "PowerToys (微软官方工具集 / Microsoft official utilities)"; Global = $false }
-    "everything-beta" = @{ Desc = "Everything (快速文件搜索 / Fast file search)"; Global = $false }
-    "fancontrol"      = @{ Desc = "FanControl (风扇控制工具 / Fan control utility)"; Global = $false }
-    "hwinfo"          = @{ Desc = "HWiNFO (系统信息与诊断工具 / System information and diagnostics)"; Global = $false }
-    "flow-launcher"   = @{ Desc = "Flow Launcher (文件搜索和启动器 / File search and launcher)"; Global = $false }
-    "krokiet"         = @{ Desc = "Krokiet (图片查重工具 / picture duplicate finder)"; Global = $false }
-    "ventoy"          = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $false }
-    "rufus"           = @{ Desc = "Rufus (USB 启动盘制作工具 / USB bootable creator)"; Global = $false }
-    "wiztree"         = @{ Desc = "WizTree (磁盘空间分析工具 / Disk space analyzer)"; Global = $false }
-    "spacesniffer"    = @{ Desc = "SpaceSniffer (磁盘空间可视化工具 / Disk space visualizer)"; Global = $false }
-    "memreduct"       = @{ Desc = "Mem Reduct (内存优化工具 / Memory optimizer)"; Global = $false }
-    "msiafterburner"  = @{ Desc = "MSI Afterburner (GPU 超频与监控 / GPU overclocking and monitoring)"; Global = $true }
-    "rtss"            = @{ Desc = "RivaTuner Statistics Server (OSD & FPS 限制 / OSD & FPS limiter)"; Global = $true }
-    "ddu"             = @{ Desc = "Display Driver Uninstaller (显卡驱动清理工具 / GPU driver cleaner)"; Global = $false }
+    "powertoys"       = @{ Desc = "PowerToys (微软官方工具集 / Microsoft official utilities)"; Global = $false; Default = $true }
+    "everything-beta" = @{ Desc = "Everything (快速文件搜索 / Fast file search)"; Global = $false; Default = $true }
+    "fancontrol"      = @{ Desc = "FanControl (风扇控制工具 / Fan control utility)"; Global = $false; Default = $true }
+    "hwinfo"          = @{ Desc = "HWiNFO (系统信息与诊断工具 / System information and diagnostics)"; Global = $false; Default = $true }
+    "flow-launcher"   = @{ Desc = "Flow Launcher (文件搜索和启动器 / File search and launcher)"; Global = $false; Default = $true }
+    "krokiet"         = @{ Desc = "Krokiet (图片查重工具 / picture duplicate finder)"; Global = $false; Default = $true }
+    "ventoy"          = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $false; Default = $true }
+    "rufus"           = @{ Desc = "Rufus (USB 启动盘制作工具 / USB bootable creator)"; Global = $false; Default = $true }
+    "wiztree"         = @{ Desc = "WizTree (磁盘空间分析工具 / Disk space analyzer)"; Global = $false; Default = $true }
+    "spacesniffer"    = @{ Desc = "SpaceSniffer (磁盘空间可视化工具 / Disk space visualizer)"; Global = $false; Default = $true }
+    "memreduct"       = @{ Desc = "Mem Reduct (内存优化工具 / Memory optimizer)"; Global = $false; Default = $true }
+    "msiafterburner"  = @{ Desc = "MSI Afterburner (GPU 超频与监控 / GPU overclocking and monitoring)"; Global = $true; Default = $true }
+    "rtss"            = @{ Desc = "RivaTuner Statistics Server (OSD & FPS 限制 / OSD & FPS limiter)"; Global = $true; Default = $true }
+    "ddu"             = @{ Desc = "Display Driver Uninstaller (显卡驱动清理工具 / GPU driver cleaner)"; Global = $false; Default = $true }
 }
 
-foreach ($package in $winTools.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
-        if ($install -notmatch '^[Nn]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $winTools
 
 # OpenHashTab (文件哈希右键扩展)
 Write-Header "OpenHashTab (文件哈希右键扩展) / OpenHashTab (File Hash Context Menu)"
@@ -223,67 +106,27 @@ else {
     $wingApps = @{ 
         "namazso.OpenHashTab" = @{ Desc = "OpenHashTab (文件哈希右键扩展 / File Hash Context Menu)"; InstallArgs = @("--exact", "--silent") }
     }
-
-    foreach ($entry in $wingApps.GetEnumerator()) {
-        $appId = $entry.Key
-        $appInfo = $entry.Value
-
-        try {
-            $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
-        }
-        catch {
-            $isInstalled = $null
-        }
-
-        if (-not $isInstalled) {
-            Write-Step "通过 winget 安装 $($appInfo.Desc) ($appId)"
-            winget install --id $appId @($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
-            Write-Ok "$appId 安装完成 / $appId installation completed"
-        }
-        else {
-            Write-Ok "$appId 已安装 / $appId is already installed"
-        }
-    }
+    Install-WingetApps $wingApps -Force
 }
 
 # 终端与命令行工具
 Write-Header "终端与命令行工具 / Terminal & CLI Tools"
 
 $termTools = @{
-    "wezterm-nightly" = @{ Desc = "WezTerm (GPU 加速终端 / GPU-accelerated terminal)"; Global = $false }
-    "nu"              = @{ Desc = "Nushell"; Global = $false }
-    "less"            = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false }
-    "starship"        = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false }
-    "zoxide"          = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false }
-    "fzf"             = @{ Desc = "fzf (模糊查找器 / Fuzzy finder)"; Global = $false }
-    "ripgrep"         = @{ Desc = "ripgrep (快速搜索工具 / Fast search tool)"; Global = $false }
-    "fd"              = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false }
-    "bat"             = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false }
-    "eza"             = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false }
-    "dark"            = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true }
+    "wezterm-nightly" = @{ Desc = "WezTerm (GPU 加速终端 / GPU-accelerated terminal)"; Global = $false; Default = $true }
+    "nu"              = @{ Desc = "Nushell"; Global = $false; Default = $true }
+    "less"            = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false; Default = $true }
+    "starship"        = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false; Default = $true }
+    "zoxide"          = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false; Default = $true }
+    "fzf"             = @{ Desc = "fzf (模糊查找器 / Fuzzy finder)"; Global = $false; Default = $true }
+    "ripgrep"         = @{ Desc = "ripgrep (快速搜索工具 / Fast search tool)"; Global = $false; Default = $true }
+    "fd"              = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false; Default = $true }
+    "bat"             = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false; Default = $true }
+    "eza"             = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false; Default = $true }
+    "dark"            = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true; Default = $true }
 }
 
-foreach ($tool in $termTools.GetEnumerator()) {
-    $toolName = $tool.Key
-    $toolInfo = $tool.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$toolName\s")) {
-        $install = Confirm-Install "是否安装 $($toolInfo.Desc)？(Y/n) / Install $($toolInfo.Desc)? (Y/n)"
-        if ($install -notmatch '^[Nn]$') {
-            if ($toolInfo.Global) {
-                scoop install $toolName --global
-                Write-Ok "$toolName 安装完成（全局） / $toolName installation completed (global)"
-            }
-            else {
-                scoop install $toolName
-                Write-Ok "$toolName 安装完成 / $toolName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$toolName 已安装 / $toolName is already installed"
-    }
-}
+Install-ScoopPackages $termTools
 
 # 网络工具
 Write-Header "网络工具 / Network Tools"
@@ -295,28 +138,15 @@ $networkTools = @{
     "wireshark" = @{ Desc = "Wireshark (网络协议分析器 / Network protocol analyzer)"; Global = $false }
 }
 
-foreach ($package in $networkTools.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
-        if ($install -match '^[Yy]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $networkTools
 
 Write-Header "系统工具安装完成 / System tools installation completed"
+$globalRoot = if ($env:SCOOP_GLOBAL) { $env:SCOOP_GLOBAL } else { "C:\ProgramData\scoop" }
+$globalAppsDir = Join-Path $globalRoot "apps"
 Write-Note "全局安装的应用 / Globally installed apps:"
-scoop list | Select-String "Global"
+if (Test-Path $globalAppsDir) {
+    Get-ChildItem $globalAppsDir -Directory | Select-Object -ExpandProperty Name
+}
+else {
+    Write-Note "未检测到全局应用目录 / No global apps directory found"
+}

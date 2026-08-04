@@ -52,14 +52,16 @@ function Invoke-Script {
             $scripts = Get-ChildItem -Path "$Script:ScriptDir/0[1-5]-*.ps1" -Exclude "*00-main.ps1" | Sort-Object Name
             foreach ($script in $scripts) {
                 Write-Step "执行 $($script.Name) / Executing $($script.Name)"
-                if ($autoYes) {
-                    & $script.FullName -AutoYes
+                try {
+                    if ($autoYes) {
+                        & $script.FullName -AutoYes
+                    }
+                    else {
+                        & $script.FullName
+                    }
                 }
-                else {
-                    & $script.FullName
-                }
-                if ($LASTEXITCODE -ne 0 -and $null -ne $LASTEXITCODE) {
-                    Write-Warn "脚本 $($script.Name) 执行失败 / Script $($script.Name) execution failed"
+                catch {
+                    Write-Warn "脚本 $($script.Name) 执行失败 / Script $($script.Name) execution failed: $($_.Exception.Message)"
                     Read-Host "按回车键继续… / Press Enter to continue…"
                 }
             }
@@ -80,8 +82,14 @@ function Invoke-Script {
         $scriptPath = Join-Path $Script:ScriptDir $scriptName
         if (Test-Path $scriptPath) {
             Write-Step "执行 $scriptName / Executing $scriptName"
-            & $scriptPath
-            return $?
+            try {
+                & $scriptPath
+                return $true
+            }
+            catch {
+                Write-Err "脚本 $scriptName 执行失败 / Script $scriptName execution failed: $($_.Exception.Message)"
+                return $false
+            }
         }
         else {
             Write-Err "错误: 脚本 $scriptName 不存在 / Error: Script $scriptName does not exist"

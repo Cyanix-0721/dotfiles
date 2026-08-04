@@ -19,26 +19,14 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot/00-common.ps1"
 
 # 初始化自动确认模式
-if ($AutoYes) {
-    Write-Note "自动确认模式已启用 / Auto-yes mode enabled"
-}
-else {
-    $autoYesChoice = Read-Host "是否全选 Y（自动确认所有安装）？(y/N) / Select all Y (auto-confirm all installations)? (y/N)"
-    if ($autoYesChoice -match '^[Yy]$') { $AutoYes = $true }
-}
-
-function Confirm-Install {
-    param([string]$Prompt)
-    if ($AutoYes) { return "Y" }
-    return Read-Host $Prompt
-}
+Initialize-AutoYes
 
 Write-Header "必备软件包安装 / Essential Applications Installation"
 
 # 检查 Scoop
 if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
     Write-Err "Scoop 未安装，请先运行系统基础环境配置脚本 / Scoop not installed, please run the system foundation setup script first"
-    exit 1
+    throw "Scoop 未安装 / Scoop not installed"
 }
 
 # 浏览器
@@ -51,10 +39,10 @@ $browserOptions = @(
     @{ Name = "ungoogled-chromium"; Desc = "Ungoogled Chromium (隐私增强版 Chrome / Privacy-enhanced Chrome)" }
 )
 
-# 检测已安装的浏览器
+# 检测已安装的浏览器（使用缓存的 scoop list）
 $installedBrowsers = @()
 foreach ($opt in $browserOptions) {
-    if (scoop list | Select-String -Pattern "^$($opt.Name)\s") {
+    if (Test-ScoopInstalled $opt.Name) {
         $installedBrowsers += $opt.Name
     }
 }
@@ -77,16 +65,26 @@ else {
         if ($choice -match '^\d+$') { $selection = [int]$choice } else { $selection = 1 }
 
         if ($selection -eq 1) {
-            # 默认：同时安装 zen-browser + helium
-            scoop install zen-browser
-            Write-Ok "zen-browser 安装完成 / zen-browser installation completed"
-            scoop install helium
-            Write-Ok "helium 安装完成 / helium installation completed"
+            # 默认：同时安装 zen-browser + helium（跳过已安装）
+            foreach ($name in @("zen-browser", "helium")) {
+                if (Test-ScoopInstalled $name) {
+                    Write-Ok "$name 已安装 / $name is already installed"
+                }
+                else {
+                    scoop install $name
+                    Write-Ok "$name 安装完成 / $name installation completed"
+                }
+            }
         }
         elseif ($selection -ge 2 -and $selection -le ($browserOptions.Count + 1)) {
             $target = $browserOptions[$selection - 2]
-            scoop install $target.Name
-            Write-Ok "$($target.Name) 安装完成 / $($target.Name) installation completed"
+            if (Test-ScoopInstalled $target.Name) {
+                Write-Ok "$($target.Name) 已安装 / $($target.Name) is already installed"
+            }
+            else {
+                scoop install $target.Name
+                Write-Ok "$($target.Name) 安装完成 / $($target.Name) installation completed"
+            }
         }
         elseif ($selection -eq ($browserOptions.Count + 2)) {
             foreach ($opt in $browserOptions) {
@@ -98,11 +96,17 @@ else {
         }
         else {
             Write-Warn "无效输入，默认安装 zen-browser + helium / Invalid input, installing zen-browser + helium by default"
-            scoop install zen-browser
-            Write-Ok "zen-browser 安装完成 / zen-browser installation completed"
-            scoop install helium
-            Write-Ok "helium 安装完成 / helium installation completed"
+            foreach ($name in @("zen-browser", "helium")) {
+                if (Test-ScoopInstalled $name) {
+                    Write-Ok "$name 已安装 / $name is already installed"
+                }
+                else {
+                    scoop install $name
+                    Write-Ok "$name 安装完成 / $name installation completed"
+                }
+            }
         }
+        Reset-ScoopCache
     }
 }
 
@@ -117,85 +121,25 @@ $productivityApps = @{
     "quickclipboard" = @{ Desc = "QuickClipboard (剪贴板管理工具 / Clipboard manager)"; Global = $false }
 }
 
-foreach ($package in $productivityApps.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
-        if ($install -match '^[Yy]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $productivityApps
 
 # 密码管理器
 Write-Header "密码管理器 / Password Managers"
 
 $passwordManagers = @{
-    "keepassxc" = @{ Desc = "KeePassXC"; Global = $false }
+    "keepassxc" = @{ Desc = "KeePassXC"; Global = $false; Default = $true }
 }
 
-foreach ($package in $passwordManagers.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
-        if ($install -notmatch '^[Nn]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $passwordManagers
 
 # 邮件客户端
 Write-Header "邮件客户端 / Email Clients"
 
 $emailClients = @{
-    "thunderbird" = @{ Desc = "Thunderbird"; Global = $false }
+    "thunderbird" = @{ Desc = "Thunderbird"; Global = $false; Default = $true }
 }
 
-foreach ($package in $emailClients.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
-        if ($install -notmatch '^[Nn]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $emailClients
 
 # 通讯软件
 Write-Header "通讯软件 / Communication Apps"
@@ -205,88 +149,28 @@ $commApps = @{
     "ayugram" = @{ Desc = "AyuGram (Telegram 客户端 / Telegram client)"; Global = $false }
 }
 
-foreach ($package in $commApps.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
-        if ($install -match '^[Yy]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $commApps
 
 # 文件同步
 Write-Header "文件同步 / File Synchronization"
 
 $syncApps = @{
-    "syncthing"     = @{ Desc = "Syncthing (P2P 文件同步 / P2P file sync)"; Global = $false }
-    "syncthingtray" = @{ Desc = "Syncthing Tray (系统托盘工具 / System tray utility)"; Global = $false }
-    "localsend"     = @{ Desc = "LocalSend (局域网文件传输 / LAN file transfer)"; Global = $false }
-    "winscp"        = @{ Desc = "WinSCP (SFTP/FTP 文件传输 / SFTP/FTP file transfer)"; Global = $false }
+    "syncthing"     = @{ Desc = "Syncthing (P2P 文件同步 / P2P file sync)"; Global = $false; Default = $true }
+    "syncthingtray" = @{ Desc = "Syncthing Tray (系统托盘工具 / System tray utility)"; Global = $false; Default = $true }
+    "localsend"     = @{ Desc = "LocalSend (局域网文件传输 / LAN file transfer)"; Global = $false; Default = $true }
+    "winscp"        = @{ Desc = "WinSCP (SFTP/FTP 文件传输 / SFTP/FTP file transfer)"; Global = $false; Default = $true }
 }
 
-foreach ($package in $syncApps.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
-        if ($install -notmatch '^[Nn]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $syncApps
 
 # 远程控制
 Write-Header "远程控制 / Remote Control"
 
 $remoteApps = @{
-    "rustdesk" = @{ Desc = "RustDesk (远程桌面工具 / Remote desktop)"; Global = $false }
+    "rustdesk" = @{ Desc = "RustDesk (远程桌面工具 / Remote desktop)"; Global = $false; Default = $true }
 }
 
-foreach ($package in $remoteApps.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
-        if ($install -notmatch '^[Nn]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $remoteApps
 
 # 下载工具
 Write-Header "下载工具 / Download Tools"
@@ -295,27 +179,7 @@ $downloadApps = @{
     "qbittorrent-enhanced" = @{ Desc = "qBittorrent Enhanced (BT 下载 / BT download)"; Global = $false }
 }
 
-foreach ($package in $downloadApps.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
-        if ($install -match '^[Yy]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $downloadApps
 
 # 多媒体
 Write-Header "多媒体工具 / Multimedia Tools"
@@ -327,27 +191,7 @@ $multimediaTools = @{
     "ffmpeg"      = @{ Desc = "FFmpeg (多媒体处理工具 / Multimedia processing tool)"; Global = $false }
 }
 
-foreach ($package in $multimediaTools.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
-        if ($install -match '^[Yy]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $multimediaTools
 
 # 阅读器
 Write-Header "阅读器 / Readers"
@@ -357,57 +201,17 @@ $readerApps = @{
     "sumatrapdf" = @{ Desc = "SumatraPDF (PDF 阅读器 / PDF reader)"; Global = $false }
 }
 
-foreach ($package in $readerApps.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
-        if ($install -match '^[Yy]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $readerApps
 
 # 字体
 Write-Header "字体 / Fonts"
 
 $fonts = @{
-    "JetBrainsMono-NF-Mono" = @{ Desc = "JetBrains Mono Nerd Font"; Global = $false }
-    "SarasaGothic-SC"       = @{ Desc = "Sarasa Gothic (更纱黑体)"; Global = $false }
+    "JetBrainsMono-NF-Mono" = @{ Desc = "JetBrains Mono Nerd Font"; Global = $false; Default = $true }
+    "SarasaGothic-SC"       = @{ Desc = "Sarasa Gothic (更纱黑体)"; Global = $false; Default = $true }
 }
 
-foreach ($package in $fonts.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(Y/n) / Install $($packageInfo.Desc)? (Y/n)"
-        if ($install -notmatch '^[Nn]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
-            }
-        }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
-    }
-}
+Install-ScoopPackages $fonts
 
 # 游戏平台
 Write-Header "游戏平台 / Game Platforms"
@@ -421,32 +225,7 @@ else {
         "EpicGames.EpicGamesLauncher" = @{ Desc = "Epic Games Launcher"; InstallArgs = @("--exact", "--silent") }
         "GOG.Galaxy"                  = @{ Desc = "GOG Galaxy"; InstallArgs = @("--exact", "--silent") }
     }
-
-    foreach ($entry in $wingApps.GetEnumerator()) {
-        $appId = $entry.Key
-        $appInfo = $entry.Value
-
-        try {
-            $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String $appId
-        }
-        catch {
-            $isInstalled = $null
-        }
-
-        if (-not $isInstalled) {
-            Write-Step "通过 winget 安装 $($appInfo.Desc) ($appId)"
-            winget install --id $appId @($appInfo.InstallArgs) --accept-source-agreements --accept-package-agreements
-            if ($LASTEXITCODE -eq 0) {
-                Write-Ok "$appId 安装完成 / $appId installation completed"
-            }
-            else {
-                Write-Err "$appId 安装失败 / $appId installation failed"
-            }
-        }
-        else {
-            Write-Ok "$appId 已安装 / $appId is already installed"
-        }
-    }
+    Install-WingetApps $wingApps -Force
 }
 
 Write-Header "必备软件包安装完成 / Essential applications installation completed"
