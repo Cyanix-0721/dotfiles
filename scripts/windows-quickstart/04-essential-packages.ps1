@@ -44,29 +44,65 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
 # 浏览器
 Write-Header "浏览器 / Web Browsers"
 
-$browsers = @{
-    "ungoogled-chromium" = @{ Desc = "Ungoogled Chromium (隐私增强版 Chrome / Privacy-enhanced Chrome)"; Global = $false }
+$browserOptions = @(
+    @{ Name = "zen-browser"; Desc = "Zen Browser (Firefox 引擎浏览器 / Firefox-based browser)" }
+    @{ Name = "helium"; Desc = "Helium（Chromium 稳定版 / Stable）" }
+    @{ Name = "helium-pre"; Desc = "Helium Pre（Chromium 预发布版 / Pre-release）" }
+    @{ Name = "ungoogled-chromium"; Desc = "Ungoogled Chromium (隐私增强版 Chrome / Privacy-enhanced Chrome)" }
+)
+
+# 检测已安装的浏览器
+$installedBrowsers = @()
+foreach ($opt in $browserOptions) {
+    if (scoop list | Select-String -Pattern "^$($opt.Name)\s") {
+        $installedBrowsers += $opt.Name
+    }
 }
 
-foreach ($package in $browsers.GetEnumerator()) {
-    $packageName = $package.Key
-    $packageInfo = $package.Value
-    
-    if (-not (scoop list | Select-String -Pattern "^$packageName\s")) {
-        $install = Confirm-Install "是否安装 $($packageInfo.Desc)？(y/N) / Install $($packageInfo.Desc)? (y/N)"
-        if ($install -match '^[Yy]$') {
-            if ($packageInfo.Global) {
-                scoop install $packageName --global
-                Write-Ok "$packageName 安装完成（全局） / $packageName installation completed (global)"
-            }
-            else {
-                scoop install $packageName
-                Write-Ok "$packageName 安装完成 / $packageName installation completed"
+if ($installedBrowsers.Count -eq $browserOptions.Count) {
+    Write-Ok "所有浏览器已安装 / All browsers already installed"
+}
+else {
+    $install = Confirm-Install "是否安装浏览器？(Y/n) / Install browsers? (Y/n)"
+    if ($install -notmatch '^[Nn]$') {
+        Write-Note "请选择要安装的浏览器（默认 1）/ Select browsers to install (default 1):"
+        Write-Host "  [1] zen-browser + helium（默认 / default）"
+        for ($i = 0; $i -lt $browserOptions.Count; $i++) {
+            $state = if ($installedBrowsers -contains $browserOptions[$i].Name) { "（已安装 / installed）" } else { "" }
+            Write-Host "  [$($i + 2)] $($browserOptions[$i].Desc) $state"
+        }
+        Write-Host "  [$($browserOptions.Count + 2)] 全部安装 / Install all"
+
+        $choice = Read-Host "请输入编号（默认 1）/ Enter a number (default 1)"
+        if ($choice -match '^\d+$') { $selection = [int]$choice } else { $selection = 1 }
+
+        if ($selection -eq 1) {
+            # 默认：同时安装 zen-browser + helium
+            scoop install zen-browser
+            Write-Ok "zen-browser 安装完成 / zen-browser installation completed"
+            scoop install helium
+            Write-Ok "helium 安装完成 / helium installation completed"
+        }
+        elseif ($selection -ge 2 -and $selection -le ($browserOptions.Count + 1)) {
+            $target = $browserOptions[$selection - 2]
+            scoop install $target.Name
+            Write-Ok "$($target.Name) 安装完成 / $($target.Name) installation completed"
+        }
+        elseif ($selection -eq ($browserOptions.Count + 2)) {
+            foreach ($opt in $browserOptions) {
+                if ($installedBrowsers -notcontains $opt.Name) {
+                    scoop install $opt.Name
+                    Write-Ok "$($opt.Name) 安装完成 / $($opt.Name) installation completed"
+                }
             }
         }
-    }
-    else {
-        Write-Ok "$packageName 已安装 / $packageName is already installed"
+        else {
+            Write-Warn "无效输入，默认安装 zen-browser + helium / Invalid input, installing zen-browser + helium by default"
+            scoop install zen-browser
+            Write-Ok "zen-browser 安装完成 / zen-browser installation completed"
+            scoop install helium
+            Write-Ok "helium 安装完成 / helium installation completed"
+        }
     }
 }
 
@@ -74,10 +110,11 @@ foreach ($package in $browsers.GetEnumerator()) {
 Write-Header "效率工具 / Productivity Tools"
 
 $productivityApps = @{
-    "obsidian"   = @{ Desc = "Obsidian (笔记软件 / Note-taking app)"; Global = $false }
-    "draw.io"    = @{ Desc = "Draw.io (流程图绘制 / Diagram drawing)"; Global = $false }
-    "stranslate" = @{ Desc = "Stranslate (翻译工具 / Translation tool)"; Global = $false }
-    "umi-ocr"    = @{ Desc = "Umi OCR (OCR 工具 / OCR tool)"; Global = $false }
+    "obsidian"       = @{ Desc = "Obsidian (笔记软件 / Note-taking app)"; Global = $false }
+    "draw.io"        = @{ Desc = "Draw.io (流程图绘制 / Diagram drawing)"; Global = $false }
+    "stranslate"     = @{ Desc = "Stranslate (翻译工具 / Translation tool)"; Global = $false }
+    "umi-ocr"        = @{ Desc = "Umi OCR (OCR 工具 / OCR tool)"; Global = $false }
+    "quickclipboard" = @{ Desc = "QuickClipboard (剪贴板管理工具 / Clipboard manager)"; Global = $false }
 }
 
 foreach ($package in $productivityApps.GetEnumerator()) {

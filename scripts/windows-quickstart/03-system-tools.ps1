@@ -145,7 +145,7 @@ Write-Header "压缩工具 / Compression Tools"
 
 $compressionTools = @{
     "7zip"    = @{ Desc = "7zip (压缩/解压工具 / Archive utility)"; Global = $false }
-    "peazip"   = @{ Desc = "PeaZip (压缩/解压工具 / Archive utility)"; Global = $false }
+    "peazip"  = @{ Desc = "PeaZip (压缩/解压工具 / Archive utility)"; Global = $false }
     "innounp" = @{ Desc = "innounp (Inno Setup 解包工具 / Inno Setup unpacker)"; Global = $true }
 }
 
@@ -175,20 +175,20 @@ foreach ($entry in $compressionTools.GetEnumerator()) {
 Write-Header "Windows 增强工具 / Windows Enhancement Tools"
 
 $winTools = @{
-    "powertoys"      = @{ Desc = "PowerToys (微软官方工具集 / Microsoft official utilities)"; Global = $false }
-    "everything"     = @{ Desc = "Everything (快速文件搜索 / Fast file search)"; Global = $false }
-    "fancontrol"     = @{ Desc = "FanControl (风扇控制工具 / Fan control utility)"; Global = $false }
-    "hwinfo"         = @{ Desc = "HWiNFO (系统信息与诊断工具 / System information and diagnostics)"; Global = $false }
-    "flow-launcher"  = @{ Desc = "Flow Launcher (文件搜索和启动器 / File search and launcher)"; Global = $false }
-    "krokiet"        = @{ Desc = "Krokiet (图片查重工具 / picture duplicate finder)"; Global = $false }
-    "ventoy"         = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $false }
-    "rufus"          = @{ Desc = "Rufus (USB 启动盘制作工具 / USB bootable creator)"; Global = $false }
-    "wiztree"        = @{ Desc = "WizTree (磁盘空间分析工具 / Disk space analyzer)"; Global = $false }
-    "spacesniffer"   = @{ Desc = "SpaceSniffer (磁盘空间可视化工具 / Disk space visualizer)"; Global = $false }
-    "memreduct"      = @{ Desc = "Mem Reduct (内存优化工具 / Memory optimizer)"; Global = $false }
-    "msiafterburner" = @{ Desc = "MSI Afterburner (GPU 超频与监控 / GPU overclocking and monitoring)"; Global = $true }
-    "rtss"           = @{ Desc = "RivaTuner Statistics Server (OSD & FPS 限制 / OSD & FPS limiter)"; Global = $true }
-    "ddu"            = @{ Desc = "Display Driver Uninstaller (显卡驱动清理工具 / GPU driver cleaner)"; Global = $false }
+    "powertoys"       = @{ Desc = "PowerToys (微软官方工具集 / Microsoft official utilities)"; Global = $false }
+    "everything-beta" = @{ Desc = "Everything (快速文件搜索 / Fast file search)"; Global = $false }
+    "fancontrol"      = @{ Desc = "FanControl (风扇控制工具 / Fan control utility)"; Global = $false }
+    "hwinfo"          = @{ Desc = "HWiNFO (系统信息与诊断工具 / System information and diagnostics)"; Global = $false }
+    "flow-launcher"   = @{ Desc = "Flow Launcher (文件搜索和启动器 / File search and launcher)"; Global = $false }
+    "krokiet"         = @{ Desc = "Krokiet (图片查重工具 / picture duplicate finder)"; Global = $false }
+    "ventoy"          = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $false }
+    "rufus"           = @{ Desc = "Rufus (USB 启动盘制作工具 / USB bootable creator)"; Global = $false }
+    "wiztree"         = @{ Desc = "WizTree (磁盘空间分析工具 / Disk space analyzer)"; Global = $false }
+    "spacesniffer"    = @{ Desc = "SpaceSniffer (磁盘空间可视化工具 / Disk space visualizer)"; Global = $false }
+    "memreduct"       = @{ Desc = "Mem Reduct (内存优化工具 / Memory optimizer)"; Global = $false }
+    "msiafterburner"  = @{ Desc = "MSI Afterburner (GPU 超频与监控 / GPU overclocking and monitoring)"; Global = $true }
+    "rtss"            = @{ Desc = "RivaTuner Statistics Server (OSD & FPS 限制 / OSD & FPS limiter)"; Global = $true }
+    "ddu"             = @{ Desc = "Display Driver Uninstaller (显卡驱动清理工具 / GPU driver cleaner)"; Global = $false }
 }
 
 foreach ($package in $winTools.GetEnumerator()) {
