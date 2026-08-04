@@ -22,3 +22,10 @@
 - 这是个人配置仓库，改动应尽量保持安全、可移植、尽量不破坏默认终端/系统行为。
 - 私有模板和敏感信息不应被公开写入仓库。对 `private_dot_ssh/` 的改动要特别谨慎。
 - 如果需要添加说明文档，优先更新 `README.md`。
+
+## Git 提交规范
+
+- 所有提交必须遵循 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/) 规范，格式为 `type(scope): 描述`，例如 `feat(scripts): 添加某功能`、`fix(docs): 修复文档错误`、`refactor(scripts): 重构安装逻辑`。
+- `type` 使用小写，可选 `feat`、`fix`、`refactor`、`chore`、`docs`、`style`、`test`、`perf` 等；`scope` 一般为改动所属的目录或模块（如 `scripts`、`docs`、`config`）。
+- 描述使用中文，简要说明改动内容；必要时在 `type(scope): 描述` 下方补充详细说明（body）。
+- 禁止使用无规范格式的提交信息（如仅一句话描述、缺少 type 前缀）。
