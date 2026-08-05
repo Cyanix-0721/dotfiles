@@ -1,11 +1,13 @@
-{{- $name := promptStringOnce . "name" "Git user name" -}}
-{{- $email := promptStringOnce . "email" "Git email address" -}}
+{{- $name := promptStringOnce . "name" "Git user name" (output "git" "config" "user.name" | trim) -}}
+{{- $email := promptStringOnce . "email" "Git email address" (output "git" "config" "user.email" | trim) -}}
 {{- $editor := promptStringOnce . "editor" "Preferred editor" "nvim" -}}
+{{- $aria2RpcSecret := promptStringOnce . "aria2RpcSecret" "Aria2 RPC secret (rpc-secret)" "1145141919810" -}}
 
 [data]
     name = {{ $name | quote }}
     email = {{ $email | quote }}
     editor = {{ $editor | quote }}
+    aria2RpcSecret = {{ $aria2RpcSecret | quote }}
 
 # 编辑命令的配置
 [edit]

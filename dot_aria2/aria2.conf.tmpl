@@ -38,12 +38,13 @@ enable-rpc=true
 rpc-listen-all=true
 # RPC 监听端口
 rpc-listen-port=6800
-# RPC 密钥令牌（建议修改为自己的密码）
-rpc-secret=1145141919810
+# RPC 密钥令牌（默认值定义在 .chezmoi.toml.tmpl 的 aria2RpcSecret；若此处为空，请在该文件 [data] 补充 aria2RpcSecret）
+rpc-secret={{ get . "aria2RpcSecret" }}
 # 允许覆盖
 rpc-allow-origin-all=true
 # 允许外部访问
-# 是否启用 HTTPS/WSS（true 为 HTTPS/WSS，false 为 HTTP/WS，性能最佳）
+# 注意：rpc-listen-all=true 会监听所有网卡接口，配合明文 HTTP 存在暴露风险。
+# 若仅在本机使用，可改为 false 只监听 localhost；也可用 rpc-secure=true + TLS，或靠防火墙限制端口 6800。
 rpc-secure=false
 
 ## BT/PT 下载设置 / BT/PT Download Settings
