@@ -17,7 +17,9 @@ jobs:
       - name: Install chezmoi
         run: |
           curl -fsSL https://get.chezmoi.io | sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          chezmoi_path=$(find "$HOME" -name chezmoi -type f 2>/dev/null | head -1)
+          echo "Found chezmoi: ${chezmoi_path}"
+          echo "$(dirname "${chezmoi_path}")" >> "$GITHUB_PATH"
       - name: Render all templates
         run: |
           set -euo pipefail
