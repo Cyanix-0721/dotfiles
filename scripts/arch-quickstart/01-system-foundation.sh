@@ -24,7 +24,8 @@ ok "系统更新完成 / System update completed"
 
 # 安装基础工具 / Install basic tools
 step "安装基础工具 / Installing basic tools"
-sudo pacman -S --noconfirm git subversion base-devel
+sudo pacman -S --needed --noconfirm git subversion base-devel
+ok "基础工具安装完成 / Basic tools installed"
 
 # 安装终端模拟器 / Install terminal emulator
 header "终端模拟器 / Terminal Emulator"
@@ -45,6 +46,7 @@ esac
 if [[ -n "$term_packages" ]]; then
 	step "安装终端模拟器: $term_packages / Installing: $term_packages"
 	sudo pacman -S --noconfirm $term_packages
+	ok "终端模拟器安装完成 / Terminal emulator installed"
 fi
 
 # 安装 Shell / Install Shell
@@ -64,11 +66,13 @@ esac
 if [[ -n "$shell_packages" ]]; then
 	step "安装 Shell: $shell_packages / Installing: $shell_packages"
 	sudo pacman -S --noconfirm $shell_packages
+	ok "Shell 安装完成 / Shell installed"
 fi
 
 # 安装 pacman 工具 / Install pacman tools
 step "安装 pacman-contrib 与 reflector / Installing pacman-contrib and reflector"
 sudo pacman -S --noconfirm pacman-contrib reflector
+ok "pacman-contrib 与 reflector 安装完成 / Installed"
 
 # 配置 reflector 服务和定时器 / Configure reflector service and timer
 if confirm_install 0 "配置 reflector 服务与定时器？/ Configure reflector service and timer?"; then
@@ -151,6 +155,7 @@ fi
 if confirm_install 1 "安装 Flatpak？/ Install Flatpak?"; then
 	header "安装 Flatpak / Installing Flatpak"
 	sudo pacman -S --noconfirm flatpak
+	ok "Flatpak 安装完成 / Flatpak installed"
 else
 	note "跳过 Flatpak 安装 / Skipping Flatpak"
 fi
@@ -308,6 +313,7 @@ fi
 header "备份工具 / Backup Tools"
 if confirm_install 1 "安装备份工具？/ Install backup tools?"; then
 	sudo pacman -S --noconfirm snapper btrfs-assistant snap-pac
+	ok "备份工具安装完成 / Backup tools installed"
 else
 	note "跳过备份工具安装 / Skipping backup tools"
 fi

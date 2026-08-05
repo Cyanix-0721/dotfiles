@@ -13,6 +13,7 @@ header "中文本地化配置 / Chinese Localization"
 # 安装中文字体 / Install Chinese fonts
 step "安装中文字体 / Installing Chinese fonts"
 sudo pacman -S --noconfirm adobe-source-han-sans-cn-fonts adobe-source-han-serif-cn-fonts noto-fonts-cjk noto-fonts-emoji wqy-microhei wqy-microhei-lite wqy-bitmapfont wqy-zenhei ttf-arphic-ukai ttf-arphic-uming ttf-jetbrains-mono ttf-jetbrains-mono-nerd ttf-sarasa-gothic
+ok "中文字体安装完成 / Chinese fonts installed"
 
 # 清除字体缓存 / Clear font cache
 step "清除字体缓存 / Clearing font cache"
