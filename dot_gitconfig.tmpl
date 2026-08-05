@@ -2,37 +2,45 @@
 	defaultBranch = main
 [fetch]
 	prune = true
+[push]
+	autoSetupRemote = true
+[rebase]
+	autoStash = true
+[rerere]
+	enabled = true
+[pull]
+	rebase = false
 [user]
 	name = {{ .name }}
 	email = {{ .email }}
 [core]
-  pager = delta
+	pager = delta
 {{- if eq .chezmoi.os "windows" }}
-  autocrlf = true
-  sshCommand = C:/Windows/System32/OpenSSH/ssh.exe
+	autocrlf = true
+	sshCommand = C:/Windows/System32/OpenSSH/ssh.exe
 {{- else }}
-  autocrlf = input
+	autocrlf = input
 {{- end }}
 [interactive]
-  diffFilter = delta --color-only
+	diffFilter = delta --color-only
 [delta]
-  navigate = true  # use n and N to move between diff sections
-  dark = true      # or light = true, or omit for auto-detection
+	navigate = true  # use n and N to move between diff sections
+	dark = true      # or light = true, or omit for auto-detection
 [merge]
-  conflictStyle = zdiff3
+	conflictStyle = zdiff3
 [credential]
 {{- if eq .chezmoi.os "windows" }}
-  helper = manager
+	helper = manager
 {{- else }}
-  {{- if stat "/usr/share/git/credential/libsecret/git-credential-libsecret" }}
-    helper = /usr/share/git/credential/libsecret/git-credential-libsecret
-  {{- else }}
-    helper = cache --timeout=3600
-  {{- end }}
+	{{- if stat "/usr/share/git/credential/libsecret/git-credential-libsecret" }}
+		helper = /usr/share/git/credential/libsecret/git-credential-libsecret
+	{{- else }}
+		helper = cache --timeout=3600
+	{{- end }}
 {{- end }}
 [http]
-  connectTimeout = 3
-  timeout = 5
+	connectTimeout = 3
+	timeout = 5
 [https]
-  connectTimeout = 3
-  timeout = 5
+	connectTimeout = 3
+	timeout = 5
