@@ -7,16 +7,15 @@ Universal File Sync Tool - Supports Linux↔Linux, Linux↔Windows, Windows↔Li
 Executes on Linux, supports various filesystems, optional empty directory exclusion
 """
 
-import sys
+import argparse
 import json
-import subprocess
-import shutil
 import logging
 import os
-import argparse
-from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Union
+import shutil
+import subprocess
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass
@@ -35,8 +34,8 @@ class SyncScenario:
     source_fs: str
     dest_fs: str
     scenario_type: str
-    recommendations: List[str]
-    warnings: List[str]
+    recommendations: list[str]
+    warnings: list[str]
 
 
 class FileSystemAnalyzer:
@@ -62,9 +61,7 @@ class FileSystemAnalyzer:
             if len(lines) > 1:
                 parts = lines[1].split()
                 if len(parts) >= 3:
-                    return FileSystemInfo(
-                        fs_type=parts[2], mount_point=parts[1], device=parts[0]
-                    )
+                    return FileSystemInfo(fs_type=parts[2], mount_point=parts[1], device=parts[0])
         except subprocess.TimeoutExpired:
             self.logger.error(f"检测文件系统超时: {path}")
         except subprocess.CalledProcessError as e:
@@ -82,11 +79,13 @@ class FileSystemAnalyzer:
         self.logger.info("同步场景分析 / Sync scenario analysis:")
         self.logger.info(f"  源 / Source: {source}")
         self.logger.info(
-            f"    文件系统 / Filesystem: {source_info.fs_type}, 挂载点 / Mount: {source_info.mount_point}"
+            "    文件系统 / Filesystem: "
+            f"{source_info.fs_type}, 挂载点 / Mount: {source_info.mount_point}"
         )
         self.logger.info(f"  目标 / Destination: {destination}")
         self.logger.info(
-            f"    文件系统 / Filesystem: {dest_info.fs_type}, 挂载点 / Mount: {dest_info.mount_point}"
+            "    文件系统 / Filesystem: "
+            f"{dest_info.fs_type}, 挂载点 / Mount: {dest_info.mount_point}"
         )
 
         source_is_windows = source_info.fs_type.lower() in self.WINDOWS_FS_TYPES
@@ -161,9 +160,7 @@ class FileSystemAnalyzer:
             warnings=warnings,
         )
 
-    def analyze_empty_directories(
-        self, source_path: str, max_display: int = 10
-    ) -> List[str]:
+    def analyze_empty_directories(self, source_path: str, max_display: int = 10) -> list[str]:
         """分析源目录中的空文件夹 / Analyze empty directories in source"""
         if not Path(source_path).exists():
             return []
@@ -182,9 +179,7 @@ class FileSystemAnalyzer:
                 if len(empty_dirs) >= 100:  # 限制收集数量 / Limit collection
                     break
         except Exception as e:
-            self.logger.error(
-                f"分析空文件夹时出错 / Error analyzing empty directories: {e}"
-            )
+            self.logger.error(f"分析空文件夹时出错 / Error analyzing empty directories: {e}")
             return []
 
         if empty_dirs:
@@ -195,7 +190,8 @@ class FileSystemAnalyzer:
                 self.logger.debug(f"    📁 {empty_dir}")
             if len(empty_dirs) > max_display:
                 self.logger.debug(
-                    f"    ... 还有 {len(empty_dirs) - max_display} 个 / {len(empty_dirs) - max_display} more"
+                    f"    ... 还有 {len(empty_dirs) - max_display} 个 / "
+                    f"{len(empty_dirs) - max_display} more"
                 )
         else:
             self.logger.info("  未发现空文件夹 / No empty directories found")
@@ -217,11 +213,11 @@ class RsyncCommandBuilder:
         sync_mode: str = "mirror",
         dry_run: bool = False,
         exclude_empty_dirs: bool = True,
-        folder_white_list: Optional[List[str]] = None,
-        folder_black_list: Optional[List[str]] = None,
-        extension_white_list: Optional[List[str]] = None,
-        extension_black_list: Optional[List[str]] = None,
-    ) -> List[str]:
+        folder_white_list: list[str] | None = None,
+        folder_black_list: list[str] | None = None,
+        extension_white_list: list[str] | None = None,
+        extension_black_list: list[str] | None = None,
+    ) -> list[str]:
         """构建rsync命令 / Build rsync command"""
 
         # 基础参数 / Base arguments
@@ -231,9 +227,7 @@ class RsyncCommandBuilder:
         if scenario.scenario_type == "Linux to Linux":
             cmd.extend(["-a", "--modify-window=1"])
         else:
-            cmd.extend(
-                ["-rlt", "--modify-window=2", "--no-perms", "--no-owner", "--no-group"]
-            )
+            cmd.extend(["-rlt", "--modify-window=2", "--no-perms", "--no-owner", "--no-group"])
 
             # 对于Windows目标，使用大小比较 / For Windows destination, use size comparison
             if scenario.dest_fs.lower() in FileSystemAnalyzer.WINDOWS_FS_TYPES:
@@ -272,11 +266,11 @@ class RsyncCommandBuilder:
 
     def _build_filters(
         self,
-        folder_white_list: List[str],
-        folder_black_list: List[str],
-        extension_white_list: List[str],
-        extension_black_list: List[str],
-    ) -> List[str]:
+        folder_white_list: list[str],
+        folder_black_list: list[str],
+        extension_white_list: list[str],
+        extension_black_list: list[str],
+    ) -> list[str]:
         """构建过滤器参数 / Build filter arguments"""
         filters = []
 
@@ -329,9 +323,7 @@ class SyncManager:
         """检查rsync是否可用 / Check if rsync is available"""
         return shutil.which("rsync") is not None
 
-    def validate_paths(
-        self, source: str, destination: str, auto_create: bool = False
-    ) -> bool:
+    def validate_paths(self, source: str, destination: str, auto_create: bool = False) -> bool:
         """验证源路径和目标路径 / Validate source and destination paths"""
         source_path = Path(source)
         dest_path = Path(destination)
@@ -348,9 +340,7 @@ class SyncManager:
                         f"已创建目标目录 / Created destination directory: {destination}"
                     )
                 except Exception as e:
-                    self.logger.error(
-                        f"创建目标目录失败 / Failed to create destination: {e}"
-                    )
+                    self.logger.error(f"创建目标目录失败 / Failed to create destination: {e}")
                     return False
             else:
                 self.logger.error(
@@ -362,7 +352,7 @@ class SyncManager:
 
     def run_sync(
         self,
-        config: Dict,
+        config: dict,
         sync_mode: str = "mirror",
         dry_run: bool = False,
         exclude_empty_dirs: bool = True,
@@ -433,7 +423,9 @@ class SyncManager:
         )
         self.logger.info(f"场景 / Scenario: {scenario.scenario_type}")
         self.logger.info(
-            f"空文件夹排除 / Empty dir exclusion: {'启用' if exclude_empty_dirs else '禁用'} / {'Enabled' if exclude_empty_dirs else 'Disabled'}"
+            f"空文件夹排除 / Empty dir exclusion: "
+            f"{'启用' if exclude_empty_dirs else '禁用'} / "
+            f"{'Enabled' if exclude_empty_dirs else 'Disabled'}"
         )
 
         if dry_run:
@@ -450,9 +442,7 @@ class SyncManager:
             if result.returncode == 0:
                 self.logger.info("同步操作完成 / Sync operation completed!")
                 if dry_run:
-                    self.logger.info(
-                        "这是模拟运行，要实际执行请去掉--dry-run / This was a dry run"
-                    )
+                    self.logger.info("这是模拟运行，要实际执行请去掉--dry-run / This was a dry run")
                 else:
                     self._show_post_sync_advice(scenario, exclude_empty_dirs)
                 return True
@@ -491,15 +481,15 @@ class PresetManager:
     def __init__(self, preset_dir: Path, logger: logging.Logger):
         self.preset_dir = preset_dir
         self.logger = logger
-        self.presets: Dict[str, Dict] = {}
+        self.presets: dict[str, dict] = {}
 
-    def load_presets(self) -> Dict[str, Dict]:
+    def load_presets(self) -> dict[str, dict]:
         """加载所有预设文件 / Load all preset files"""
         preset_files = sorted(self.preset_dir.glob("preset_*.json"))
 
         for i, preset_file in enumerate(preset_files, 1):
             try:
-                with open(preset_file, "r", encoding="utf-8") as f:
+                with open(preset_file, encoding="utf-8") as f:
                     preset_data = json.load(f)
 
                 preset_name = preset_file.stem.replace("preset_", "")
@@ -514,13 +504,11 @@ class PresetManager:
             except json.JSONDecodeError as e:
                 self.logger.error(f"JSON解析失败 / JSON parse error {preset_file}: {e}")
             except Exception as e:
-                self.logger.error(
-                    f"加载预设文件失败 / Failed to load preset {preset_file}: {e}"
-                )
+                self.logger.error(f"加载预设文件失败 / Failed to load preset {preset_file}: {e}")
 
         return self.presets
 
-    def get_preset(self, preset: str) -> Optional[Dict]:
+    def get_preset(self, preset: str) -> dict | None:
         """
         获取指定预设 / Get preset by id, name or file path
         - 数字字符串: 作为编号
@@ -540,7 +528,7 @@ class PresetManager:
         p = Path(preset)
         if p.exists() and p.is_file():
             try:
-                with open(p, "r", encoding="utf-8") as f:
+                with open(p, encoding="utf-8") as f:
                     data = json.load(f)
                 return {
                     "name": data.get("name", p.stem),
@@ -548,15 +536,13 @@ class PresetManager:
                     "data": data,
                 }
             except Exception as e:
-                self.logger.error(
-                    f"加载预设文件失败 / Failed to load preset file {p}: {e}"
-                )
+                self.logger.error(f"加载预设文件失败 / Failed to load preset file {p}: {e}")
                 return None
 
         return None
 
     @staticmethod
-    def normalize_and_validate_config(raw: Dict) -> Optional[Dict]:
+    def normalize_and_validate_config(raw: dict) -> dict | None:
         """
         规范化并校验配置字段，确保类型正确，必填项存在。
         必填: source, destination
@@ -568,7 +554,7 @@ class PresetManager:
             if k not in raw or not isinstance(raw[k], str) or not raw[k].strip():
                 return None
 
-        def to_list(v: Optional[Union[List[str], str]]) -> List[str]:
+        def to_list(v: list[str] | str | None) -> list[str]:
             if v is None:
                 return []
             if isinstance(v, list):
@@ -588,9 +574,9 @@ class PresetManager:
             "extension_black_list": to_list(raw.get("extension_black_list")),
         }
 
-    def list_presets(self) -> List[Tuple[str, str, str, str, str]]:
+    def list_presets(self) -> list[tuple[str, str, str, str, str]]:
         """列出所有预设 / List all presets"""
-        result: List[Tuple[str, str, str, str, str]] = []
+        result: list[tuple[str, str, str, str, str]] = []
         for key, preset in self.presets.items():
             data = preset["data"]
             result.append(
@@ -644,18 +630,14 @@ def interactive_mode(
     logger.info("=" * 60)
     logger.info("🔄 通用文件同步工具 / Universal File Sync Tool")
     logger.info("支持 / Supports: Linux↔Linux, Linux↔Windows, Windows↔Linux")
-    logger.info(
-        "特性 / Features: 可选排除空文件夹 / Optional empty directory exclusion"
-    )
+    logger.info("特性 / Features: 可选排除空文件夹 / Optional empty directory exclusion")
     logger.info("=" * 60)
 
     presets = preset_manager.list_presets()
 
     if not presets:
         logger.error("未找到任何预设文件 / No preset files found")
-        logger.info(
-            "请在同目录下创建 preset_*.json 文件 / Please create preset_*.json files"
-        )
+        logger.info("请在同目录下创建 preset_*.json 文件 / Please create preset_*.json files")
         logger.info("可参考 template.json / Refer to template.json")
         return
 
@@ -672,9 +654,7 @@ def interactive_mode(
     logger.info("=" * 60)
 
     try:
-        choice = input(
-            "请选择预设 / Select preset (0-{}): ".format(len(presets))
-        ).strip()
+        choice = input(f"请选择预设 / Select preset (0-{len(presets)}): ").strip()
 
         if choice == "0":
             logger.info("再见! / Goodbye! 👋")
@@ -689,7 +669,8 @@ def interactive_mode(
         config = PresetManager.normalize_and_validate_config(raw_config)  # type: ignore
         if not config:
             logger.error(
-                "配置缺失或字段类型错误：至少需要 source 与 destination（字符串）/ Invalid config: requires string fields 'source' and 'destination'"
+                "配置缺失或字段类型错误：至少需要 source 与 destination（字符串）/ "
+                "Invalid config: requires string fields 'source' and 'destination'"
             )
             return
         logger.info(f"\n选择的预设 / Selected preset: {config.get('name')}")
@@ -722,18 +703,12 @@ def interactive_mode(
 
         # 执行同步 / Execute sync
         if not dry_run:
-            confirm = (
-                input("\n确认执行同步操作? / Confirm sync operation? (y/n): ")
-                .strip()
-                .lower()
-            )
+            confirm = input("\n确认执行同步操作? / Confirm sync operation? (y/n): ").strip().lower()
             if confirm != "y":
                 logger.info("操作已取消 / Operation cancelled")
                 return
 
-        sync_manager.run_sync(
-            config, sync_mode, dry_run, exclude_empty_dirs, auto_create_dest=True
-        )
+        sync_manager.run_sync(config, sync_mode, dry_run, exclude_empty_dirs, auto_create_dest=True)
 
     except KeyboardInterrupt:
         logger.warning("\n操作被用户中断 / Operation interrupted by user")
@@ -773,9 +748,7 @@ def main():
         action="store_true",
         help="不排除空文件夹 / Do not exclude empty directories",
     )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="详细输出 / Verbose output"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="详细输出 / Verbose output")
     parser.add_argument(
         "-q",
         "--quiet",
@@ -819,7 +792,8 @@ def main():
         config = PresetManager.normalize_and_validate_config(preset["data"])  # type: ignore
         if not config:
             logger.error(
-                "配置缺失或字段类型错误：至少需要 source 与 destination（字符串）/ Invalid config: requires string fields 'source' and 'destination'"
+                "配置缺失或字段类型错误：至少需要 source 与 destination（字符串）/ "
+                "Invalid config: requires string fields 'source' and 'destination'"
             )
             sys.exit(1)
         exclude_empty_dirs = not args.no_exclude_empty

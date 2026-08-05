@@ -1,0 +1,10 @@
+# Prettier 忽略规则 / Prettier ignore rules
+# 版本控制与依赖目录
+.git/
+.kilo/
+node_modules/
+
+# Python 生成/缓存目录
+__pycache__/
+.venv/
+.ruff_cache/

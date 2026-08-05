@@ -40,21 +40,15 @@ def resolve_python_spec() -> str:
 
 def ensure_uv_python(spec: str) -> Path:
     """Install and locate uv-managed Python / 安装并定位 uv 管理的 Python。"""
-    print(
-        f"[INFO] Ensuring uv Python {spec} is installed / 确保安装 uv Python {spec}。"
-    )
+    print(f"[INFO] Ensuring uv Python {spec} is installed / 确保安装 uv Python {spec}。")
     try:
         subprocess.run(["uv", "python", "install", spec], check=True)
     except FileNotFoundError:
-        print(
-            "[ERROR] 'uv' executable not found. Please install uv and ensure it is in PATH."
-        )
+        print("[ERROR] 'uv' executable not found. Please install uv and ensure it is in PATH.")
         print("[错误] 未找到 'uv' 可执行文件。请安装 uv 并确保其在 PATH 中。")
         sys.exit(1)
     except subprocess.CalledProcessError as exc:
-        print(
-            f"[ERROR] Failed to install uv python {spec} (exit code {exc.returncode})."
-        )
+        print(f"[ERROR] Failed to install uv python {spec} (exit code {exc.returncode}).")
         print(f"[错误] 安装 uv python {spec} 失败（退出码 {exc.returncode}）。")
         sys.exit(exc.returncode)
 
@@ -66,23 +60,17 @@ def ensure_uv_python(spec: str) -> Path:
             text=True,
         )
     except FileNotFoundError:
-        print(
-            "[ERROR] 'uv' executable not found. Please install uv and ensure it is in PATH."
-        )
+        print("[ERROR] 'uv' executable not found. Please install uv and ensure it is in PATH.")
         print("[错误] 未找到 'uv' 可执行文件。请安装 uv 并确保其在 PATH 中。")
         sys.exit(1)
     except subprocess.CalledProcessError as exc:
-        print(
-            f"[ERROR] Unable to locate uv python {spec} (exit code {exc.returncode})."
-        )
+        print(f"[ERROR] Unable to locate uv python {spec} (exit code {exc.returncode}).")
         print(f"[错误] 无法定位 uv python {spec}（退出码 {exc.returncode}）。")
         sys.exit(exc.returncode)
 
     path = Path(result.stdout.strip())
     if not path.exists():
-        print(
-            f"[ERROR] Located uv python path does not exist / uv python 路径不存在: {path}"
-        )
+        print(f"[ERROR] Located uv python path does not exist / uv python 路径不存在: {path}")
         sys.exit(1)
     return path
 
@@ -100,9 +88,7 @@ def ensure_uv_venv(spec: str) -> None:
     if interpreter.exists():
         return
 
-    print(
-        f"[INFO] Creating uv virtual environment at / 正在创建 uv 虚拟环境: {VENV_DIR}。"
-    )
+    print(f"[INFO] Creating uv virtual environment at / 正在创建 uv 虚拟环境: {VENV_DIR}。")
     try:
         subprocess.run(
             ["uv", "venv", "--python", spec],
@@ -110,9 +96,7 @@ def ensure_uv_venv(spec: str) -> None:
             cwd=BASE_DIR,
         )
     except FileNotFoundError:
-        print(
-            "[ERROR] 'uv' executable not found. Please install uv and ensure it is in PATH."
-        )
+        print("[ERROR] 'uv' executable not found. Please install uv and ensure it is in PATH.")
         print("[错误] 未找到 'uv' 可执行文件。请安装 uv 并确保其在 PATH 中。")
         sys.exit(1)
     except subprocess.CalledProcessError as exc:
@@ -141,14 +125,16 @@ def existing_requirement_files() -> list[Path]:
         files.append(platform_file)
     elif platform_file:
         print(
-            f"[INFO] Platform-specific requirements file missing / 未找到平台特定依赖文件: {platform_file}"
+            "[INFO] Platform-specific requirements file missing / "
+            f"未找到平台特定依赖文件: {platform_file}"
         )
 
     return files
 
 
 def main() -> None:
-    """Run ``uv pip install`` for the shared and platform-specific requirements / 调用 ``uv pip install`` 安装通用与平台特定依赖。"""
+    """Run ``uv pip install`` for the shared and platform-specific requirements /
+    调用 ``uv pip install`` 安装通用与平台特定依赖。"""
     python_spec = resolve_python_spec()
     ensure_uv_python(python_spec)
     ensure_uv_venv(python_spec)
@@ -173,9 +159,7 @@ def main() -> None:
     try:
         subprocess.run(command, check=True)
     except FileNotFoundError:
-        print(
-            "[ERROR] 'uv' executable not found. Please install uv and ensure it is in PATH."
-        )
+        print("[ERROR] 'uv' executable not found. Please install uv and ensure it is in PATH.")
         print("[错误] 未找到 'uv' 可执行文件。请安装 uv 并确保其在 PATH 中。")
         sys.exit(1)
     except subprocess.CalledProcessError as exc:
@@ -189,16 +173,12 @@ def main() -> None:
     print("=" * 70)
     print("\nTo use the virtual environment, choose one of the following methods:")
     print("使用虚拟环境，请选择以下方式之一：")
-    print(
-        "\n1. Activate the virtual environment (traditional way) / 激活虚拟环境（传统方式）:"
-    )
+    print("\n1. Activate the virtual environment (traditional way) / 激活虚拟环境（传统方式）:")
     if platform.system() == "Windows":
         print(f"   {VENV_DIR}\\Scripts\\Activate.ps1")
     else:
         print(f"   source {VENV_DIR}/bin/activate")
-    print(
-        "\n2. Run scripts directly with virtual environment Python / 直接使用虚拟环境的 Python:"
-    )
+    print("\n2. Run scripts directly with virtual environment Python / 直接使用虚拟环境的 Python:")
     print(f"   {venv_python_path()} <your_script.py>")
     print("\n3. Use uv run (modern way) / 使用 uv run（现代方式）:")
     print(f"   uv run --python {VENV_DIR} <your_script.py>")

@@ -24,11 +24,9 @@
 - 复制模式：复制文件保留原文件夹结构
 """
 
-import shutil
 import platform
+import shutil
 from pathlib import Path
-from typing import List
-
 
 # 支持的图片格式
 IMAGE_EXTENSIONS = {
@@ -70,7 +68,7 @@ def wait_for_exit():
             print()  # 新行，美化输出
 
 
-def get_image_files(directory: Path) -> List[Path]:
+def get_image_files(directory: Path) -> list[Path]:
     """
     获取指定目录下的所有图片文件
 
@@ -165,9 +163,7 @@ def generate_new_filename(
     return new_name
 
 
-def ensure_unique_filename(
-    target_dir: Path, filename: str, separator: str = "_"
-) -> str:
+def ensure_unique_filename(target_dir: Path, filename: str, separator: str = "_") -> str:
     """
     确保文件名唯一，如果存在重复则智能添加编号
 
@@ -204,9 +200,7 @@ def ensure_unique_filename(
         # 检查最后一部分是否为纯数字
         if last_part.isdigit():
             # 纯数字情况：智能补全序号
-            return _handle_numeric_suffix(
-                target_dir, base_name, last_part, ext_part, separator
-            )
+            return _handle_numeric_suffix(target_dir, base_name, last_part, ext_part, separator)
 
     # 非纯数字或没有分隔符：添加 (1), (2) 等
     return _handle_parenthesis_suffix(target_dir, name_part, ext_part)
@@ -461,9 +455,7 @@ def main():
     if delete_strategy == "force":
         # 强制删除所有已处理的子文件夹
         print("\n清理子文件夹（强制删除）...")
-        sorted_subdirs = sorted(
-            processed_subdirs, key=lambda p: len(p.parts), reverse=True
-        )
+        sorted_subdirs = sorted(processed_subdirs, key=lambda p: len(p.parts), reverse=True)
 
         for subdir in sorted_subdirs:
             try:
@@ -490,9 +482,7 @@ def main():
     elif delete_strategy == "empty":
         # 只删除空文件夹
         print("\n清理空文件夹...")
-        sorted_subdirs = sorted(
-            processed_subdirs, key=lambda p: len(p.parts), reverse=True
-        )
+        sorted_subdirs = sorted(processed_subdirs, key=lambda p: len(p.parts), reverse=True)
 
         for subdir in sorted_subdirs:
             try:
