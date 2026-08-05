@@ -49,6 +49,16 @@ $gitTools = @{
 
 Install-ScoopPackages $gitTools
 
+# Shell 脚本工具
+Write-Header "Shell 脚本工具 / Shell Script Tools"
+
+$shellTools = @{
+    "shellcheck" = @{ Desc = "shellcheck (bash 静态检查 / bash static analysis)"; Global = $false; Default = $true }
+    "shfmt"      = @{ Desc = "shfmt (bash 格式化 / bash formatter)"; Global = $false; Default = $true }
+}
+
+Install-ScoopPackages $shellTools
+
 # SVN 客户端
 Write-Header "SVN 客户端 / SVN Clients"
 
@@ -76,7 +86,7 @@ Write-Step "Python 包管理器 / Python Package Manager (Optional)"
 Write-Note "可以选择安装 uv、miniconda3 或两者都装 / Can install uv, miniconda3, or both"
 
 $pythonPackageManagers = @{
-    "uv" = @{
+    "uv"         = @{
         Desc    = "uv (现代 Python 包管理器，推荐个人开发 / Modern Python package manager, recommended)"
         Global  = $false
         Default = $true
@@ -169,7 +179,6 @@ Write-Header "其他开发工具 / Other Development Tools"
 $devTools = @{
     "jq"     = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
     "pandoc" = @{ Desc = "Pandoc (文档转换器 / Document converter)"; Global = $true }
-    "shfmt"  = @{ Desc = "shfmt (Shell 格式化工具 / Shell formatter)"; Global = $false }
     "adb"    = @{ Desc = "adb (Android Debug Bridge)"; Global = $false }
 }
 
