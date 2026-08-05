@@ -4,7 +4,12 @@ README.md
 # 如果需要，也可以忽略其他仓库管理文件
 .gitignore
 LICENSE
+.github/
 scripts/
+
+# 仓库级开发/文档文件（不应同步到 home）
+AGENTS.md
+ruff.toml
 
 # Windows 系统忽略 Linux 特定配置
 {{- if eq .chezmoi.os "windows" }}
@@ -18,7 +23,6 @@ scripts/
 .config/fcitx5/
 .config/environment.d/
 .local/share/fcitx5/
-.local/share/rofi/
 
 # Linux shell 配置
 .config/fish/

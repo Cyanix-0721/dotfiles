@@ -1,0 +1,9 @@
+# 行尾规范化 / Line ending normalization
+# bash 脚本必须 LF（否则 shellcheck/shfmt 异常）
+*.sh   text eol=lf
+.gitattributes text eol=lf
+
+# Windows 批处理/脚本保持 CRLF
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+*.ps1  text eol=crlf
