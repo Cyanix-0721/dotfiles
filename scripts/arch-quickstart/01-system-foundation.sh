@@ -154,6 +154,9 @@ fi
 # 安装 Flatpak / Install Flatpak
 if confirm_install 1 "安装 Flatpak？/ Install Flatpak?"; then
 	header "安装 Flatpak / Installing Flatpak"
+
+	# 安装 Flatpak / Install Flatpak
+	step "安装 Flatpak / Installing Flatpak"
 	sudo pacman -S --noconfirm flatpak
 	ok "Flatpak 安装完成 / Flatpak installed"
 else
@@ -312,6 +315,7 @@ fi
 # 备份工具
 header "备份工具 / Backup Tools"
 if confirm_install 1 "安装备份工具？/ Install backup tools?"; then
+	step "安装备份工具 / Installing backup tools"
 	sudo pacman -S --noconfirm snapper btrfs-assistant snap-pac
 	ok "备份工具安装完成 / Backup tools installed"
 else
