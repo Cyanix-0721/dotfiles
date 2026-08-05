@@ -8,7 +8,7 @@ Automated file synchronization tool supporting Linux/Windows cross-platform sync
 
 - 🔄 支持多种同步场景 / Multiple sync scenarios supported
   - Linux ↔ Linux
-  - Linux ↔ Windows  
+  - Linux ↔ Windows
   - Windows ↔ Linux
 - 🎯 智能文件系统检测 / Intelligent filesystem detection
   - 自动识别 NTFS、ext4、FAT32 等文件系统
@@ -29,10 +29,10 @@ Automated file synchronization tool supporting Linux/Windows cross-platform sync
   ```bash
   # Ubuntu/Debian
   sudo apt install rsync
-  
+
   # Arch/Manjaro
   sudo pacman -S rsync
-  
+
   # Fedora/RHEL
   sudo dnf install rsync
   ```
@@ -74,10 +74,10 @@ cp template.json preset_mybackup.json
     "description": "从NTFS只读分区同步音乐文件到本地音乐库",
     "source": "/mnt/DDDD/UserData/Music/Music/My collection/",
     "destination": "/home/user/Music/",
-    
+
     "folder_white_list": [],
     "folder_black_list": ["temp", "cache"],
-    
+
     "extension_white_list": [
         "flac", "wav", "mp3", "m4a", "aac", "ogg"
     ],
@@ -107,7 +107,7 @@ cp template.json preset_mybackup.json
 - **有斜杠** `/path/source/`：同步源目录**内的内容**到目标目录
   - 例如: `/mnt/Music/` → 将 Music 文件夹内的文件同步到目标
   - With slash: syncs **contents** of source directory to destination
-  
+
 - **无斜杠** `/path/source`：在目标目录**创建源目录的子文件夹**
   - 例如: `/mnt/Music` → 在目标目录创建 Music 子文件夹
   - Without slash: creates source directory **as a subdirectory** in destination

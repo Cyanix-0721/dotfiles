@@ -1,0 +1,67 @@
+# CI 校验 / Continuous Integration
+# 防止配置/脚本破坏：模板渲染、Python/bash/PowerShell 代码质量
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # 1. Chezmoi 模板渲染校验：防止模板语法错误破坏整机配置
+  chezmoi:
+    name: Chezmoi template validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install chezmoi
+        run: sudo sh -c 'curl -fsSL https://get.chezmoi.io | sh'
+      - name: Render all templates
+        run: |
+          set -euo pipefail
+          for t in $(git ls-files '*.tmpl'); do
+            echo "Rendering $t"
+            chezmoi execute-template --init \
+              --promptString name=CI \
+              --promptString email=ci@example.com \
+              --promptString editor=nvim \
+              --promptString aria2RpcSecret=ci-secret \
+              < "$t" > /dev/null
+          done
+
+  # 2. Python lint (ruff)
+  python:
+    name: Python lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install ruff
+        run: uv tool install ruff
+      - name: Run ruff
+        run: ruff check scripts/
+
+  # 3. Shell lint (shellcheck)
+  shell:
+    name: Shell lint (shellcheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Run shellcheck
+        run: |
+          mapfile -t sh_files < <(find scripts dot_local/bin -name '*.sh' -type f)
+          shellcheck -x -S warning "${sh_files[@]}"
+
+  # 4. PowerShell lint (PSScriptAnalyzer)
+  powershell:
+    name: PowerShell lint (PSScriptAnalyzer)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+          Invoke-ScriptAnalyzer -Path scripts/windows-quickstart -Recurse
