@@ -108,6 +108,23 @@ $pythonPackageManagers = @{
 
 Install-ScoopPackages $pythonPackageManagers
 
+# uv 工具 (copyparty, ruff / uv tools)
+if (Get-Command uv -ErrorAction SilentlyContinue) {
+    Write-Step "uv 工具 / uv Tools (copyparty, ruff)"
+    $installUvTools = Confirm-Install "安装 uv 工具 copyparty、ruff？(Y/n) / Install uv tools copyparty, ruff? (Y/n)"
+    if ($installUvTools -notmatch '^[Nn]$') {
+        Write-Step "安装 uv 工具 / Installing uv tools (copyparty, ruff)"
+        uv tool install copyparty ruff
+        Write-Ok "uv 工具安装完成 / uv tools installed"
+    }
+    else {
+        Write-Note "跳过 uv 工具 / Skipping uv tools"
+    }
+}
+else {
+    Write-Note "uv 未安装，跳过 uv 工具 / uv not installed, skipping uv tools"
+}
+
 # .NET 运行时和 SDK
 Write-Header ".NET 运行时和 SDK / .NET Runtime and SDK"
 
