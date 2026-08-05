@@ -26,10 +26,7 @@ jobs:
           for t in $(git ls-files '*.tmpl'); do
             echo "Rendering $t"
             chezmoi execute-template --init \
-              --promptString name=CI \
-              --promptString email=ci@example.com \
-              --promptString editor=nvim \
-              --promptString aria2RpcSecret=ci-secret \
+              --override-data '{"name":"CI","email":"ci@example.com","editor":"nvim","aria2RpcSecret":"ci-secret"}' \
               < "$t" > /dev/null
           done
 
