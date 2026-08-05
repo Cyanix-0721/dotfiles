@@ -71,7 +71,7 @@ step "安装 pacman-contrib 与 reflector / Installing pacman-contrib and reflec
 sudo pacman -S --noconfirm pacman-contrib reflector
 
 # 配置 reflector 服务和定时器 / Configure reflector service and timer
-if confirm_install "配置 reflector 服务与定时器？/ Configure reflector service and timer?" 0; then
+if confirm_install 0 "配置 reflector 服务与定时器？/ Configure reflector service and timer?"; then
 	step "配置 reflector 服务与定时器 / Configuring reflector"
 
 	# 获取脚本所在目录 / Get script directory
@@ -92,7 +92,7 @@ else
 fi
 
 # 配置 ArchlinuxCN 仓库 / Configure ArchlinuxCN Repository
-if confirm_install "配置 ArchlinuxCN 仓库？/ Configure ArchlinuxCN repository?" 0; then
+if confirm_install 0 "配置 ArchlinuxCN 仓库？/ Configure ArchlinuxCN repository?"; then
 	header "配置 ArchlinuxCN 仓库 / Configuring ArchlinuxCN repository"
 
 	# 检查是否已配置 archlinuxcn / Check if archlinuxcn is already configured
@@ -131,7 +131,7 @@ else
 fi
 
 # 可选：安装 yay / Optional: install yay
-if confirm_install "安装 yay 作为备用 AUR 助手？/ Install yay as alternative AUR helper?" 0; then
+if confirm_install 0 "安装 yay 作为备用 AUR 助手？/ Install yay as alternative AUR helper?"; then
 	step "安装 yay / Installing yay"
 	if ! command -v yay &>/dev/null; then
 		temp_dir=$(mktemp -d)
@@ -148,7 +148,7 @@ if confirm_install "安装 yay 作为备用 AUR 助手？/ Install yay as altern
 fi
 
 # 安装 Flatpak / Install Flatpak
-if confirm_install "安装 Flatpak？/ Install Flatpak?" 1; then
+if confirm_install 1 "安装 Flatpak？/ Install Flatpak?"; then
 	header "安装 Flatpak / Installing Flatpak"
 	sudo pacman -S --noconfirm flatpak
 else
@@ -189,7 +189,7 @@ if command -v refind-install &>/dev/null; then
 	ok "rEFInd 已安装 / rEFInd is already installed"
 	refind_available=true
 else
-	if confirm_install "安装 rEFInd 引导管理器？/ Install rEFInd boot manager?" 1; then
+	if confirm_install 1 "安装 rEFInd 引导管理器？/ Install rEFInd boot manager?"; then
 		step "安装 rEFInd / Installing rEFInd"
 		sudo pacman -S --noconfirm refind
 
@@ -209,7 +209,7 @@ fi
 
 # 询问是否运行 refind-install (仅在工具可用时)
 if [[ $refind_available == "true" ]]; then
-	if confirm_install "运行 refind-install 安装到 EFI 分区？/ Run refind-install to install to EFI partition?" 1; then
+	if confirm_install 1 "运行 refind-install 安装到 EFI 分区？/ Run refind-install to install to EFI partition?"; then
 		step "安装 rEFInd 到 EFI 分区 / Installing to EFI partition"
 		sudo refind-install
 		ok "rEFInd 已安装到 EFI 分区 / Installed to EFI partition"
@@ -221,7 +221,7 @@ fi
 # 安装 rEFInd 主题 (仅在 rEFInd 可用时)
 if [[ $refind_available == "true" ]]; then
 	header "rEFInd 主题安装 / rEFInd Theme Installation"
-	if confirm_install "安装 Catppuccin 主题？/ Install Catppuccin theme?" 1; then
+	if confirm_install 1 "安装 Catppuccin 主题？/ Install Catppuccin theme?"; then
 
 		# 查找 rEFInd 目录
 		REFIND_DIR=""
@@ -306,7 +306,7 @@ fi
 
 # 备份工具
 header "备份工具 / Backup Tools"
-if confirm_install "安装备份工具？/ Install backup tools?" 1; then
+if confirm_install 1 "安装备份工具？/ Install backup tools?"; then
 	sudo pacman -S --noconfirm snapper btrfs-assistant snap-pac
 else
 	note "跳过备份工具安装 / Skipping backup tools"
@@ -320,7 +320,7 @@ if command -v chezmoi &>/dev/null; then
 	ok "Chezmoi 已安装 / Chezmoi already installed"
 	chezmoi_available=true
 else
-	if confirm_install "安装 Chezmoi？/ Install Chezmoi?" 1; then
+	if confirm_install 1 "安装 Chezmoi？/ Install Chezmoi?"; then
 		step "安装 Chezmoi / Installing Chezmoi"
 		sudo pacman -S --noconfirm chezmoi
 
@@ -340,7 +340,7 @@ fi
 
 # 询问是否初始化 dotfiles (仅在工具可用时)
 if [[ $chezmoi_available == "true" ]]; then
-	if confirm_install "初始化 dotfiles 配置？/ Initialize dotfiles configuration?" 1; then
+	if confirm_install 1 "初始化 dotfiles 配置？/ Initialize dotfiles configuration?"; then
 		step "初始化 dotfiles 配置 / Initializing dotfiles"
 		chezmoi init https://github.com/Cyanix-0721/dotfiles.git -a
 		ok "dotfiles 配置初始化完成 / dotfiles initialized"

@@ -45,7 +45,7 @@ fi
 ok "输入法安装完成 / Input method installed"
 
 # 配置输入法环境变量（可选） / Configure input method environment variables (optional)
-if confirm_install "配置输入法环境变量？/ Configure input method env vars?" 0; then
+if confirm_install 0 "配置输入法环境变量？/ Configure input method env vars?"; then
 	step "配置输入法环境变量 / Configuring input method env vars"
 
 	# 创建配置目录（如果不存在）

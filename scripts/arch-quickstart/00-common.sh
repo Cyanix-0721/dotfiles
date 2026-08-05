@@ -51,10 +51,11 @@ init_auto_yes() {
 }
 
 # 询问是否执行操作；返回 0=是，1=否
-# default_yes: 1 → [Y/n]（回车=是）；0 → [y/N]（回车=否）
+# 用法: confirm_install <default_yes> <prompt>
+#   default_yes: 1 → [Y/n]（回车=是）；0 → [y/N]（回车=否）
 confirm_install() {
-	local prompt=$1
-	local default_yes=${2:-0}
+	local default_yes=${1:-0}
+	local prompt=${2:-}
 	if [ "$AUTO_YES" = "1" ]; then
 		return 0
 	fi

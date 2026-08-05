@@ -36,7 +36,7 @@ sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn
 paru -S --noconfirm zen-browser-bin ungoogled-chromium-bin localsend-bin bibata-cursor-theme-bin vesktop-bin ayugram-desktop
 
 # 询问是否安装 Podman
-if confirm_install "安装 Podman 与 podman-compose？/ Install Podman and podman-compose?" 1; then
+if confirm_install 1 "安装 Podman 与 podman-compose？/ Install Podman and podman-compose?"; then
 	step "安装容器工具 / Installing container tools"
 	sudo pacman -S --noconfirm podman podman-compose podman-docker
 
@@ -51,11 +51,11 @@ else
 fi
 
 # 询问是否安装 LazyVim
-if confirm_install "安装 LazyVim Starter？/ Install LazyVim Starter?" 0; then
+if confirm_install 0 "安装 LazyVim Starter？/ Install LazyVim Starter?"; then
 	step "安装 LazyVim Starter / Installing LazyVim Starter"
 
 	# 询问是否备份现有配置
-	if confirm_install "备份现有 Neovim 配置？/ Backup existing Neovim configuration?" 1; then
+	if confirm_install 1 "备份现有 Neovim 配置？/ Backup existing Neovim configuration?"; then
 		step "备份 Neovim 配置 / Backing up Neovim configuration"
 		# 必需备份
 		mv ~/.config/nvim ~/.config/nvim.bak 2>/dev/null || echo "无现有 nvim 配置可备份 / No existing nvim configuration to backup"
@@ -85,7 +85,7 @@ else
 fi
 
 # 询问是否安装 vfox
-if confirm_install "安装 vfox（版本管理工具）？/ Install vfox (version manager)?" 1; then
+if confirm_install 1 "安装 vfox（版本管理工具）？/ Install vfox (version manager)?"; then
 	step "安装 vfox / Installing vfox"
 	curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash
 	ok "vfox 安装完成 / vfox installed"
@@ -94,7 +94,7 @@ else
 fi
 
 # 询问是否启用 MPD 服务
-if confirm_install "启用 MPD（音乐播放器守护进程）用户服务？/ Enable MPD user service?" 1; then
+if confirm_install 1 "启用 MPD（音乐播放器守护进程）用户服务？/ Enable MPD user service?"; then
 	step "启用 MPD 用户服务 / Enabling MPD user service"
 	systemctl --user enable --now mpd.service
 	systemctl --user enable --now mpd-mpris.service
@@ -104,7 +104,7 @@ else
 fi
 
 # 询问是否启用 Syncthing 服务
-if confirm_install "启用 Syncthing（文件同步）用户服务？/ Enable Syncthing user service?" 1; then
+if confirm_install 1 "启用 Syncthing（文件同步）用户服务？/ Enable Syncthing user service?"; then
 	step "启用 Syncthing 用户服务 / Enabling Syncthing user service"
 	systemctl --user enable --now syncthing.service
 	ok "Syncthing 用户服务已启用 / Syncthing user service enabled"
@@ -114,7 +114,7 @@ else
 fi
 
 # 询问是否启用 Ly 显示管理器
-if confirm_install "启用 Ly 显示管理器？/ Enable Ly display manager?" 1; then
+if confirm_install 1 "启用 Ly 显示管理器？/ Enable Ly display manager?"; then
 	echo -n "选择启动 TTY（如 tty2 或 2）[默认 tty2] / Choose TTY (e.g., tty2 or 2) [default tty2]: "
 	read -r ly_tty
 
