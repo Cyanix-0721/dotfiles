@@ -15,7 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install chezmoi
-        uses: twpayne/chezmoi-action@v1
+        run: |
+          curl -fsSL https://get.chezmoi.io | sh
+          echo "$HOME/bin" >> "$GITHUB_PATH"
       - name: Render all templates
         run: |
           set -euo pipefail
