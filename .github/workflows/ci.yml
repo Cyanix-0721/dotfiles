@@ -20,10 +20,6 @@ jobs:
           chezmoi_path=$(find "$HOME" -name chezmoi -type f 2>/dev/null | head -1)
           echo "Found chezmoi: ${chezmoi_path}"
           echo "$(dirname "${chezmoi_path}")" >> "$GITHUB_PATH"
-      - name: Configure git identity for templates
-        run: |
-          git config --global user.name "CI"
-          git config --global user.email "ci@example.com"
       - name: Render all templates
         run: |
           set -euo pipefail
