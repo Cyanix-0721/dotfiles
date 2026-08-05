@@ -17,28 +17,28 @@ if ! command -v paru &>/dev/null; then
 fi
 
 step "安装命令行工具 / Installing command line tools"
-install_official 1 fzf zoxide ripgrep fd eza bat stow btop fastfetch dex viu less
+sudo pacman -S --noconfirm fzf zoxide ripgrep fd eza bat stow btop fastfetch dex viu less
 
 step "安装开发工具 / Installing development tools"
-install_official 1 neovim python-pynvim lazygit gitui github-cli uv ast-grep git-delta poppler resvg imagemagick jq luarocks ruff shellcheck shfmt copyparty
-install_aur 1 visual-studio-code-bin
+sudo pacman -S --noconfirm neovim python-pynvim lazygit gitui github-cli uv ast-grep git-delta poppler resvg imagemagick jq luarocks ruff shellcheck shfmt copyparty
+paru -S --noconfirm visual-studio-code-bin
 
 step "安装系统工具 / Installing system tools"
-install_official 1 mako fuzzel ntfs-3g niri lysd qt6ct xwayland-satellite playerctl polkit-kde-agent xdg-desktop-portal xdg-desktop-portal-gtk nwg-look cliphist wl-clipboard wl-clip-persist udisks2
-install_aur 1 systemd-manager-tui
+sudo pacman -S --noconfirm mako fuzzel ntfs-3g niri lysd qt6ct xwayland-satellite playerctl polkit-kde-agent xdg-desktop-portal xdg-desktop-portal-gtk nwg-look cliphist wl-clipboard wl-clip-persist udisks2
+paru -S --noconfirm systemd-manager-tui
 
 step "安装网络工具 / Installing network tools"
-install_official 1 nmap
-install_aur 1 clash-verge-rev-bin
+sudo pacman -S --noconfirm nmap
+paru -S --noconfirm clash-verge-rev-bin
 
 step "安装日常应用 / Installing daily applications"
-install_official 1 obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn mpv ffmpeg gimp yazi 7zip dolphin nautilus scrcpy syncthing mpd mpd-mpris rmpc kdenlive cava
-install_aur 1 zen-browser-bin ungoogled-chromium-bin localsend-bin bibata-cursor-theme-bin vesktop-bin ayugram-desktop
+sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn mpv ffmpeg gimp yazi 7zip dolphin nautilus scrcpy syncthing mpd mpd-mpris rmpc kdenlive cava
+paru -S --noconfirm zen-browser-bin ungoogled-chromium-bin localsend-bin bibata-cursor-theme-bin vesktop-bin ayugram-desktop
 
 # 询问是否安装 Podman
 if confirm_install "安装 Podman 与 podman-compose？/ Install Podman and podman-compose?" 1; then
 	step "安装容器工具 / Installing container tools"
-	install_official 1 podman podman-compose podman-docker
+	sudo pacman -S --noconfirm podman podman-compose podman-docker
 
 	step "配置 Podman 镜像源 / Configuring Podman registry mirror"
 	sudo tee /etc/containers/registries.conf.d/10-unqualified-search-registries.conf <<EOF

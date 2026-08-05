@@ -12,7 +12,7 @@ header "中文本地化配置 / Chinese Localization"
 
 # 安装中文字体 / Install Chinese fonts
 step "安装中文字体 / Installing Chinese fonts"
-install_official 1 adobe-source-han-sans-cn-fonts adobe-source-han-serif-cn-fonts noto-fonts-cjk noto-fonts-emoji wqy-microhei wqy-microhei-lite wqy-bitmapfont wqy-zenhei ttf-arphic-ukai ttf-arphic-uming ttf-jetbrains-mono ttf-jetbrains-mono-nerd ttf-sarasa-gothic
+sudo pacman -S --noconfirm adobe-source-han-sans-cn-fonts adobe-source-han-serif-cn-fonts noto-fonts-cjk noto-fonts-emoji wqy-microhei wqy-microhei-lite wqy-bitmapfont wqy-zenhei ttf-arphic-ukai ttf-arphic-uming ttf-jetbrains-mono ttf-jetbrains-mono-nerd ttf-sarasa-gothic
 
 # 清除字体缓存 / Clear font cache
 step "清除字体缓存 / Clearing font cache"
@@ -21,13 +21,11 @@ ok "字体缓存清除完成 / Font cache cleared"
 
 # 安装输入法 / Install input method
 step "安装输入法 / Installing input method"
-install_official 1 fcitx5-im fcitx5-rime fcitx5-chinese-addons
+sudo pacman -S --noconfirm fcitx5-im fcitx5-rime fcitx5-chinese-addons
 
 # 检测并安装 rime-wanxiang-pinyin / Detect and install rime-wanxiang-pinyin
 step "检测 rime-wanxiang-pinyin 安装方式 / Detecting installation method"
-if pkg_installed rime-wanxiang-pinyin; then
-	ok "rime-wanxiang-pinyin 已安装 / rime-wanxiang-pinyin already installed"
-elif pacman -Si rime-wanxiang-pinyin &>/dev/null; then
+if pacman -Si rime-wanxiang-pinyin &>/dev/null; then
 	# 从官方仓库安装 / Install from official repository
 	step "从官方仓库安装 rime-wanxiang-pinyin / Installing from official repo"
 	sudo pacman -S --noconfirm rime-wanxiang-pinyin
