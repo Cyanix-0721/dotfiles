@@ -5,12 +5,14 @@ set -e
 # 加载公共函数
 . "$(dirname "$0")/00-common.sh"
 
+# 自动确认模式（全选 Y）
+init_auto_yes
+
 header "中文本地化配置 / Chinese Localization"
 
 # 安装中文字体 / Install Chinese fonts
 step "安装中文字体 / Installing Chinese fonts"
-sudo pacman -S --noconfirm adobe-source-han-sans-cn-fonts adobe-source-han-serif-cn-fonts noto-fonts-cjk noto-fonts-emoji wqy-microhei wqy-microhei-lite wqy-bitmapfont wqy-zenhei ttf-arphic-ukai ttf-arphic-uming ttf-jetbrains-mono ttf-jetbrains-mono-nerd ttf-sarasa-gothic
-ok "中文字体安装完成 / Chinese fonts installed"
+install_official 1 adobe-source-han-sans-cn-fonts adobe-source-han-serif-cn-fonts noto-fonts-cjk noto-fonts-emoji wqy-microhei wqy-microhei-lite wqy-bitmapfont wqy-zenhei ttf-arphic-ukai ttf-arphic-uming ttf-jetbrains-mono ttf-jetbrains-mono-nerd ttf-sarasa-gothic
 
 # 清除字体缓存 / Clear font cache
 step "清除字体缓存 / Clearing font cache"
@@ -19,11 +21,13 @@ ok "字体缓存清除完成 / Font cache cleared"
 
 # 安装输入法 / Install input method
 step "安装输入法 / Installing input method"
-sudo pacman -S --noconfirm fcitx5-im fcitx5-rime fcitx5-chinese-addons
+install_official 1 fcitx5-im fcitx5-rime fcitx5-chinese-addons
 
 # 检测并安装 rime-wanxiang-pinyin / Detect and install rime-wanxiang-pinyin
 step "检测 rime-wanxiang-pinyin 安装方式 / Detecting installation method"
-if pacman -Si rime-wanxiang-pinyin &>/dev/null; then
+if pkg_installed rime-wanxiang-pinyin; then
+	ok "rime-wanxiang-pinyin 已安装 / rime-wanxiang-pinyin already installed"
+elif pacman -Si rime-wanxiang-pinyin &>/dev/null; then
 	# 从官方仓库安装 / Install from official repository
 	step "从官方仓库安装 rime-wanxiang-pinyin / Installing from official repo"
 	sudo pacman -S --noconfirm rime-wanxiang-pinyin
@@ -43,9 +47,7 @@ fi
 ok "输入法安装完成 / Input method installed"
 
 # 配置输入法环境变量（可选） / Configure input method environment variables (optional)
-read -p "配置输入法环境变量？[y/N] / Configure input method env vars? [y/N]: " -r configure_im
-
-if [[ "$configure_im" =~ ^[Yy]$ ]]; then
+if confirm_install "配置输入法环境变量？/ Configure input method env vars?" 0; then
 	step "配置输入法环境变量 / Configuring input method env vars"
 
 	# 创建配置目录（如果不存在）

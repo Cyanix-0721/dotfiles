@@ -5,6 +5,9 @@ set -e
 # 加载公共函数
 . "$(dirname "$0")/00-common.sh"
 
+# 自动确认模式（全选 Y）
+init_auto_yes
+
 header "系统基础环境配置 / System Foundation Setup"
 
 # 检查网络连接 / Check network connection
@@ -21,8 +24,7 @@ ok "系统更新完成 / System update completed"
 
 # 安装基础工具 / Install basic tools
 step "安装基础工具 / Installing basic tools"
-sudo pacman -S --needed --noconfirm git subversion base-devel
-ok "基础工具安装完成 / Basic tools installed"
+install_official 1 git subversion base-devel
 
 # 安装终端模拟器 / Install terminal emulator
 header "终端模拟器 / Terminal Emulator"
@@ -42,8 +44,7 @@ esac
 
 if [[ -n "$term_packages" ]]; then
 	step "安装终端模拟器: $term_packages / Installing: $term_packages"
-	sudo pacman -S --noconfirm $term_packages
-	ok "终端模拟器安装完成 / Terminal emulator installed"
+	install_official 1 $term_packages
 fi
 
 # 安装 Shell / Install Shell
@@ -62,18 +63,15 @@ esac
 
 if [[ -n "$shell_packages" ]]; then
 	step "安装 Shell: $shell_packages / Installing: $shell_packages"
-	sudo pacman -S --noconfirm $shell_packages
-	ok "Shell 安装完成 / Shell installed"
+	install_official 1 $shell_packages
 fi
 
 # 安装 pacman 工具 / Install pacman tools
 step "安装 pacman-contrib 与 reflector / Installing pacman-contrib and reflector"
-sudo pacman -S --noconfirm pacman-contrib reflector
-ok "pacman-contrib 与 reflector 安装完成 / Installed"
+install_official 1 pacman-contrib reflector
 
 # 配置 reflector 服务和定时器 / Configure reflector service and timer
-read -p "配置 reflector 服务与定时器？[y/N] / Configure reflector service and timer? [y/N]: " configure_reflector
-if [[ $configure_reflector =~ ^[Yy]$ ]]; then
+if confirm_install "配置 reflector 服务与定时器？/ Configure reflector service and timer?" 0; then
 	step "配置 reflector 服务与定时器 / Configuring reflector"
 
 	# 获取脚本所在目录 / Get script directory
@@ -94,8 +92,7 @@ else
 fi
 
 # 配置 ArchlinuxCN 仓库 / Configure ArchlinuxCN Repository
-read -p "配置 ArchlinuxCN 仓库？[y/N] / Configure ArchlinuxCN repository? [y/N]: " configure_archlinuxcn
-if [[ $configure_archlinuxcn =~ ^[Yy]$ ]]; then
+if confirm_install "配置 ArchlinuxCN 仓库？/ Configure ArchlinuxCN repository?" 0; then
 	header "配置 ArchlinuxCN 仓库 / Configuring ArchlinuxCN repository"
 
 	# 检查是否已配置 archlinuxcn / Check if archlinuxcn is already configured
@@ -134,8 +131,7 @@ else
 fi
 
 # 可选：安装 yay / Optional: install yay
-read -p "安装 yay 作为备用 AUR 助手？[y/N] / Install yay as alternative AUR helper? [y/N]: " install_yay
-if [[ $install_yay =~ ^[Yy]$ ]]; then
+if confirm_install "安装 yay 作为备用 AUR 助手？/ Install yay as alternative AUR helper?" 0; then
 	step "安装 yay / Installing yay"
 	if ! command -v yay &>/dev/null; then
 		temp_dir=$(mktemp -d)
@@ -152,14 +148,9 @@ if [[ $install_yay =~ ^[Yy]$ ]]; then
 fi
 
 # 安装 Flatpak / Install Flatpak
-read -p "安装 Flatpak？[Y/n] / Install Flatpak? [Y/n]: " install_flatpak
-if [[ ! $install_flatpak =~ ^[Nn]$ ]]; then
+if confirm_install "安装 Flatpak？/ Install Flatpak?" 1; then
 	header "安装 Flatpak / Installing Flatpak"
-
-	# 安装 Flatpak / Install Flatpak
-	step "安装 Flatpak / Installing Flatpak"
-	sudo pacman -S --noconfirm flatpak
-	ok "Flatpak 安装完成 / Flatpak installed"
+	install_official 1 flatpak
 else
 	note "跳过 Flatpak 安装 / Skipping Flatpak"
 fi
@@ -198,10 +189,9 @@ if command -v refind-install &>/dev/null; then
 	ok "rEFInd 已安装 / rEFInd is already installed"
 	refind_available=true
 else
-	read -p "安装 rEFInd 引导管理器？[Y/n] / Install rEFInd boot manager? [Y/n]: " install_refind
-	if [[ ! $install_refind =~ ^[Nn]$ ]]; then
+	if confirm_install "安装 rEFInd 引导管理器？/ Install rEFInd boot manager?" 1; then
 		step "安装 rEFInd / Installing rEFInd"
-		sudo pacman -S --noconfirm refind
+		install_official 1 refind
 
 		# 验证安装是否成功
 		if command -v refind-install &>/dev/null; then
@@ -219,8 +209,7 @@ fi
 
 # 询问是否运行 refind-install (仅在工具可用时)
 if [[ $refind_available == "true" ]]; then
-	read -p "运行 refind-install 安装到 EFI 分区？[Y/n] / Run refind-install to install to EFI partition? [Y/n]: " run_refind_install
-	if [[ ! $run_refind_install =~ ^[Nn]$ ]]; then
+	if confirm_install "运行 refind-install 安装到 EFI 分区？/ Run refind-install to install to EFI partition?" 1; then
 		step "安装 rEFInd 到 EFI 分区 / Installing to EFI partition"
 		sudo refind-install
 		ok "rEFInd 已安装到 EFI 分区 / Installed to EFI partition"
@@ -232,8 +221,7 @@ fi
 # 安装 rEFInd 主题 (仅在 rEFInd 可用时)
 if [[ $refind_available == "true" ]]; then
 	header "rEFInd 主题安装 / rEFInd Theme Installation"
-	read -p "安装 Catppuccin 主题？[Y/n] / Install Catppuccin theme? [Y/n]: " install_refind_theme
-	if [[ ! $install_refind_theme =~ ^[Nn]$ ]]; then
+	if confirm_install "安装 Catppuccin 主题？/ Install Catppuccin theme?" 1; then
 
 		# 查找 rEFInd 目录
 		REFIND_DIR=""
@@ -318,11 +306,8 @@ fi
 
 # 备份工具
 header "备份工具 / Backup Tools"
-read -p "安装备份工具？[Y/n] / Install backup tools? [Y/n]: " install_backup_tools
-if [[ ! $install_backup_tools =~ ^[Nn]$ ]]; then
-	step "安装备份工具 / Installing backup tools"
-	sudo pacman -S --noconfirm snapper btrfs-assistant snap-pac
-	ok "备份工具安装完成 / Backup tools installed"
+if confirm_install "安装备份工具？/ Install backup tools?" 1; then
+	install_official 1 snapper btrfs-assistant snap-pac
 else
 	note "跳过备份工具安装 / Skipping backup tools"
 fi
@@ -335,10 +320,9 @@ if command -v chezmoi &>/dev/null; then
 	ok "Chezmoi 已安装 / Chezmoi already installed"
 	chezmoi_available=true
 else
-	read -p "安装 Chezmoi？[Y/n] / Install Chezmoi? [Y/n]: " install_chezmoi
-	if [[ ! $install_chezmoi =~ ^[Nn]$ ]]; then
+	if confirm_install "安装 Chezmoi？/ Install Chezmoi?" 1; then
 		step "安装 Chezmoi / Installing Chezmoi"
-		sudo pacman -S --noconfirm chezmoi
+		install_official 1 chezmoi
 
 		# 验证安装是否成功
 		if command -v chezmoi &>/dev/null; then
@@ -356,8 +340,7 @@ fi
 
 # 询问是否初始化 dotfiles (仅在工具可用时)
 if [[ $chezmoi_available == "true" ]]; then
-	read -p "初始化 dotfiles 配置？[Y/n] / Initialize dotfiles configuration? [Y/n]: " init_chezmoi
-	if [[ ! $init_chezmoi =~ ^[Nn]$ ]]; then
+	if confirm_install "初始化 dotfiles 配置？/ Initialize dotfiles configuration?" 1; then
 		step "初始化 dotfiles 配置 / Initializing dotfiles"
 		chezmoi init https://github.com/Cyanix-0721/dotfiles.git -a
 		ok "dotfiles 配置初始化完成 / dotfiles initialized"

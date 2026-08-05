@@ -5,6 +5,9 @@ set -e
 # 加载公共函数
 . "$(dirname "$0")/00-common.sh"
 
+# 自动确认模式（全选 Y）
+init_auto_yes
+
 header "安装常用软件 / Installing Common Software"
 
 # 检查 paru 是否已安装
@@ -14,33 +17,28 @@ if ! command -v paru &>/dev/null; then
 fi
 
 step "安装命令行工具 / Installing command line tools"
-sudo pacman -S --noconfirm fzf zoxide ripgrep fd eza bat stow btop fastfetch dex viu less
+install_official 1 fzf zoxide ripgrep fd eza bat stow btop fastfetch dex viu less
 
 step "安装开发工具 / Installing development tools"
-sudo pacman -S --noconfirm neovim python-pynvim lazygit gitui github-cli uv ast-grep git-delta poppler resvg imagemagick jq luarocks ruff shellcheck shfmt copyparty
-paru -S --noconfirm visual-studio-code-bin
+install_official 1 neovim python-pynvim lazygit gitui github-cli uv ast-grep git-delta poppler resvg imagemagick jq luarocks ruff shellcheck shfmt copyparty
+install_aur 1 visual-studio-code-bin
 
 step "安装系统工具 / Installing system tools"
-sudo pacman -S --noconfirm mako fuzzel ntfs-3g niri lysd qt6ct xwayland-satellite playerctl polkit-kde-agent xdg-desktop-portal xdg-desktop-portal-gtk nwg-look cliphist wl-clipboard wl-clip-persist udisks2
-paru -S --noconfirm systemd-manager-tui
+install_official 1 mako fuzzel ntfs-3g niri lysd qt6ct xwayland-satellite playerctl polkit-kde-agent xdg-desktop-portal xdg-desktop-portal-gtk nwg-look cliphist wl-clipboard wl-clip-persist udisks2
+install_aur 1 systemd-manager-tui
 
 step "安装网络工具 / Installing network tools"
-sudo pacman -S --noconfirm nmap
-paru -S --noconfirm clash-verge-rev-bin
+install_official 1 nmap
+install_aur 1 clash-verge-rev-bin
 
 step "安装日常应用 / Installing daily applications"
-sudo pacman -S --noconfirm obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn mpv ffmpeg gimp yazi 7zip dolphin nautilus scrcpy syncthing mpd mpd-mpris rmpc kdenlive cava
-paru -S --noconfirm zen-browser-bin ungoogled-chromium-bin localsend-bin bibata-cursor-theme-bin vesktop-bin ayugram-desktop
+install_official 1 obsidian keepassxc thunderbird thunderbird-i18n-zh-cn libreoffice-fresh libreoffice-fresh-zh-cn mpv ffmpeg gimp yazi 7zip dolphin nautilus scrcpy syncthing mpd mpd-mpris rmpc kdenlive cava
+install_aur 1 zen-browser-bin ungoogled-chromium-bin localsend-bin bibata-cursor-theme-bin vesktop-bin ayugram-desktop
 
 # 询问是否安装 Podman
-echo -n "安装 Podman 与 podman-compose？[Y/n] / Install Podman and podman-compose? [Y/n]: "
-read -r install_podman
-
-install_podman=${install_podman:-Y}
-
-if [[ $install_podman =~ ^[Yy]$ ]]; then
+if confirm_install "安装 Podman 与 podman-compose？/ Install Podman and podman-compose?" 1; then
 	step "安装容器工具 / Installing container tools"
-	sudo pacman -S --noconfirm podman podman-compose podman-docker
+	install_official 1 podman podman-compose podman-docker
 
 	step "配置 Podman 镜像源 / Configuring Podman registry mirror"
 	sudo tee /etc/containers/registries.conf.d/10-unqualified-search-registries.conf <<EOF
@@ -53,21 +51,11 @@ else
 fi
 
 # 询问是否安装 LazyVim
-echo -n "安装 LazyVim Starter？[y/N] / Install LazyVim Starter? [y/N]: "
-read -r install_lazyvim
-
-install_lazyvim=${install_lazyvim:-N}
-
-if [[ $install_lazyvim =~ ^[Yy]$ ]]; then
+if confirm_install "安装 LazyVim Starter？/ Install LazyVim Starter?" 0; then
 	step "安装 LazyVim Starter / Installing LazyVim Starter"
 
 	# 询问是否备份现有配置
-	echo -n "备份现有 Neovim 配置？[Y/n] / Backup existing Neovim configuration? [Y/n]: "
-	read -r backup_nvim
-
-	backup_nvim=${backup_nvim:-Y}
-
-	if [[ $backup_nvim =~ ^[Yy]$ ]]; then
+	if confirm_install "备份现有 Neovim 配置？/ Backup existing Neovim configuration?" 1; then
 		step "备份 Neovim 配置 / Backing up Neovim configuration"
 		# 必需备份
 		mv ~/.config/nvim ~/.config/nvim.bak 2>/dev/null || echo "无现有 nvim 配置可备份 / No existing nvim configuration to backup"
@@ -97,12 +85,7 @@ else
 fi
 
 # 询问是否安装 vfox
-echo -n "安装 vfox（版本管理工具）？[Y/n] / Install vfox (version manager)? [Y/n]: "
-read -r install_vfox
-
-install_vfox=${install_vfox:-Y}
-
-if [[ $install_vfox =~ ^[Yy]$ ]]; then
+if confirm_install "安装 vfox（版本管理工具）？/ Install vfox (version manager)?" 1; then
 	step "安装 vfox / Installing vfox"
 	curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash
 	ok "vfox 安装完成 / vfox installed"
@@ -111,12 +94,7 @@ else
 fi
 
 # 询问是否启用 MPD 服务
-echo -n "启用 MPD（音乐播放器守护进程）用户服务？[Y/n] / Enable MPD user service? [Y/n]: "
-read -r enable_mpd
-
-enable_mpd=${enable_mpd:-Y}
-
-if [[ $enable_mpd =~ ^[Yy]$ ]]; then
+if confirm_install "启用 MPD（音乐播放器守护进程）用户服务？/ Enable MPD user service?" 1; then
 	step "启用 MPD 用户服务 / Enabling MPD user service"
 	systemctl --user enable --now mpd.service
 	systemctl --user enable --now mpd-mpris.service
@@ -126,12 +104,7 @@ else
 fi
 
 # 询问是否启用 Syncthing 服务
-echo -n "启用 Syncthing（文件同步）用户服务？[Y/n] / Enable Syncthing user service? [Y/n]: "
-read -r enable_syncthing
-
-enable_syncthing=${enable_syncthing:-Y}
-
-if [[ $enable_syncthing =~ ^[Yy]$ ]]; then
+if confirm_install "启用 Syncthing（文件同步）用户服务？/ Enable Syncthing user service?" 1; then
 	step "启用 Syncthing 用户服务 / Enabling Syncthing user service"
 	systemctl --user enable --now syncthing.service
 	ok "Syncthing 用户服务已启用 / Syncthing user service enabled"
@@ -141,12 +114,7 @@ else
 fi
 
 # 询问是否启用 Ly 显示管理器
-echo -n "启用 Ly 显示管理器？[Y/n] / Enable Ly display manager? [Y/n]: "
-read -r enable_ly
-
-enable_ly=${enable_ly:-Y}
-
-if [[ $enable_ly =~ ^[Yy]$ ]]; then
+if confirm_install "启用 Ly 显示管理器？/ Enable Ly display manager?" 1; then
 	echo -n "选择启动 TTY（如 tty2 或 2）[默认 tty2] / Choose TTY (e.g., tty2 or 2) [default tty2]: "
 	read -r ly_tty
 

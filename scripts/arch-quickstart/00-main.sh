@@ -29,7 +29,13 @@ run_script() {
 		note "再见 / Goodbye"
 		exit
 		;;
-	1) step "开始完整配置 / Starting complete setup" ;;
+	1)
+		step "开始完整配置 / Starting complete setup"
+		if confirm_install "是否全选 Y（自动确认所有安装）？/ Select all Y (auto-confirm all installations)?" 0; then
+			export AUTO_YES=1
+			note "自动确认模式已启用 / Auto-yes mode enabled"
+		fi
+		;;
 	2) script_name="01-system-foundation.sh" ;;
 	3) script_name="02-chinese-localization.sh" ;;
 	4) script_name="03-essential-packages.sh" ;;
