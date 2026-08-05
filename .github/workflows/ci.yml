@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install chezmoi
-        run: sudo sh -c 'curl -fsSL https://get.chezmoi.io | sh'
+        uses: twpayne/chezmoi-action@v1
       - name: Render all templates
         run: |
           set -euo pipefail
