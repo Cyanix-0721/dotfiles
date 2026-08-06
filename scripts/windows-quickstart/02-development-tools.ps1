@@ -205,10 +205,10 @@ Install-ScoopPackages $devTools
 Write-Header "AI 开发工具 / AI Development Tools"
 
 $aiTools = @{
-    "ollama"   = @{
-        Desc    = "ollama (本地大模型运行器 / Local LLM runner)"
-        Global  = $false
-        Default = $true
+    "ollama" = @{
+        Desc     = "ollama (本地大模型运行器 / Local LLM runner)"
+        Global   = $false
+        Default  = $true
         PostNote = @(
             "启动服务 / Start the server: ollama serve"
             "下载模型示例 / Pull a model e.g.: ollama pull qwen3:8b"
@@ -229,6 +229,130 @@ else {
         "Docker.DockerDesktop" = @{ Desc = "Docker Desktop"; InstallArgs = @("--exact", "--silent"); Default = $true }
     }
     Install-WingetApps $wingApps
+}
+
+# WSL2 + Debian + opencode
+Write-Header "WSL2 / Debian / opencode 安装 / WSL2 / Debian / opencode setup"
+
+$installWsl = Confirm-Install "是否安装 WSL2、Debian 发行版并配置默认开发环境？(Y/n) / Install WSL2, Debian distro and configure the default dev environment? (Y/n)"
+if ($installWsl -notmatch '^[Nn]$') {
+    Write-Step "检查并安装 WSL2 / Checking and installing WSL2"
+
+    if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
+        Write-Warn "当前系统未检测到 wsl.exe，尝试通过 winget 安装 WSL / wsl.exe not found, attempting to install WSL via winget"
+        if (Get-Command winget -ErrorAction SilentlyContinue) {
+            winget install --id Microsoft.WSL --exact --silent --accept-source-agreements --accept-package-agreements
+            if ($LASTEXITCODE -ne 0) {
+                Write-Err "WSL 安装失败 / WSL installation failed"
+            }
+        }
+        else {
+            Write-Err "winget 不可用，无法自动安装 WSL / winget unavailable, cannot auto-install WSL"
+        }
+    }
+
+    if (Get-Command wsl.exe -ErrorAction SilentlyContinue) {
+        Write-Step "启用 Windows 的 WSL 相关功能 / Enabling Windows features required for WSL"
+        $wslFeatures = @(
+            "Microsoft-Windows-Subsystem-Linux",
+            "VirtualMachinePlatform",
+            "Microsoft-Hyper-V-All"
+        )
+        foreach ($feature in $wslFeatures) {
+            try {
+                dism.exe /online /enable-feature /featurename:$feature /all /norestart | Out-Null
+            }
+            catch {
+                Write-Warn "启用 Windows 功能 $feature 失败，后续继续尝试 / Enabling Windows feature $feature failed; continuing"
+            }
+        }
+
+        Write-Step "设置 WSL 默认版本为 2 / Setting WSL default version to 2"
+        wsl.exe --set-default-version 2 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warn "设置 WSL 2 版本失败，后续仍尝试安装发行版 / Failed to set WSL 2 version, will still try installing the distro"
+        }
+
+        $distroList = @(wsl.exe --list --quiet 2>$null)
+        if ($distroList -notcontains "Debian") {
+            Write-Step "安装 Debian 发行版 / Installing Debian distro"
+            wsl.exe --install -d Debian
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warn "Debian 安装命令返回非零状态，可能需要重启系统后再继续 / Debian install returned a non-zero status; a reboot may be required"
+            }
+        }
+
+        wsl.exe --set-default Debian 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warn "设置 Debian 为默认发行版失败 / Failed to set Debian as the default distro"
+        }
+
+        $useRoot = $false
+        if ($Script:AutoYes) {
+            $useRoot = $false
+        }
+        else {
+            $useRootChoice = Read-Host "是否直接使用 root 账户？(y/N) / Use root account directly? (y/N)"
+            $useRoot = ($useRootChoice -match '^[Yy]$')
+        }
+
+        if ($useRoot) {
+            $defaultUser = "root"
+            $defaultPassword = $null
+            Write-Note "将直接使用 root 账户完成 Debian 初始化 / Will initialize Debian directly with the root account"
+        }
+        else {
+            $defaultUser = if ($Script:AutoYes) { "slayer" } else { Read-Host "请输入 Debian 默认用户名 (默认 slayer) / Enter Debian default username (default: slayer)" }
+            if ([string]::IsNullOrWhiteSpace($defaultUser)) { $defaultUser = "slayer" }
+
+            $defaultPassword = if ($Script:AutoYes) { "114514" } else { Read-Host "请输入 Debian 默认密码 (默认 114514) / Enter Debian default password (default: 114514)" }
+            if ([string]::IsNullOrWhiteSpace($defaultPassword)) { $defaultPassword = "114514" }
+        }
+
+        $wslSetupScript = @"
+set -e
+export DEBIAN_FRONTEND=noninteractive
+if [ '$useRoot' = 'True' ]; then
+    echo 'Using root account directly'
+else
+    if ! command -v sudo >/dev/null 2>&1; then
+        apt-get update
+        apt-get install -y sudo
+    fi
+    if id -u $defaultUser >/dev/null 2>&1; then
+        echo "user exists"
+    else
+        useradd -m -s /bin/bash -G sudo $defaultUser
+    fi
+    printf '%s:%s
+' '$defaultUser' '$defaultPassword' | chpasswd
+    usermod -aG sudo $defaultUser
+fi
+apt-get update
+apt-get full-upgrade -y
+apt-get install -y git curl ca-certificates gnupg lsb-release
+if [ '$useRoot' = 'True' ]; then
+    curl -fsSL https://opencode.ai/install | bash
+else
+    sudo -u $defaultUser -H bash -lc 'curl -fsSL https://opencode.ai/install | bash'
+fi
+"@
+
+        Write-Step "在 Debian 中初始化用户、完成系统更新并安装 Git / opencode / Initializing Debian user, applying system updates, and installing Git / opencode"
+        wsl.exe -d Debian --user root -- sh -lc $wslSetupScript
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "WSL2 / Debian / opencode 配置完成 / WSL2 / Debian / opencode setup completed"
+        }
+        else {
+            Write-Warn "WSL2 / Debian / opencode 配置命令返回非零状态，可能需要手动重试 / WSL2 / Debian / opencode setup returned a non-zero status; manual retry may be needed"
+        }
+    }
+    else {
+        Write-Warn "当前环境无法调用 wsl.exe，跳过 WSL 配置 / Unable to invoke wsl.exe in this environment, skipping WSL setup"
+    }
+}
+else {
+    Write-Note "跳过 WSL2 / Debian / opencode 安装 / Skipping WSL2 / Debian / opencode installation"
 }
 
 Write-Header "开发工具安装完成 / Development tools installation completed"
