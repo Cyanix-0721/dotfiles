@@ -39,7 +39,7 @@ cd ~/.local/share/chezmoi
 交互式菜单，可选择安装：
 
 - **系统基础**：包管理器（Scoop/pacman）、终端、字体、基础工具
-- **开发工具**：Neovim、lazygit、GitHub CLI、uv、vfox、shellcheck 等
+- **开发工具**：Neovim、lazygit、GitHub CLI、uv、vfox、shellcheck、opencode、ollama 等
 - **常用软件**：浏览器、办公、媒体、备份等
 
 ## 主要配置

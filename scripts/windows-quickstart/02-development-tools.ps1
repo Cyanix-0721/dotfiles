@@ -201,6 +201,32 @@ $devTools = @{
 
 Install-ScoopPackages $devTools
 
+# AI 开发工具
+Write-Header "AI 开发工具 / AI Development Tools"
+
+$aiTools = @{
+    "opencode" = @{
+        Desc    = "opencode (开源 AI 编码代理 / Open-source AI coding agent)"
+        Global  = $false
+        Default = $true
+        PostNote = @(
+            "运行 opencode 开始使用 / Run 'opencode' to start"
+            "更多配置请参考 / See https://opencode.ai/docs for config"
+        )
+    }
+    "ollama"   = @{
+        Desc    = "ollama (本地大模型运行器 / Local LLM runner)"
+        Global  = $false
+        Default = $true
+        PostNote = @(
+            "启动服务 / Start the server: ollama serve"
+            "下载模型示例 / Pull a model e.g.: ollama pull qwen3:8b"
+        )
+    }
+}
+
+Install-ScoopPackages $aiTools
+
 # 容器与虚拟化 / Containers and Virtualization
 Write-Header "容器与虚拟化 / Containers and Virtualization"
 
