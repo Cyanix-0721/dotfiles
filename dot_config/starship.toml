@@ -17,7 +17,6 @@ $php\
 $ruby\
 $lua\
 $c\
-$cpp\
 $kotlin\
 $dart\
 $conda\
@@ -109,11 +108,6 @@ format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
 
 [c]
 symbol = " "
-style = "bg:#212736"
-format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
-
-[cpp]
-symbol = " "
 style = "bg:#212736"
 format = '[[ $symbol ($version) ](fg:#769ff0 bg:#212736)]($style)'
 
