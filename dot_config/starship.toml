@@ -154,7 +154,17 @@ format = "[ $symbol ]($style)"
 
 [os.symbols]
 Windows = "󰖳"
+Macos = ""
+Linux = ""
 Arch = ""
+Debian = ""
+Ubuntu = ""
+Fedora = ""
+Mint = ""
+Alpine = ""
+NixOS = ""
+Gentoo = ""
+openSUSE = ""
 
 [time]
 disabled = false
