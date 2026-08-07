@@ -3,13 +3,16 @@
 批量重命名并移动/复制图片文件脚本
 
 功能：
-1. 递归扫描当前目录下的所有子文件夹（支持多层嵌套）
-2. 交互式输入前缀和连接符号
-3. 将子文件夹中的图片重命名为：前缀_根文件夹名_子路径_..._原文件名
-4. 选择移动（删除子文件夹）或复制（保留子文件夹）文件到根目录
+1. 递归扫描根目录下的所有子文件夹（支持多层嵌套）
+2. 支持按名称/修改时间/创建时间/大小排序（升序或降序）
+3. 交互式输入前缀和连接符号
+4. 将子文件夹中的图片重命名为：前缀_根文件夹名_子路径_..._原文件名
+5. 选择移动（删除子文件夹）或复制（保留子文件夹）文件到根目录
 
 使用方法：
-将此脚本放在目标文件夹的根目录下，运行即可。
+python batch_rename_images.py [根目录]
+- 不传参数时默认处理脚本所在目录（即把脚本放在目标文件夹根目录下运行）
+- 传入参数时处理指定目录
 
 支持系统：
 - Windows (自动检测)
@@ -19,13 +22,15 @@
 - 支持多层子文件夹嵌套
 - 可选前缀（默认使用）
 - 自定义连接符号（默认为 "_"）
+- 文件排序：名称/修改时间/创建时间/大小，升序或降序
 - 智能处理文件名冲突（数字序号补全 / 括号编号）
-- 移动模式：移动文件并删除空文件夹（默认）
+- 移动模式：移动文件并按策略清理子文件夹（默认）
 - 复制模式：复制文件保留原文件夹结构
 """
 
 import platform
 import shutil
+import sys
 from pathlib import Path
 
 # 支持的图片格式
@@ -40,43 +45,74 @@ IMAGE_EXTENSIONS = {
     ".tif",
     ".ico",
     ".svg",
+    ".heic",
+    ".heif",
+    ".avif",
+}
+
+# 排序选项：交互选项编号 -> 排序键
+SORT_OPTIONS = {
+    "1": "name_asc",
+    "2": "name_desc",
+    "3": "mtime_asc",
+    "4": "mtime_desc",
+    "5": "ctime_asc",
+    "6": "ctime_desc",
+    "7": "size_asc",
+    "8": "size_desc",
+}
+
+SORT_LABELS = {
+    "name_asc": "名称升序",
+    "name_desc": "名称降序",
+    "mtime_asc": "修改时间升序",
+    "mtime_desc": "修改时间降序",
+    "ctime_asc": "创建时间升序",
+    "ctime_desc": "创建时间降序",
+    "size_asc": "大小升序",
+    "size_desc": "大小降序",
 }
 
 
-def is_windows() -> bool:
-    """
-    检测当前系统是否为 Windows
+def file_sort_key(sort_option: str):
+    """返回排序键函数 / Return a sort key function for the given option."""
+    if sort_option in ("mtime_asc", "mtime_desc"):
+        return lambda f: f.stat().st_mtime
+    if sort_option in ("ctime_asc", "ctime_desc"):
+        # Windows 下 st_ctime 为创建时间；Unix 下为 inode 变更时间
+        return lambda f: f.stat().st_ctime
+    if sort_option in ("size_asc", "size_desc"):
+        return lambda f: f.stat().st_size
+    return lambda f: f.name.lower()
 
-    Returns:
-        True 如果是 Windows 系统，否则 False
-    """
-    return platform.system().lower() == "windows"
+
+def apply_sort(files: list[Path], sort_option: str) -> list[Path]:
+    """按指定选项排序文件列表 / Sort files by the given option."""
+    reverse = sort_option.endswith("_desc")
+    return sorted(files, key=file_sort_key(sort_option), reverse=reverse)
 
 
 def wait_for_exit():
     """
-    根据操作系统等待用户退出
-    Windows: 按回车键退出
-    Unix/Linux: 按回车键退出或直接关闭终端
+    等待用户按回车退出
+    兼容交互终端（Ctrl+C）和非交互终端（EOF）
     """
-    if is_windows():
+    try:
         input("\n按回车键退出...")
-    else:
-        try:
-            input("\n按回车键退出...")
-        except (EOFError, KeyboardInterrupt):
-            print()  # 新行，美化输出
+    except (EOFError, KeyboardInterrupt):
+        print()  # 新行，美化输出
 
 
-def get_image_files(directory: Path) -> list[Path]:
+def get_image_files(directory: Path, sort_option: str = "name_asc") -> list[Path]:
     """
-    获取指定目录下的所有图片文件
+    获取指定目录下的所有图片文件，并按指定选项排序
 
     Args:
         directory: 目录路径
+        sort_option: 排序方式（默认名称升序）
 
     Returns:
-        图片文件路径列表
+        已排序的图片文件路径列表
     """
     image_files = []
     if not directory.is_dir():
@@ -86,27 +122,30 @@ def get_image_files(directory: Path) -> list[Path]:
         if file.is_file() and file.suffix.lower() in IMAGE_EXTENSIONS:
             image_files.append(file)
 
-    return image_files
+    return apply_sort(image_files, sort_option)
 
 
-def scan_subdirectories(root_dir: Path) -> dict:
+def scan_subdirectories(
+    root_dir: Path, sort_option: str = "name_asc"
+) -> dict[Path, list[Path]]:
     """
     递归扫描根目录下的所有子文件夹及其包含的图片（支持多层嵌套）
 
     Args:
         root_dir: 根目录路径
+        sort_option: 图片排序方式
 
     Returns:
-        字典，键为子文件夹路径，值为该文件夹中的图片文件列表
+        字典，键为子文件夹路径，值为该文件夹中已排序的图片文件列表
     """
-    subdirs_images = {}
+    subdirs_images: dict[Path, list[Path]] = {}
 
     def scan_recursive(directory: Path):
         """递归扫描目录"""
-        for item in directory.iterdir():
+        for item in sorted(directory.iterdir(), key=lambda p: p.name.lower()):
             if item.is_dir():
                 # 获取当前目录的图片
-                images = get_image_files(item)
+                images = get_image_files(item, sort_option)
                 if images:
                     subdirs_images[item] = images
                 # 递归扫描子目录
@@ -279,17 +318,37 @@ def main():
     print("=" * 60)
     print()
 
-    # 获取脚本所在目录（根目录）
-    root_dir = Path.cwd()
+    # 获取根目录：优先命令行参数，缺省为脚本所在目录
+    root_dir = (
+        Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent
+    )
     root_name = root_dir.name
+
+    if not root_dir.is_dir():
+        print(f"[错误] 目录不存在 / Directory not found: {root_dir}")
+        wait_for_exit()
+        return
 
     print(f"当前根目录: {root_dir}")
     print(f"根文件夹名: {root_name}")
     print()
 
+    # 交互式选择排序方式
+    print("请选择文件排序方式 / Choose file sort order (直接回车默认 1):")
+    for num, opt in SORT_OPTIONS.items():
+        print(f"  {num}. {SORT_LABELS[opt]}")
+    sort_choice = input(
+        "请选择 (1-8，直接回车默认 1) / Choose (1-8, Enter for default 1): "
+    ).strip()
+    if sort_choice not in SORT_OPTIONS:
+        sort_choice = "1"
+    sort_option = SORT_OPTIONS[sort_choice]
+    print(f"排序方式: {SORT_LABELS[sort_option]}")
+    print()
+
     # 扫描子文件夹
     print("正在扫描子文件夹...")
-    subdirs_images = scan_subdirectories(root_dir)
+    subdirs_images = scan_subdirectories(root_dir, sort_option)
 
     if not subdirs_images:
         print("未找到包含图片的子文件夹！")
@@ -454,6 +513,11 @@ def main():
 
     if delete_strategy == "force":
         # 强制删除所有已处理的子文件夹
+        if error_count > 0:
+            print(
+                f"\n  ⚠ 有 {error_count} 个文件处理失败，force 模式将连同源文件夹一起删除，"
+                "失败文件将无法找回！"
+            )
         print("\n清理子文件夹（强制删除）...")
         sorted_subdirs = sorted(processed_subdirs, key=lambda p: len(p.parts), reverse=True)
 
@@ -465,6 +529,22 @@ def main():
                         display_path = str(rel_path)
                     except ValueError:
                         display_path = subdir.name
+
+                    # 删除前检查是否含非图片文件，提前提示
+                    non_image_files = [
+                        f
+                        for f in subdir.iterdir()
+                        if f.is_file() and f.suffix.lower() not in IMAGE_EXTENSIONS
+                    ]
+                    if non_image_files:
+                        print(
+                            f"  ⚠ {display_path} 含 {len(non_image_files)} 个非图片文件，"
+                            "将一并删除："
+                        )
+                        for f in non_image_files[:5]:
+                            print(f"      {f.name}")
+                        if len(non_image_files) > 5:
+                            print(f"      ... 等 {len(non_image_files)} 个")
 
                     # 使用 shutil.rmtree 删除整个文件夹（包括非空文件夹）
                     shutil.rmtree(str(subdir))

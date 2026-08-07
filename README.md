@@ -59,7 +59,7 @@ cd ~/.local/share/chezmoi
 | 脚本 | 用途 |
 | ------ | ------ |
 | `scripts/rsync/rsync.py` | 通用文件同步（Linux/Windows 跨平台，基于 rsync） |
-| `scripts/rename/batch_rename_images.py` | 批量重命名图片（按子文件夹前缀） |
+| `scripts/rename/batch_rename_images.py` | 批量重命名图片（按子文件夹前缀，支持名称/时间/大小排序） |
 | `scripts/reflector/setup_reflector.sh` | Arch 镜像源自动更新（systemd timer） |
 | `scripts/install_uv_dependencies.py` | uv 虚拟环境 + 依赖安装（占位，当前无第三方依赖） |
 
