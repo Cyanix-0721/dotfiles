@@ -51,7 +51,7 @@ config.color_scheme = 'Tokyo Night'
 config.window_background_opacity = 0.8
 config.window_decorations = "INTEGRATED_BUTTONS|RESIZE"
 
-config.font = wezterm.font('JetBrainsMono Nerd Font Mono')
+config.font = wezterm.font_with_fallback({'JetBrainsMono Nerd Font Mono', 'Sarasa Mono SC'})
 config.font_locator = is_windows and 'Gdi' or 'FontConfig'
 config.font_rules = {{
     font = wezterm.font('Sarasa Mono SC'),
