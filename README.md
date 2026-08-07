@@ -52,7 +52,7 @@ cd ~/.local/share/chezmoi
 | `dot_condarc` | Conda 镜像源 + 代理 |
 | `dot_aria2/aria2.conf.tmpl` | Aria2 下载器（RPC 密钥由变量注入） |
 | `private_dot_ssh/config.tmpl` | SSH 配置（github 直连，serv00 走代理） |
-| `dot_config/fish/` / `nushell/` / `powershell/` | Shell 配置（starship、zoxide、fzf、vfox、yazi） |
+| `dot_config/fish/` / `powershell/` | Shell 配置（starship、zoxide、fzf、vfox、yazi） |
 
 ## 辅助脚本
 

@@ -114,7 +114,6 @@ Write-Header "终端与命令行工具 / Terminal & CLI Tools"
 
 $termTools = @{
     "wezterm-nightly" = @{ Desc = "WezTerm (GPU 加速终端 / GPU-accelerated terminal)"; Global = $false; Default = $true }
-    "nu"              = @{ Desc = "Nushell"; Global = $false; Default = $true }
     "less"            = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false; Default = $true }
     "starship"        = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false; Default = $true }
     "zoxide"          = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false; Default = $true }
