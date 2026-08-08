@@ -2,8 +2,13 @@
 {{- if eq .chezmoi.os "windows" -}}
 $ErrorActionPreference = "Stop"
 
-$source = Join-Path "{{ $wt }}" "dot_config/powershell/Microsoft.PowerShell_profile.ps1"
-$target = $PROFILE
+# 每次 chezmoi apply 时将 pwsh 配置同步到 pwsh 实际加载的"所有主机"profile。
+# 使用 run_ 前缀：每次 apply 都复制，删除后能自愈重建、改源后自动同步。
+# 目标路径用 [Environment]::GetFolderPath('MyDocuments') 解析：
+#   - 兼容 Documents 被重定向到其他盘 / OneDrive 的情况
+#   - 不依赖 $PROFILE（它随执行脚本的 PowerShell 版本变化，5.1 会指向 WindowsPowerShell\）
+$source = Join-Path "{{ $wt }}" "dot_config/powershell/profile.ps1"
+$target = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\profile.ps1'
 
 if (-not (Test-Path $source)) {
     Write-Warning "Source file not found: $source"
