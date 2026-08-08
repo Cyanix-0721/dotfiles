@@ -146,7 +146,7 @@ Write-Header "通讯软件 / Communication Apps"
 
 $commApps = @{
     "vesktop" = @{ Desc = "Vesktop (Discord 客户端 / Discord client)"; Global = $false }
-    "ayugram" = @{ Desc = "AyuGram (Telegram 客户端 / Telegram client)"; Global = $false }
+    "telegram" = @{ Desc = "Telegram (Telegram 客户端 / Telegram client)"; Global = $false }
 }
 
 Install-ScoopPackages $commApps
