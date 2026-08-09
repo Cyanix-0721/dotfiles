@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# ///
 """
 批量重命名并移动/复制图片文件脚本
 
@@ -13,6 +16,9 @@
 python batch_rename_images.py [根目录]
 - 不传参数时默认处理脚本所在目录（即把脚本放在目标文件夹根目录下运行）
 - 传入参数时处理指定目录
+- 本脚本仅依赖标准库，任何装有 Python 的环境均可直接运行；
+  也可用 uv 统一运行（自动选择合适的 Python 版本）：
+    uv run batch_rename_images.py
 
 支持系统：
 - Windows (自动检测)
@@ -26,9 +32,16 @@ python batch_rename_images.py [根目录]
 - 智能处理文件名冲突（数字序号补全 / 括号编号）
 - 移动模式：移动文件并按策略清理子文件夹（默认）
 - 复制模式：复制文件保留原文件夹结构
+
+联动：
+- 可与同目录下的 batch_pack_cbz.py 配合使用
+- 先运行本脚本批量重命名图片，再运行 batch_pack_cbz.py 将每个文件夹打包为 CBZ
+- 注意：本脚本的"移动模式"会把图片扁平化到根目录，如需按文件夹打包 CBZ，
+  请使用复制模式或在文件夹内原地重命名
 """
 
 import platform
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -49,6 +62,12 @@ IMAGE_EXTENSIONS = {
     ".heif",
     ".avif",
 }
+
+
+def natural_key(text: str):
+    """自然排序键：将 'a2b10' 排序为 ['a', 2, 'b', 10]（数字按数值比较）"""
+    return [int(part) if part.isdigit() else part.lower() for part in re.split(r"(\d+)", text)]
+
 
 # 排序选项：交互选项编号 -> 排序键
 SORT_OPTIONS = {
@@ -83,7 +102,7 @@ def file_sort_key(sort_option: str):
         return lambda f: f.stat().st_ctime
     if sort_option in ("size_asc", "size_desc"):
         return lambda f: f.stat().st_size
-    return lambda f: f.name.lower()
+    return lambda f: natural_key(f.name)
 
 
 def apply_sort(files: list[Path], sort_option: str) -> list[Path]:
@@ -125,9 +144,7 @@ def get_image_files(directory: Path, sort_option: str = "name_asc") -> list[Path
     return apply_sort(image_files, sort_option)
 
 
-def scan_subdirectories(
-    root_dir: Path, sort_option: str = "name_asc"
-) -> dict[Path, list[Path]]:
+def scan_subdirectories(root_dir: Path, sort_option: str = "name_asc") -> dict[Path, list[Path]]:
     """
     递归扫描根目录下的所有子文件夹及其包含的图片（支持多层嵌套）
 
@@ -142,7 +159,7 @@ def scan_subdirectories(
 
     def scan_recursive(directory: Path):
         """递归扫描目录"""
-        for item in sorted(directory.iterdir(), key=lambda p: p.name.lower()):
+        for item in sorted(directory.iterdir(), key=lambda p: natural_key(p.name)):
             if item.is_dir():
                 # 获取当前目录的图片
                 images = get_image_files(item, sort_option)
@@ -319,9 +336,7 @@ def main():
     print()
 
     # 获取根目录：优先命令行参数，缺省为脚本所在目录
-    root_dir = (
-        Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent
-    )
+    root_dir = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent
     root_name = root_dir.name
 
     if not root_dir.is_dir():

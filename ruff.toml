@@ -9,6 +9,8 @@ include = ["scripts/**/*.py"]
 [lint]
 # E/F/W 基础错误，I import 排序，UP pyupgrade，B bugbear，SIM 简化
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+# 脚本需处理日文标题中的全角字符（如（）），忽略 RUF001 全角括号混淆警告
+ignore = ["RUF001"]
 
 [format]
 quote-style = "double"

@@ -2,3 +2,5 @@
 # Main sync: use Syncthing (built-in)
 # Auxiliary sync: use copyparty (standalone)
 # rsync script uses standard library only
+# batch_pack_cbz.py needs Pillow to read image dimensions for ComicInfo.xml
+Pillow
