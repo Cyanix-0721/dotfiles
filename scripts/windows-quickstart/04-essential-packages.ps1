@@ -177,6 +177,7 @@ Write-Header "下载工具 / Download Tools"
 
 $downloadApps = @{
     "qbittorrent-enhanced" = @{ Desc = "qBittorrent Enhanced (BT 下载 / BT download)"; Global = $false }
+    "motrix-next"         = @{ Desc = "Motrix Next (全能下载管理器 / Full-featured download manager)"; Global = $false }
 }
 
 Install-ScoopPackages $downloadApps
