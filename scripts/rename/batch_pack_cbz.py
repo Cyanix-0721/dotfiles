@@ -66,7 +66,8 @@ python batch_pack_cbz.py [根目录] [选项]
                       LanguageISO：skip 不生成 / ja 全部日语 / zh 全部中文 /
                       interactive 逐文件夹交互选择（缺省交互式询问）
   --volume {skip,auto,input}
-                      Volume 模式：skip 不生成 / auto 自动检测 /
+                      Volume 模式：skip 不生成 / auto 自动检测（同系列存在
+                      更高卷号时，无卷号的漫画自动推断为第 1 卷）/
                       input 逐文件夹输入（缺省交互式询问）
   -d, --delete        打包成功后自动删除源文件夹（不询问）
   -k, --keep          打包后保留源文件夹（不询问，默认行为）
@@ -77,6 +78,7 @@ python batch_pack_cbz.py [根目录] [选项]
 - 开头询问执行位置（root）：1 默认脚本所在目录（回车）/ 2 手动输入 / 3 弹出窗口选择
 - 开头询问 LanguageISO 模式：跳过（默认）/ 逐文件夹选择 ja 或 zh
 - 开头询问 Volume 模式：跳过（默认）/ 自动检测 / 逐文件夹手动输入
+  （auto 模式：同系列有更高卷号时，无卷号的漫画自动推断为第 1 卷）
 - 开头询问删除模式：保留（默认）/ 打包后自动删除源文件夹
 - 以上各项均可通过命令行选项直接指定（root / --lang / --volume / -d / -k）
 
@@ -180,6 +182,41 @@ def detect_volume(name: str) -> tuple[str, int | None]:
     if m2:
         return name, int(m2.group(1))
     return name, None
+
+
+def infer_volumes(metas: list[dict]) -> dict[Path, int | None]:
+    """
+    推断每个漫画文件夹的卷号（含"无卷号推断为第 1 卷"的规则）
+
+    规则：
+    1. 显式卷号：从标题检测（末尾 " 1"、"#1"、"Vol.1" 或内嵌 "3〜"），检测到则使用
+    2. 推断卷号：同一系列（series_key）下存在大于 1 的显式卷号，
+       且"无显式卷号"的漫画恰好只有 1 本时，将该本推断为第 1 卷
+       （例：系列同时有 屈服2、屈服3 时，"屈服" 推断为 Vol.1）
+    3. 其余情况无卷号（None，不生成 <Volume>）
+
+    metas: derive_metadata 结果，须含 "folder"、"title"、"series_key"
+
+    Returns:
+        {folder: 卷号或 None}
+    """
+    explicit = {m["folder"]: detect_volume(m["title"])[1] for m in metas}
+    groups: dict[str, list[Path]] = {}
+    for m in metas:
+        groups.setdefault(m["series_key"], []).append(m["folder"])
+
+    result: dict[Path, int | None] = {}
+    for m in metas:
+        folder = m["folder"]
+        vol = explicit[folder]
+        if vol is None:
+            siblings = groups[m["series_key"]]
+            no_vol = [p for p in siblings if explicit[p] is None]
+            has_vol = [explicit[p] for p in siblings if explicit[p] is not None]
+            if len(no_vol) == 1 and has_vol and max(has_vol) > 1:
+                vol = 1
+        result[folder] = vol
+    return result
 
 
 def get_image_files(folder: Path) -> list[Path]:
@@ -392,7 +429,10 @@ def main() -> None:
         "--volume",
         choices=["skip", "auto", "input"],
         default=None,
-        help="Volume 模式：skip 不生成 / auto 自动检测 / input 逐文件夹输入（缺省交互式询问）",
+        help=(
+            "Volume 模式：skip 不生成 / auto 自动检测（同系列有更高卷号时"
+            "无卷号漫画推断为第 1 卷）/ input 逐文件夹输入（缺省交互式询问）"
+        ),
     )
     parser.add_argument(
         "-d", "--delete", action="store_true", help="打包成功后自动删除源文件夹（不询问）"
@@ -482,7 +522,8 @@ def main() -> None:
     else:
         print("Volume（卷号）选项：")
         print("  1. 跳过（默认，不生成 <Volume> 标签）")
-        print("  2. 自动检测 — 从标题/系列名末尾自动提取数字卷号")
+        print("  2. 自动检测 — 从标题/系列名末尾自动提取数字卷号；同系列存在")
+        print("     更高卷号时，无卷号的漫画自动推断为第 1 卷")
         print("  3. 交互式输入 — 逐文件夹手动输入卷号")
         vol_choice = input("请选择 (1-3，直接回车默认跳过): ").strip()
         volume_mode = {"1": "skip", "2": "auto", "3": "input"}.get(vol_choice, "skip")
@@ -526,19 +567,35 @@ def main() -> None:
         print(f"Volume 模式: {volume_labels[volume_mode]}")
     if delete_mode == "delete":
         print("删除模式: 打包后自动删除源文件夹")
-    print("-" * 70)
+
+    # 收集元数据 + 推断卷号
+    # auto 模式：同系列存在更高卷号时，无显式卷号的漫画自动推断为第 1 卷
+    metas: list[dict] = []
     for folder, depth in comics:
+        meta = derive_metadata(folder, root_dir, depth)
+        meta["folder"] = folder
+        meta["depth"] = depth
+        # series 分组键：两层结构用外层系列文件夹路径，单层结构每本自成一组
+        meta["series_key"] = str(folder.parent) if depth >= 2 else str(folder)
+        metas.append(meta)
+    volume_map: dict[Path, int | None] = infer_volumes(metas) if volume_mode == "auto" else {}
+
+    print("-" * 70)
+    for meta in metas:
+        folder = meta["folder"]
+        depth = meta["depth"]
         rel = folder.relative_to(root_dir)
         display = str(rel) if str(rel) != "." else f"<根目录: {root_dir.name}>"
         n = len(get_image_files(folder))
-        meta = derive_metadata(folder, root_dir, depth)
 
-        # Volume 检测 / 预览（与打包逻辑一致：始终检测 title）
+        # Volume 预览（与打包逻辑一致：始终检测 title）
         volume_str = ""
-        if volume_mode == "auto":  # 自动检测
-            clean_s, vol = detect_volume(meta["title"])
+        if volume_mode == "auto":
+            vol = volume_map[folder]
             if vol is not None:
-                volume_str = f"  Vol.{vol}"
+                # 无显式卷号但被推断为第 1 卷时标注"推断"
+                explicit_vol = detect_volume(meta["title"])[1]
+                volume_str = f"  Vol.{vol}（推断）" if explicit_vol is None else f"  Vol.{vol}"
         elif volume_mode == "input":  # 交互式
             volume_str = "  Vol.?"
 
@@ -584,6 +641,8 @@ def main() -> None:
                     meta["title"] = clean
                     if depth <= 1:
                         meta["series"] = clean  # 一层时 title == series
+                elif volume_map.get(folder) == 1:  # 推断为第 1 卷（标题无卷号，无需修改）
+                    volume = 1
             elif volume_mode == "input":  # 交互式输入
                 prompt = f"  [{meta['cbz_name']}] 请输入卷号（直接回车跳过）: "
                 vol_input = input(prompt).strip()
