@@ -318,6 +318,15 @@ def build_comic_info_xml(
     """
     生成 ComicInfo.xml 内容
 
+    规范来源：ComicInfo XML 标准（GitHub: anansi-project/comicinfo，
+    schema/v2.0/ComicInfo.xsd，社区维护的正式标准）
+    - 顶层元素用 <xs:sequence>，顺序有定义：
+      Title→Series→…→Volume→…→Writer→…→PageCount→LanguageISO→…→Pages
+      （PageCount 必须在 LanguageISO 之前，Pages 位于最后）
+    - Page 的 Type 属性默认 "Story"（正文页）；
+      Image/ImageSize/ImageWidth/ImageHeight 均为合法属性，
+      DoublePage/Key/Bookmark 可选省略
+
     image_infos: [(ImageSize字节数, ImageWidth, ImageHeight), ...]，顺序即页码顺序
     volume: 卷号（可选，None 时不生成 <Volume>）
     language_iso: 语言代码如 "ja"/"zh"（可选，None 时不生成 <LanguageISO>）
@@ -333,9 +342,11 @@ def build_comic_info_xml(
         lines.append(f"    <Volume>{volume}</Volume>")
     if writer:
         lines.append(f"    <Writer>{escape(writer)}</Writer>")
+    # 元素顺序遵循 ComicInfo 标准（anansi-project/comicinfo v2.0, xs:sequence）：
+    # 规范顺序 Title→Series→…→Volume→…→Writer→…→PageCount→LanguageISO→…→Pages
+    lines.append(f"    <PageCount>{len(image_infos)}</PageCount>")
     if language_iso:
         lines.append(f"    <LanguageISO>{escape(language_iso)}</LanguageISO>")
-    lines.append(f"    <PageCount>{len(image_infos)}</PageCount>")
     lines.append("    <Pages>")
     for index, (size, width, height) in enumerate(image_infos):
         attrs = f' Image="{index}" Type="Story" ImageSize="{size}"'
