@@ -64,7 +64,7 @@ python batch_pack_cbz.py [根目录] [选项]
   -o, --out 目录      指定 CBZ 统一输出目录（缺省：两层结构放 series 内 / 单层放漫画文件夹内）
   --lang {skip,ja,zh,interactive}
                       LanguageISO：skip 不生成 / ja 全部日语 / zh 全部中文 /
-                      interactive 逐文件夹交互选择（缺省交互式询问）
+                      interactive 逐文件夹交互选择（可跳过/留空，缺省交互式询问）
   --volume {skip,auto,input}
                       Volume 模式：skip 不生成 / auto 自动检测（同系列存在
                       更高卷号时，无卷号的漫画自动推断为第 1 卷）/
@@ -76,7 +76,8 @@ python batch_pack_cbz.py [根目录] [选项]
 
 交互式流程：
 - 开头询问执行位置（root）：1 默认脚本所在目录（回车）/ 2 手动输入 / 3 弹出窗口选择
-- 开头询问 LanguageISO 模式：跳过（默认）/ 逐文件夹选择 ja 或 zh
+- 开头询问 LanguageISO 模式：跳过（默认）/ 逐文件夹选择 ja、zh 或跳过（不生成，
+  纯图片漫画可留空）
 - 开头询问 Volume 模式：跳过（默认）/ 自动检测 / 逐文件夹手动输入
   （auto 模式：同系列有更高卷号时，无卷号的漫画自动推断为第 1 卷）
 - 开头询问删除模式：保留（默认）/ 打包后自动删除源文件夹
@@ -422,7 +423,7 @@ def main() -> None:
         default=None,
         help=(
             "LanguageISO：skip 不生成 / ja 全部日语 / zh 全部中文 / "
-            "interactive 逐文件夹交互选择（缺省交互式询问）"
+            "interactive 逐文件夹交互选择（可跳过/留空，缺省交互式询问）",
         ),
     )
     parser.add_argument(
@@ -654,8 +655,10 @@ def main() -> None:
             if language_iso_mode == "fixed":
                 lang_iso = lang_fixed
             elif language_iso_mode == "interactive":
-                print(f"  [{meta['cbz_name']}] LanguageISO:")
-                print("    1. 跳过   2. ja   3. zh")
+                print(f"  [{meta['cbz_name']}] LanguageISO（回车=跳过/不生成）:")
+                print("    1. 跳过（不生成 LanguageISO，纯图片漫画可选此项）")
+                print("    2. ja")
+                print("    3. zh")
                 li = input("    请选择 (1-3，直接回车默认跳过): ").strip()
                 if li == "2":
                     lang_iso = "ja"
