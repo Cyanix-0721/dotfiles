@@ -90,7 +90,7 @@ python batch_pack_cbz.py [根目录] [选项]
   纯图片漫画可留空）
 - 开头询问 Volume 模式：跳过（默认）/ 自动检测 / 逐文件夹手动输入
   （auto 模式：同系列有更高卷号时，无卷号的漫画自动推断为第 1 卷，并按卷号排序）
-- 开头询问删除模式：保留（默认）/ 打包后自动删除源文件夹
+- 开头询问删除模式：保留（默认）/ 打包后自动删除源文件夹（保留生成的 CBZ）
 - 开头询问冲突处理方案：覆盖（默认）/ 自动重命名（如 xxx (1).cbz）/ 逐文件询问
 - 以上各项均可通过命令行选项直接指定
   （root / --lang / --volume / -d / -k / --conflict）
@@ -575,7 +575,10 @@ def main() -> None:
         ),
     )
     parser.add_argument(
-        "-d", "--delete", action="store_true", help="打包成功后自动删除源文件夹（不询问）"
+        "-d",
+        "--delete",
+        action="store_true",
+        help="打包成功后自动删除源文件夹（保留生成的 CBZ，不询问）",
     )
     parser.add_argument(
         "-k", "--keep", action="store_true", help="打包后保留源文件夹（不询问，默认行为）"
@@ -681,7 +684,7 @@ def main() -> None:
     else:
         print("删除源文件夹选项：")
         print("  1. 保留（默认，不删除）")
-        print("  2. 自动删除 — 打包成功后删除源文件夹")
+        print("  2. 自动删除 — 打包成功后删除源文件夹（保留生成的 CBZ）")
         del_choice = input("请选择 (1-2，直接回车默认保留): ").strip()
         delete_mode = "delete" if del_choice == "2" else "keep"
         print(f"删除模式: {'自动删除' if delete_mode == 'delete' else '保留源文件夹'}")
@@ -987,25 +990,41 @@ def main() -> None:
     deleted = 0
     if delete_folders and success_folders:
         print("\n删除源文件夹...")
-        # 先删深层，再删浅层，避免父目录残留导致误删
+        # 先删深层，再删浅层，避免父目录残留
+        # 关键：排除刚生成的 .cbz（单个漫画/根目录场景 CBZ 就在源文件夹内），
+        # 删除其余源文件；删除后若文件夹已空且不是根目录，再移除空文件夹本身
         for folder in sorted(success_folders, key=lambda p: len(p.parts), reverse=True):
             try:
-                if folder.exists() and folder.is_dir():
-                    # 检查是否还有非图片文件，提前提示
-                    others = [
-                        f
-                        for f in folder.iterdir()
-                        if f.is_file() and f.suffix.lower() not in IMAGE_EXTENSIONS
-                    ]
-                    if others:
-                        print(f"  ⚠ {folder.name} 含 {len(others)} 个非图片文件，将一并删除")
-                    shutil.rmtree(folder)
-                    try:
-                        rel_del = folder.relative_to(root_dir)
-                    except ValueError:
-                        rel_del = folder
-                    print(f"  已删除: {rel_del}")
-                    deleted += 1
+                if not (folder.exists() and folder.is_dir()):
+                    continue
+                # 提示将一并删除的非图片、非 CBZ 文件
+                others = [
+                    f
+                    for f in folder.iterdir()
+                    if f.is_file()
+                    and f.suffix.lower() not in IMAGE_EXTENSIONS
+                    and f.suffix.lower() != ".cbz"
+                ]
+                if others:
+                    print(f"  ⚠ {folder.name} 含 {len(others)} 个非图片文件，将一并删除")
+                for item in list(folder.iterdir()):
+                    if item.is_file() and item.suffix.lower() == ".cbz":
+                        continue  # 保留生成的 CBZ
+                    if item.is_dir():
+                        shutil.rmtree(item)
+                    else:
+                        item.unlink()
+                # 删除后若文件夹已空且不是根目录，移除空文件夹本身
+                if folder != root_dir and not any(folder.iterdir()):
+                    folder.rmdir()
+                try:
+                    rel_del = folder.relative_to(root_dir)
+                    if str(rel_del) == ".":
+                        rel_del = f"<根目录: {root_dir.name}>"
+                except ValueError:
+                    rel_del = folder
+                print(f"  已删除: {rel_del}")
+                deleted += 1
             except Exception as e:
                 print(f"  ✗ 删除 {folder} 时出错: {e}")
         print(f"已删除 {deleted} 个源文件夹")
