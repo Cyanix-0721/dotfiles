@@ -84,7 +84,7 @@ python batch_pack_cbz.py [根目录] [选项]
   -y, --yes           跳过所有确认（打包确认、覆盖确认）
   --dry-run           仅预览计划内容，不实际创建 CBZ
   -u, --update        更新已有 CBZ 的 ComicInfo.xml（扫描 root 下所有 .cbz，重新生成
-                      并替换；手动选 LanguageISO，图片原样保留）
+                      并替换；支持与打包一致的 --lang / --volume，图片原样保留）
 
 交互式流程：
 - 开头询问执行位置（root）：1 默认脚本所在目录（回车）/ 2 手动输入 / 3 弹出窗口选择
@@ -194,6 +194,99 @@ def ask_option(prompt: str, valid: set[str], default: str) -> str:
             print("  ⚠ 无效选项，请重新输入（直接回车使用默认）")
     print(f"  ⚠ 再次无效，使用默认「{default}」")
     return default
+
+
+def ask_lang_mode(args) -> tuple[str, str | None]:
+    """开头解析 LanguageISO 模式，返回 (mode, lang_fixed)；mode: skip / fixed / interactive"""
+    if args.lang == "ja":
+        print("LanguageISO: 固定 ja")
+        return "fixed", "ja"
+    if args.lang == "zh":
+        print("LanguageISO: 固定 zh")
+        return "fixed", "zh"
+    if args.lang == "interactive":
+        print("LanguageISO: 逐文件夹交互式选择")
+        return "interactive", None
+    if args.lang == "skip":
+        print("LanguageISO: （不生成）")
+        return "skip", None
+    print("LanguageISO 选项（ComicInfo.xml 中的语言标签）：")
+    print("  1. 跳过（默认，不生成 <LanguageISO> 标签）")
+    print("  2. 交互式选择 — 逐文件夹选择 ja 或 zh")
+    li = ask_option("请选择 (1-2，直接回车默认跳过): ", {"1", "2"}, "1")
+    if li == "2":
+        print("LanguageISO: 逐文件夹交互式选择")
+        return "interactive", None
+    print("LanguageISO: （不生成）")
+    return "skip", None
+
+
+def ask_volume_mode(args) -> str:
+    """开头解析 Volume 模式，返回 skip / auto / input"""
+    if args.volume:
+        return args.volume
+    print("Volume（卷号）选项：")
+    print("  1. 跳过（默认，不生成 <Volume> 标签）")
+    print("  2. 自动检测 — 从标题/系列名末尾自动提取数字卷号；同系列存在")
+    print("     更高卷号时，无卷号的漫画自动推断为第 1 卷")
+    print("  3. 交互式输入 — 逐文件夹手动输入卷号")
+    vi = ask_option("请选择 (1-3，直接回车默认跳过): ", {"1", "2", "3"}, "1")
+    return {"1": "skip", "2": "auto", "3": "input"}[vi]
+
+
+def choose_language(
+    display: str,
+    mode: str,
+    lang_fixed: str | None,
+    current_lang: str | None = None,
+) -> str | None:
+    """
+    逐项选择 LanguageISO（打包/更新模式共用）
+    - fixed: 直接返回 lang_fixed
+    - interactive: 交互询问；已有 current_lang 时「跳过=保留现状」并提供「置空」选项
+    - skip: 返回 None（不生成）
+    """
+    if mode == "fixed":
+        return lang_fixed
+    if mode != "interactive":
+        return None
+    if current_lang:
+        print(f"  >> {display}  LanguageISO（当前 {current_lang}）:")
+        print(f"    1. 跳过（保留当前 {current_lang}）   2. ja   3. zh   4. 置空（去掉）")
+        li = ask_option("    请选择 (1-4，直接回车默认保留): ", {"1", "2", "3", "4"}, "1")
+        if li == "2":
+            return "ja"
+        if li == "3":
+            return "zh"
+        if li == "4":
+            return None  # 置空：不生成 LanguageISO
+        return current_lang  # 跳过=保留现状
+    print(f"  >> {display}  LanguageISO（回车=跳过/不生成）:")
+    print("    1. 跳过（不生成 LanguageISO）   2. ja   3. zh")
+    li = ask_option("    请选择 (1-3，直接回车默认跳过): ", {"1", "2", "3"}, "1")
+    return "ja" if li == "2" else "zh" if li == "3" else None
+
+
+def resolve_volume(
+    title: str, display: str, mode: str, inferred: int | None
+) -> tuple[str, int | None]:
+    """
+    逐项解析卷号，返回 (清理后的标题, 卷号)（打包/更新模式共用）
+    - skip: 不生成（标题不变）
+    - auto: 显式检测（detect_volume）+ 系列推断（inferred 为推断卷号）
+    - input: 交互输入（非数字视为跳过）
+    """
+    if mode == "skip":
+        return title, None
+    if mode == "auto":
+        clean, vol = detect_volume(title)
+        if vol is not None:
+            return clean, vol
+        if inferred == 1:
+            return title, 1
+        return title, None
+    vi = input(f"  >> {display}  请输入卷号（直接回车跳过）: ").strip()
+    return title, int(vi) if vi.isdigit() else None
 
 
 # 全角/半角括号（内容为"原作"，ComicInfo.xml 中忽略）
@@ -416,23 +509,15 @@ def derive_metadata(folder: Path, root: Path, depth: int) -> dict[str, str]:
     }
 
 
-def read_image_size(path: Path) -> tuple[int | None, int | None]:
-    """读取图片宽高（失败时返回 (None, None)）"""
+def read_image_size(src: Path | bytes) -> tuple[int | None, int | None]:
+    """读取图片宽高（src 为文件路径或字节流，失败时返回 (None, None)）"""
     if Image is None:
         return None, None
     try:
-        with Image.open(path) as im:
-            return im.width, im.height
-    except Exception:
-        return None, None
-
-
-def read_image_size_bytes(data: bytes) -> tuple[int | None, int | None]:
-    """从图片字节流读取宽高（用于直接处理 CBZ 内的图片，失败返回 (None, None)）"""
-    if Image is None:
-        return None, None
-    try:
-        with Image.open(io.BytesIO(data)) as im:
+        if isinstance(src, bytes):
+            with Image.open(io.BytesIO(src)) as im:
+                return im.width, im.height
+        with Image.open(src) as im:
             return im.width, im.height
     except Exception:
         return None, None
@@ -566,14 +651,15 @@ def _read_cbz_language(cbz: Path) -> str | None:
         return None
 
 
-def update_main(root_dir: Path) -> None:
+def update_main(
+    root_dir: Path, language_iso_mode: str, lang_fixed: str | None, volume_mode: str
+) -> None:
     """
     更新模式：扫描 root 下所有 .cbz，逐个重新生成 ComicInfo.xml
 
-    - 先解析所有 CBZ 元数据并做系列级卷号推断（同系列存在更高卷号时，无卷号推断为第 1 卷）
-    - 逐个手动选择 LanguageISO：
-        已有语言时「跳过」= 保留现状（不覆盖），并提供「置空」选项去掉语言；
-        无语言时「跳过」= 不添加
+    支持与打包模式一致的 --lang / --volume 模式（skip / fixed / interactive、skip / auto / input）：
+    - volume auto 时做系列级卷号推断（同系列存在更高卷号时，无卷号推断为第 1 卷）
+    - LanguageISO 交互时：已有语言「跳过=保留现状」，并提供「置空」选项去掉语言
     - 图片条目原样复制（不重新压缩），仅替换 ComicInfo.xml，用新 CBZ 替换原文件
     """
     cbz_files = sorted(
@@ -584,39 +670,34 @@ def update_main(root_dir: Path) -> None:
         print("未找到 CBZ 文件！")
         return
 
-    # 第一遍：解析所有 CBZ 元数据 + 系列级卷号推断
+    # 第一遍：解析元数据 + （auto 时）系列级卷号推断
     metas: list[dict] = []
     for cbz in cbz_files:
-        writer, title = parse_name(cbz.stem)
-        series = title
-        explicit_vol: int | None = None
-        clean, vol = detect_volume(title)
-        if vol is not None:
-            explicit_vol = vol
-            title = clean
-            series = clean
+        writer, raw_title = parse_name(cbz.stem)
+        clean, explicit_vol = detect_volume(raw_title)
+        series = clean if explicit_vol is not None else raw_title
         metas.append(
             {
                 "cbz": cbz,
                 "writer": writer,
-                "title": title,
+                "raw_title": raw_title,
                 "series": series,
                 "explicit_vol": explicit_vol,
                 "series_key": f"{writer}|{series}",
             }
         )
-    # 系列级推断：无卷号恰好 1 本且同系列存在 >1 显式卷号 → 推断为第 1 卷
-    groups: dict[str, list[dict]] = {}
-    for m in metas:
-        groups.setdefault(m["series_key"], []).append(m)
-    for m in metas:
-        m["volume"] = m["explicit_vol"]
-        if m["volume"] is None:
-            sibs = groups[m["series_key"]]
-            no_vol = [x for x in sibs if x["explicit_vol"] is None]
-            has_vol = [x["explicit_vol"] for x in sibs if x["explicit_vol"] is not None]
-            if len(no_vol) == 1 and has_vol and max(has_vol) > 1:
-                m["volume"] = 1  # 推断为第 1 卷
+    inferred_map: dict[Path, int] = {}
+    if volume_mode == "auto":
+        groups: dict[str, list[dict]] = {}
+        for m in metas:
+            groups.setdefault(m["series_key"], []).append(m)
+        for m in metas:
+            if m["explicit_vol"] is None:
+                sibs = groups[m["series_key"]]
+                no_vol = [x for x in sibs if x["explicit_vol"] is None]
+                has_vol = [x["explicit_vol"] for x in sibs if x["explicit_vol"] is not None]
+                if len(no_vol) == 1 and has_vol and max(has_vol) > 1:
+                    inferred_map[m["cbz"]] = 1  # 推断为第 1 卷
 
     print("=" * 60)
     print(f"CBZ 更新工具：找到 {len(cbz_files)} 个 CBZ")
@@ -626,41 +707,21 @@ def update_main(root_dir: Path) -> None:
     for idx, m in enumerate(metas, 1):
         cbz = m["cbz"]
         try:
-            cur_lang = _read_cbz_language(cbz)
-            vol_str = f"Vol.{m['volume']}" if m["volume"] is not None else "无卷号"
+            cur_lang = _read_cbz_language(cbz) if language_iso_mode == "interactive" else None
+            # Volume 解析（auto 静默；input 交互，prompt 含文件名可识别）
+            title, volume = resolve_volume(
+                m["raw_title"], cbz.name, volume_mode, inferred_map.get(cbz)
+            )
+            vol_str = f"Vol.{volume}" if volume is not None else "无卷号"
             lang_str = cur_lang if cur_lang else "无"
 
-            # 输出分隔，避免与上一个看混
+            # 先打印分隔与当前项标题，再询问语言，避免与上一项看混
             print("-" * 60)
             print(f"  [{idx}/{len(metas)}] {cbz.name}")
             print(f"       系列: {m['series']} | {vol_str} | 当前语言: {lang_str}")
-
-            # LanguageISO 选择（已有语言时跳过=保留，并提供置空选项）
-            if cur_lang:
-                print("  LanguageISO：")
-                print(f"    1. 跳过（保留当前 {cur_lang}）   2. ja   3. zh   4. 置空（去掉）")
-                li = ask_option(
-                    "    请选择 (1-4，直接回车默认保留): ",
-                    {"1", "2", "3", "4"},
-                    "1",
-                )
-                if li == "2":
-                    lang_iso = "ja"
-                elif li == "3":
-                    lang_iso = "zh"
-                elif li == "4":
-                    lang_iso = None  # 置空：不生成 LanguageISO
-                else:
-                    lang_iso = cur_lang  # 跳过=保留现状
-            else:
-                print("  LanguageISO：")
-                print("    1. 跳过（不添加）   2. ja   3. zh")
-                li = ask_option(
-                    "    请选择 (1-3，直接回车默认跳过): ",
-                    {"1", "2", "3"},
-                    "1",
-                )
-                lang_iso = "ja" if li == "2" else "zh" if li == "3" else None
+            lang_iso = choose_language(
+                cbz.name, language_iso_mode, lang_fixed, current_lang=cur_lang
+            )
 
             # 读取 CBZ 内图片元数据（大小 + 宽高）
             with zipfile.ZipFile(str(cbz)) as zf:
@@ -672,16 +733,16 @@ def update_main(root_dir: Path) -> None:
                 images: dict[str, tuple[bytes, int]] = {}
                 for n in names:
                     data = zf.read(n)
-                    width, height = read_image_size_bytes(data)
+                    width, height = read_image_size(data)
                     image_infos.append((len(data), width, height))
                     images[n] = (data, zf.getinfo(n).compress_type)
 
                 xml_content = build_comic_info_xml(
-                    m["title"],
+                    title,
                     m["series"],
                     m["writer"],
                     image_infos,
-                    volume=m["volume"],
+                    volume=volume,
                     language_iso=lang_iso,
                 )
 
@@ -775,7 +836,7 @@ def main() -> None:
         action="store_true",
         help=(
             "更新已有 CBZ 的 ComicInfo.xml：扫描 root 下所有 .cbz，重新生成并替换"
-            "（手动选 LanguageISO，图片原样保留）"
+            "（支持与打包一致的 --lang / --volume，图片原样保留）"
         ),
     )
     args = parser.parse_args()
@@ -818,9 +879,14 @@ def main() -> None:
         wait_for_exit()
         return
 
-    # 更新模式：只重写已有 CBZ 的 ComicInfo.xml（跳过打包相关交互）
+    # 更新模式：重写已有 CBZ 的 ComicInfo.xml（支持与打包一致的 --lang / --volume 模式）
     if args.update:
-        update_main(root_dir)
+        language_iso_mode, lang_fixed = ask_lang_mode(args)
+        volume_mode = ask_volume_mode(args)
+        volume_labels = {"skip": "跳过（不生成）", "auto": "自动检测", "input": "交互式输入"}
+        print(f"Volume 模式: {volume_labels[volume_mode]}")
+        print()
+        update_main(root_dir, language_iso_mode, lang_fixed, volume_mode)
         wait_for_exit()
         return
 
@@ -831,44 +897,11 @@ def main() -> None:
     print()
 
     # ---- LanguageISO 模式（--lang 直接指定，否则交互式询问） ----
-    language_iso_mode = "skip"
-    lang_fixed: str | None = None
-    if args.lang == "ja":
-        language_iso_mode = "fixed"
-        lang_fixed = "ja"
-        print("LanguageISO: 固定 ja")
-    elif args.lang == "zh":
-        language_iso_mode = "fixed"
-        lang_fixed = "zh"
-        print("LanguageISO: 固定 zh")
-    elif args.lang == "interactive":
-        language_iso_mode = "interactive"
-        print("LanguageISO: 逐文件夹交互式选择")
-    elif args.lang == "skip":
-        print("LanguageISO: （不生成）")
-    else:
-        print("LanguageISO 选项（ComicInfo.xml 中的语言标签）：")
-        print("  1. 跳过（默认，不生成 <LanguageISO> 标签）")
-        print("  2. 交互式选择 — 逐文件夹选择 ja 或 zh")
-        lang_choice = ask_option("请选择 (1-2，直接回车默认跳过): ", {"1", "2"}, "1")
-        if lang_choice == "2":
-            language_iso_mode = "interactive"
-            print("LanguageISO: 逐文件夹交互式选择")
-        else:
-            print("LanguageISO: （不生成）")
+    language_iso_mode, lang_fixed = ask_lang_mode(args)
     print()
 
     # ---- Volume 模式（--volume 直接指定，否则交互式询问） ----
-    if args.volume:
-        volume_mode = args.volume
-    else:
-        print("Volume（卷号）选项：")
-        print("  1. 跳过（默认，不生成 <Volume> 标签）")
-        print("  2. 自动检测 — 从标题/系列名末尾自动提取数字卷号；同系列存在")
-        print("     更高卷号时，无卷号的漫画自动推断为第 1 卷")
-        print("  3. 交互式输入 — 逐文件夹手动输入卷号")
-        vol_choice = ask_option("请选择 (1-3，直接回车默认跳过): ", {"1", "2", "3"}, "1")
-        volume_mode = {"1": "skip", "2": "auto", "3": "input"}[vol_choice]
+    volume_mode = ask_volume_mode(args)
     volume_labels = {"skip": "跳过（不生成）", "auto": "自动检测", "input": "交互式输入"}
     print(f"Volume 模式: {volume_labels[volume_mode]}")
     print()
@@ -1019,39 +1052,16 @@ def main() -> None:
         try:
             meta = derive_metadata(folder, root_dir, depth)
 
-            # ---- Volume 处理 ----
-            volume: int | None = None
-            # 始终检测 title（两层时 title 来自内层漫画名）
-            volume_target = meta["title"]
-            if volume_mode == "auto":  # 自动检测
-                clean, vol = detect_volume(volume_target)
-                if vol is not None:
-                    volume = vol
-                    meta["title"] = clean
-                    if depth <= 1:
-                        meta["series"] = clean  # 一层时 title == series
-                elif volume_map.get(folder) == 1:  # 推断为第 1 卷（标题无卷号，无需修改）
-                    volume = 1
-            elif volume_mode == "input":  # 交互式输入
-                prompt = f"  >> {meta['cbz_name']}  请输入卷号（直接回车跳过）: "
-                vol_input = input(prompt).strip()
-                if vol_input.isdigit():
-                    volume = int(vol_input)
+            # ---- Volume 处理（复用抽象函数，与更新模式一致）----
+            clean, volume = resolve_volume(
+                meta["title"], meta["cbz_name"], volume_mode, volume_map.get(folder)
+            )
+            meta["title"] = clean
+            if depth <= 1:
+                meta["series"] = clean  # 一层时 title == series
 
-            # ---- LanguageISO 逐文件夹处理 ----
-            lang_iso: str | None = None
-            if language_iso_mode == "fixed":
-                lang_iso = lang_fixed
-            elif language_iso_mode == "interactive":
-                print(f"  >> {meta['cbz_name']}  LanguageISO（回车=跳过/不生成）:")
-                print("    1. 跳过（不生成 LanguageISO，纯图片漫画可选此项）")
-                print("    2. ja")
-                print("    3. zh")
-                li = ask_option("    请选择 (1-3，直接回车默认跳过): ", {"1", "2", "3"}, "1")
-                if li == "2":
-                    lang_iso = "ja"
-                elif li == "3":
-                    lang_iso = "zh"
+            # ---- LanguageISO 逐文件夹处理（复用抽象函数）----
+            lang_iso = choose_language(meta["cbz_name"], language_iso_mode, lang_fixed)
 
             # 排序图片：固定按名称升序（自然排序），命名已由重命名脚本保证顺序
             images = get_image_files(folder)
