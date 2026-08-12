@@ -83,6 +83,8 @@ python batch_pack_cbz.py [根目录] [选项]
   -k, --keep          打包后保留源文件夹（不询问，默认行为）
   -y, --yes           跳过所有确认（打包确认、覆盖确认）
   --dry-run           仅预览计划内容，不实际创建 CBZ
+  -u, --update        更新已有 CBZ 的 ComicInfo.xml（扫描 root 下所有 .cbz，重新生成
+                      并替换；手动选 LanguageISO，图片原样保留）
 
 交互式流程：
 - 开头询问执行位置（root）：1 默认脚本所在目录（回车）/ 2 手动输入 / 3 弹出窗口选择
@@ -107,6 +109,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import io
 import os
 import platform
 import re
@@ -403,6 +406,17 @@ def read_image_size(path: Path) -> tuple[int | None, int | None]:
         return None, None
 
 
+def read_image_size_bytes(data: bytes) -> tuple[int | None, int | None]:
+    """从图片字节流读取宽高（用于直接处理 CBZ 内的图片，失败返回 (None, None)）"""
+    if Image is None:
+        return None, None
+    try:
+        with Image.open(io.BytesIO(data)) as im:
+            return im.width, im.height
+    except Exception:
+        return None, None
+
+
 def build_comic_info_xml(
     title: str,
     series: str,
@@ -518,6 +532,87 @@ def ask_folder_dialog(initial_dir: Path) -> Path | None:
     return Path(result) if result else None
 
 
+def update_main(root_dir: Path) -> None:
+    """
+    更新模式：扫描 root 下所有 .cbz，逐个重新生成 ComicInfo.xml
+
+    从 CBZ 文件名解析 writer / title / series / volume（与打包逻辑一致），
+    手动选择 LanguageISO，读取 CBZ 内图片尺寸后重写 ComicInfo.xml。
+    图片条目原样复制（不重新压缩），仅替换 ComicInfo.xml，文件用新 CBZ 替换。
+    """
+    cbz_files = sorted(
+        (p for p in root_dir.rglob("*.cbz") if p.is_file()),
+        key=lambda p: natural_key(str(p.relative_to(root_dir))),
+    )
+    if not cbz_files:
+        print("未找到 CBZ 文件！")
+        return
+    print(f"找到 {len(cbz_files)} 个 CBZ：")
+    for i, cbz in enumerate(cbz_files, 1):
+        print(f"  {i}. {cbz.relative_to(root_dir)}")
+    print()
+
+    updated = 0
+    for cbz in cbz_files:
+        try:
+            # 从文件名解析（与打包逻辑一致：一层结构 title == series）
+            writer, title = parse_name(cbz.stem)
+            series = title
+            volume: int | None = None
+            clean, vol = detect_volume(title)
+            if vol is not None:
+                volume = vol
+                title = clean
+                series = clean
+
+            # 手动选择 LanguageISO
+            print(f"[{cbz.name}] LanguageISO（回车=跳过/不生成）:")
+            print("    1. 跳过（不生成 LanguageISO）")
+            print("    2. ja")
+            print("    3. zh")
+            li = input("    请选择 (1-3，直接回车默认跳过): ").strip()
+            lang_iso = "ja" if li == "2" else "zh" if li == "3" else None
+
+            # 读取 CBZ 内图片元数据（大小 + 宽高）
+            with zipfile.ZipFile(str(cbz)) as zf:
+                names = sorted(
+                    (n for n in zf.namelist() if Path(n).suffix.lower() in IMAGE_EXTENSIONS),
+                    key=natural_key,
+                )
+                image_infos: list[tuple[int, int | None, int | None]] = []
+                images: dict[str, tuple[bytes, int]] = {}
+                for n in names:
+                    data = zf.read(n)
+                    width, height = read_image_size_bytes(data)
+                    image_infos.append((len(data), width, height))
+                    images[n] = (data, zf.getinfo(n).compress_type)
+
+                xml_content = build_comic_info_xml(
+                    title,
+                    series,
+                    writer,
+                    image_infos,
+                    volume=volume,
+                    language_iso=lang_iso,
+                )
+
+                # 重写 CBZ：图片原样复制 + 新 ComicInfo.xml，再替换原文件
+                tmp = cbz.with_name(cbz.name + ".tmp")
+                with zipfile.ZipFile(str(tmp), "w") as zf_out:
+                    zf_out.writestr("ComicInfo.xml", xml_content)
+                    for n, (data, ct) in images.items():
+                        zf_out.writestr(n, data, compress_type=ct)
+            os.replace(tmp, cbz)
+
+            vol_str = f"Vol.{volume}" if volume is not None else "无卷号"
+            lang_str = lang_iso if lang_iso else "无语言"
+            print(f"  ✓ 已更新: {cbz.name}（{len(image_infos)}页 {vol_str} {lang_str}）")
+            updated += 1
+        except Exception as e:
+            print(f"  ✗ 更新 {cbz.name} 失败: {e}")
+    print(f"\n已更新 {updated} 个 CBZ")
+
+
 def wait_for_exit():
     """等待用户按回车退出，兼容交互终端（Ctrl+C）和非交互终端（EOF）"""
     try:
@@ -585,6 +680,15 @@ def main() -> None:
     )
     parser.add_argument("-y", "--yes", action="store_true", help="跳过所有确认")
     parser.add_argument("--dry-run", action="store_true", help="仅预览，不实际打包")
+    parser.add_argument(
+        "-u",
+        "--update",
+        action="store_true",
+        help=(
+            "更新已有 CBZ 的 ComicInfo.xml：扫描 root 下所有 .cbz，重新生成并替换"
+            "（手动选 LanguageISO，图片原样保留）"
+        ),
+    )
     args = parser.parse_args()
 
     # 检测依赖
@@ -622,6 +726,12 @@ def main() -> None:
             root_dir = default_dir
     if not root_dir.is_dir():
         print(f"[错误] 目录不存在 / Directory not found: {root_dir}")
+        wait_for_exit()
+        return
+
+    # 更新模式：只重写已有 CBZ 的 ComicInfo.xml（跳过打包相关交互）
+    if args.update:
+        update_main(root_dir)
         wait_for_exit()
         return
 
