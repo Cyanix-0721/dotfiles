@@ -40,7 +40,13 @@ cd ~/.local/share/chezmoi
 # Arch Linux
 cd ~/.local/share/chezmoi
 ./scripts/arch-quickstart/00-main.sh
+
+# WSL（Debian 等）
+cd ~/.local/share/chezmoi
+./scripts/wsl-quickstart/00-main.sh
 ```
+
+WSL quickstart 内置 Windows OpenSSH agent 转发（默认启用），让 git 的 SSH 直接调用 Windows 侧 `ssh.exe`（经 KeePassXC 注入的密钥），避免 WSL 侧无法桥接 Windows agent 的问题。脚本会生成 `~/bin/win-ssh` 与 Windows 侧 `.local/bin/win-ssh.ps1`，并在 `~/.bashrc` 注入 `GIT_SSH_COMMAND`。
 
 交互式菜单，可选择安装：
 
