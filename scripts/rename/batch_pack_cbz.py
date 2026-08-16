@@ -25,6 +25,8 @@
 
 名称解析规则：
 - 文件夹名如 "[作者] 标题 系列"：[] 内为 writer，其后为 title
+- 文件夹名开头可能带 () 前缀（如 "(C108) [作者] 标题"，通常为展会/社团代码），
+  与末尾 [DL]、[中文翻译] 等标注一样被忽略，不进入 ComicInfo.xml 与 CBZ 文件名
 - 内层（系列）文件夹名也可能带 [] 前缀，例如 "[作者] 系列名 1"（系列第 1 卷），
   解析 series 时忽略该 [] 前缀；writer 一律取外层文件夹的 []
 - 标题/系列后可能带全角（）或半角 () 括号，内含"原作"信息（如 "标题（原作：X）"），
@@ -292,6 +294,10 @@ def resolve_volume(
 # 全角/半角括号（内容为"原作"，ComicInfo.xml 中忽略）
 _PAREN_RE = re.compile(r"[（(][^（）()]*[）)]")
 
+# 作者 [writer] 之前的 () 前缀（如 "(C108) [作者] 标题" 中的 (C108)，
+# 通常为展会/社团代码，与末尾 [DL] 等标注一样忽略）
+_LEADING_TAG_PAREN_RE = re.compile(r"^\s*[（(][^（）()]*[）)]\s*")
+
 # 末尾标注：标题尾部的 [DL]、[中文翻译] 等（0 个或多个，可选空格隔开），忽略
 _TRAILING_TAG_RE = re.compile(r"(?:\s*\[[^\[\]]*\])+$")
 
@@ -423,14 +429,17 @@ def parse_name(name: str) -> tuple[str, str]:
     """
     从文件夹名解析 (writer, clean_name)
 
+    - 开头的 () 前缀（如 "(C108) [作者] 标题" 中的 (C108)，通常为展会/社团代码）忽略
     - 开头的 [writer] 提取为 writer
     - 标题/系列中的括号（）/( ) 内容（原作）被忽略
 
-    例："[作者A] 作品A 副标题（原作：X）"
+    例："(C108) [作者A] 作品A 副标题（原作：X）"
         -> ("作者A", "作品A 副标题")
     无 [] 时返回 ("", 清理后的名称)
     """
     name = name.strip()
+    # 去除作者 [] 之前的 () 前缀（如 (C108)），再解析 [writer]
+    name = _LEADING_TAG_PAREN_RE.sub("", name)
     writer = ""
     if name.startswith("[") and "]" in name:
         end = name.find("]")
@@ -442,14 +451,17 @@ def parse_name(name: str) -> tuple[str, str]:
 def clean_cbz_name(raw: str) -> str:
     """
     生成 CBZ 文件名用的干净名称：保留开头 [writer] 前缀原样，
-    清理尾部 [] 标注与（）原作内容（与 strip_original_work 规则一致）
+    清理开头 () 前缀（如 (C108)）、尾部 [] 标注与（）原作内容
+    （与 strip_original_work 规则一致）
 
     例：
-    "[作者] 标题（原作：X）[DL]"          -> "[作者] 标题"
+    "(C108) [作者] 标题（原作：X）[DL]"          -> "[作者] 标题"
     "[作者] 真正的[漫画]标题 [中文翻译]"  -> "[作者] 真正的[漫画]标题"
     "[作者] 标题"                        -> "[作者] 标题"
     """
     rest = raw.strip()
+    # 去除作者 [] 之前的 () 前缀（如 (C108)）
+    rest = _LEADING_TAG_PAREN_RE.sub("", rest)
     writer_part = ""
     if rest.startswith("[") and "]" in rest:
         end = rest.find("]")
@@ -462,15 +474,17 @@ def clean_cbz_name(raw: str) -> str:
 def clean_folder_name(raw: str) -> str:
     """
     生成重命名后的文件夹名：保留 [作者] 前缀与（）原作内容，
-    去掉尾部 [DL] 等标注，[作者] 与标题之间固定一个空格
+    去掉开头 () 前缀（如 (C108)）与尾部 [DL] 等标注，[作者] 与标题之间固定一个空格
 
     例：
-    "[作者]标题（原作：X）[DL]"           -> "[作者] 标题（原作：X）"
+    "(C108) [作者]标题（原作：X）[DL]"     -> "[作者] 标题（原作：X）"
     "[作者]  真正的[漫画]标题 [中文翻译]"  -> "[作者] 真正的[漫画]标题"
     "[作者] 标题"                        -> "[作者] 标题"
     "系列A"                            -> "系列A"   # 无 [作者]，不变
     """
     rest = raw.strip()
+    # 去除作者 [] 之前的 () 前缀（如 (C108)）
+    rest = _LEADING_TAG_PAREN_RE.sub("", rest)
     writer_part = ""
     if rest.startswith("[") and "]" in rest:
         end = rest.find("]")
