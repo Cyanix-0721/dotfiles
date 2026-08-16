@@ -46,6 +46,7 @@ sudo apt-get install -y --no-install-recommends \
 	ripgrep \
 	shfmt \
 	starship \
+	subversion \
 	zoxide
 ok "命令行工具安装完成 / Command line tools installed"
 
