@@ -113,16 +113,17 @@ else {
 Write-Header "终端与命令行工具 / Terminal & CLI Tools"
 
 $termTools = @{
-    "wezterm-nightly" = @{ Desc = "WezTerm (GPU 加速终端 / GPU-accelerated terminal)"; Global = $false; Default = $true }
-    "less"            = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false; Default = $true }
-    "starship"        = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false; Default = $true }
-    "zoxide"          = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false; Default = $true }
-    "fzf"             = @{ Desc = "fzf (模糊查找器 / Fuzzy finder)"; Global = $false; Default = $true }
-    "ripgrep"         = @{ Desc = "ripgrep (快速搜索工具 / Fast search tool)"; Global = $false; Default = $true }
-    "fd"              = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false; Default = $true }
-    "bat"             = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false; Default = $true }
-    "eza"             = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false; Default = $true }
-    "dark"            = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true; Default = $true }
+    "wezterm-nightly"     = @{ Desc = "WezTerm (GPU 加速终端 / GPU-accelerated terminal)"; Global = $false; Default = $true }
+    "less"                = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false; Default = $true }
+    "microsoft-coreutils" = @{ Desc = "GNU Coreutils (ls/cp/mv 等 Linux 核心命令 / GNU core utilities)"; Global = $false; Default = $true }
+    "starship"            = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false; Default = $true }
+    "zoxide"              = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false; Default = $true }
+    "fzf"                 = @{ Desc = "fzf (模糊查找器 / Fuzzy finder)"; Global = $false; Default = $true }
+    "ripgrep"             = @{ Desc = "ripgrep (快速搜索工具 / Fast search tool)"; Global = $false; Default = $true }
+    "fd"                  = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false; Default = $true }
+    "bat"                 = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false; Default = $true }
+    "eza"                 = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false; Default = $true }
+    "dark"                = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true; Default = $true }
 }
 
 Install-ScoopPackages $termTools
