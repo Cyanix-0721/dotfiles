@@ -47,6 +47,7 @@ sudo apt-get install -y --no-install-recommends \
 	shfmt \
 	starship \
 	subversion \
+	unzip \
 	zoxide
 ok "命令行工具安装完成 / Command line tools installed"
 
@@ -60,14 +61,14 @@ else
 	ok "uv 安装完成（~/.local/bin/uv）/ uv installed (~/.local/bin/uv)"
 fi
 
-# fnm：使用官方安装脚本（Debian stable 无对应包）
-# fnm: install via the official installer script (not in Debian stable)
-step "安装 fnm（官方脚本）/ Installing fnm (official installer)"
+# fnm：使用官方安装脚本（Debian stable 无对应包），脚本会自动写入 shell 配置
+# fnm: install via the official installer script (not in Debian stable), it auto-configures the shell
+step "安装 fnm（官方脚本，自动配置 shell）/ Installing fnm (official installer, auto shell config)"
 if command -v fnm >/dev/null 2>&1; then
 	ok "fnm 已安装，跳过 / fnm already installed, skipping"
 else
-	curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir "$HOME/.fnm" --skip-shell
-	ok "fnm 安装完成（~/.fnm/fnm）/ fnm installed (~/.fnm/fnm)"
+	curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir "$HOME/.fnm"
+	ok "fnm 安装完成（~/.fnm/fnm，shell 配置已写入 ~/.bashrc）/ fnm installed (~/.fnm/fnm, shell config written to ~/.bashrc)"
 fi
 
 # opencode：使用官方安装脚本（而非 apt）
