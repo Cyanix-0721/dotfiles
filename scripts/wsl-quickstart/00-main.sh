@@ -16,6 +16,7 @@ show_menu() {
 	header "WSL 快速配置 / WSL Quick Setup"
 	echo " [1] 全部运行 / Run All"
 	echo " [2] SSH Agent 转发（win-ssh，默认启用）/ SSH Agent Forwarding (win-ssh, enabled by default)"
+	echo " [3] 常用软件安装 / Essential Packages"
 	echo " [0] 退出 / Exit"
 	echo
 }
@@ -38,6 +39,7 @@ run_script() {
 		fi
 		;;
 	2) script_name="01-ssh-agent-forward.sh" ;;
+	3) script_name="02-essential-packages.sh" ;;
 	*)
 		err "无效选项 / Invalid option"
 		return 1
@@ -49,7 +51,7 @@ run_script() {
 		return 0
 	elif [ "$script_num" -eq 1 ]; then
 		# 运行所有脚本（按数字顺序，排除主脚本）
-		for script in "$SCRIPT_DIR"/0[1]-*.sh; do
+		for script in "$SCRIPT_DIR"/0[1-2]-*.sh; do
 			if [ -f "$script" ] && [ -x "$script" ]; then
 				step "执行 $(basename "$script") / Executing $(basename "$script")"
 				"$script"
@@ -74,7 +76,7 @@ run_script() {
 # 主循环
 while true; do
 	show_menu
-	read -p "请选择操作 / Please select an option [0-2]: " choice
+	read -p "请选择操作 / Please select an option [0-3]: " choice
 
 	if run_script "$choice"; then
 		# 所有成功的选项都需要等待用户按键
