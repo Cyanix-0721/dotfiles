@@ -41,3 +41,9 @@ if (Get-Command vfox -ErrorAction SilentlyContinue) {
     Invoke-Expression "$(vfox activate pwsh)"
 }
 #endregion
+
+#region uv autocompletion
+if (Get-Command uv -ErrorAction SilentlyContinue) {
+    (& uv generate-shell-completion powershell) | Out-String | Invoke-Expression
+}
+#endregion
