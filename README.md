@@ -13,6 +13,12 @@ sudo pacman -S chezmoi             # Arch
 chezmoi init Cyanix-0721 --apply
 ```
 
+或用官方脚本一步到位（下载 + 初始化 + 应用，始终为最新版）：
+
+```bash
+sh -c "$(curl -fsLS https://get.chezmoi.io)" -- init --apply Cyanix-0721
+```
+
 初始化时会询问以下变量（输入一次，持久化到 `~/.config/chezmoi/chezmoi.toml`）：
 
 | 变量 | 说明 | 默认值 |
