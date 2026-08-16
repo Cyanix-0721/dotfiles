@@ -27,7 +27,7 @@ sudo apt-get install -y --no-install-recommends \
 	7zip \
 	bat \
 	btop \
-	delta \
+	git-delta \
 	eza \
 	fastfetch \
 	fd-find \
