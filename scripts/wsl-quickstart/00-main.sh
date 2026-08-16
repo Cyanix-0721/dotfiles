@@ -15,8 +15,8 @@ show_menu() {
 	clear
 	header "WSL 快速配置 / WSL Quick Setup"
 	echo " [1] 全部运行 / Run All"
-	echo " [2] SSH Agent 转发（win-ssh，默认启用）/ SSH Agent Forwarding (win-ssh, enabled by default)"
-	echo " [3] 常用软件安装 / Essential Packages"
+	echo " [2] 常用软件安装 / Essential Packages"
+	echo " [3] SSH Agent 转发（win-ssh，默认启用）/ SSH Agent Forwarding (win-ssh, enabled by default)"
 	echo " [0] 退出 / Exit"
 	echo
 }
@@ -38,8 +38,8 @@ run_script() {
 			note "自动确认模式已启用 / Auto-yes mode enabled"
 		fi
 		;;
-	2) script_name="01-ssh-agent-forward.sh" ;;
-	3) script_name="02-essential-packages.sh" ;;
+	2) script_name="01-essential-packages.sh" ;;
+	3) script_name="02-ssh-agent-forward.sh" ;;
 	*)
 		err "无效选项 / Invalid option"
 		return 1
