@@ -73,10 +73,11 @@ Install-ScoopPackages $svnTools
 # 环境管理
 Write-Header "环境管理 / Environment Management"
 
-# 1. vfox 版本管理器 (必装 / Required)
-Write-Step "vfox 版本管理器 / vfox Version Manager (Required)"
+# 1. 版本管理器 (必装 / Required)
+Write-Step "版本管理器 / Version Manager (Required)"
 $versionManager = @{
     "vfox" = @{ Desc = "vfox (多语言版本管理器 / Multi-language version manager)"; Global = $false; Default = $true }
+    "fnm"  = @{ Desc = "fnm (Node.js 版本管理器 / Node.js version manager)"; Global = $false; Default = $true }
 }
 
 Install-ScoopPackages $versionManager

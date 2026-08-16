@@ -60,6 +60,16 @@ else
 	ok "uv 安装完成（~/.local/bin/uv）/ uv installed (~/.local/bin/uv)"
 fi
 
+# fnm：使用官方安装脚本（Debian stable 无对应包）
+# fnm: install via the official installer script (not in Debian stable)
+step "安装 fnm（官方脚本）/ Installing fnm (official installer)"
+if command -v fnm >/dev/null 2>&1; then
+	ok "fnm 已安装，跳过 / fnm already installed, skipping"
+else
+	curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir "$HOME/.fnm" --skip-shell
+	ok "fnm 安装完成（~/.fnm/fnm）/ fnm installed (~/.fnm/fnm)"
+fi
+
 # opencode：使用官方安装脚本（而非 apt）
 # opencode: install via the official installer script
 step "安装 opencode（官方脚本）/ Installing opencode (official installer)"
@@ -74,8 +84,9 @@ fi
 # Update commands for manually-installed (official-script) tools
 header "手动安装工具 / Manually-Installed Tools"
 note "它们的更新命令 / Their update commands:"
-note "  uv      → uv self update"
-note "  opencode → opencode upgrade"
 note "  chezmoi  → chezmoi upgrade"
+note "  uv      → uv self update"
+note "  fnm     → fnm self install"
+note "  opencode → opencode upgrade"
 
 ok "常用软件安装完成 / Essential packages installed"
