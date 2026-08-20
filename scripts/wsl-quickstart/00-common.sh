@@ -7,14 +7,14 @@ export COMMON_LOADED=1
 : "${AUTO_YES:=0}"
 
 if [ -t 1 ]; then
-	RESET="\033[0m"
-	BOLD="\033[1m"
-	DIM="\033[2m"
-	RED="\033[31m"
-	GREEN="\033[32m"
-	YELLOW="\033[33m"
-	BLUE="\033[34m"
-	CYAN="\033[36m"
+	RESET=$'\033[0m'
+	BOLD=$'\033[1m'
+	DIM=$'\033[2m'
+	RED=$'\033[31m'
+	GREEN=$'\033[32m'
+	YELLOW=$'\033[33m'
+	BLUE=$'\033[34m'
+	CYAN=$'\033[36m'
 else
 	RESET=""
 	BOLD=""
