@@ -119,6 +119,7 @@ $productivityApps = @{
     "stranslate"     = @{ Desc = "Stranslate (翻译工具 / Translation tool)"; Global = $false }
     "umi-ocr"        = @{ Desc = "Umi OCR (OCR 工具 / OCR tool)"; Global = $false }
     "quickclipboard" = @{ Desc = "QuickClipboard (剪贴板管理工具 / Clipboard manager)"; Global = $false }
+    "zeal"           = @{ Desc = "Zeal (离线 API 文档浏览器 / Offline API documentation browser)"; Global = $false }
 }
 
 Install-ScoopPackages $productivityApps
