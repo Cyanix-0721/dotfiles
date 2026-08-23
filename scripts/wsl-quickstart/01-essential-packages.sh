@@ -2,7 +2,7 @@
 
 # 常用软件安装（Debian/Arch 同时存在且仅使用 Debian stable 源，apt 幂等确保）
 # Essential packages: intersection of Arch quickstart list and Debian stable packages
-# 排除：GUI 桌面工具（WSL 无需）、podman/podman-compose（暂不选用容器方案）、
+# 排除：GUI 桌面工具（WSL 无需）
 #       ruff/yazi（Debian trixie 无对应包）
 
 set -e # 遇到错误立即退出
@@ -48,7 +48,9 @@ sudo apt-get install -y --no-install-recommends \
 	starship \
 	subversion \
 	unzip \
-	zoxide
+	zoxide \
+	podman \
+	podman-compose
 ok "命令行工具安装完成 / Command line tools installed"
 
 # uv：使用官方安装脚本（而非 apt）
