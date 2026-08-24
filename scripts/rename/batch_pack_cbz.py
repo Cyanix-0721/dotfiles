@@ -75,7 +75,8 @@ python batch_pack_cbz.py [根目录] [选项]
                       interactive 逐文件夹交互选择（可跳过/留空，缺省交互式询问）
   --volume {skip,auto,input}
                       Volume 模式：skip 不生成 / auto 自动检测（同系列存在
-                      更高卷号时，无卷号的漫画自动推断为第 1 卷，并按卷号
+                      更高卷号时，无卷号的漫画自动推断为第 1 卷；存在小数
+                      卷号如 2.5 时向上取整为 3，原整数卷顺延为 4，并按卷号
                       排序）/
                       input 逐文件夹输入（缺省交互式询问）
   --conflict {overwrite,rename,ask}
@@ -93,7 +94,8 @@ python batch_pack_cbz.py [根目录] [选项]
 - 开头询问 LanguageISO 模式：跳过（默认）/ 逐文件夹选择 ja、zh 或跳过（不生成，
   纯图片漫画可留空）
 - 开头询问 Volume 模式：跳过（默认）/ 自动检测 / 逐文件夹手动输入
-  （auto 模式：同系列有更高卷号时，无卷号的漫画自动推断为第 1 卷，并按卷号排序）
+  （auto 模式：同系列有更高卷号时，无卷号的漫画自动推断为第 1 卷；
+  存在小数卷号如 2.5 时向上取整为 3，原整数卷顺延为 4，并按卷号排序）
 - 开头询问删除模式：保留（默认）/ 打包后自动删除源文件夹（保留生成的 CBZ）
 - 开头询问冲突处理方案：覆盖（默认）/ 自动重命名（如 xxx (1).cbz）/ 逐文件询问
 - 以上各项均可通过命令行选项直接指定
@@ -112,6 +114,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import io
+import math
 import os
 import platform
 import re
@@ -230,7 +233,8 @@ def ask_volume_mode(args) -> str:
     print("Volume（卷号）选项：")
     print("  1. 跳过（默认，不生成 <Volume> 标签）")
     print("  2. 自动检测 — 从标题/系列名末尾自动提取数字卷号；同系列存在")
-    print("     更高卷号时，无卷号的漫画自动推断为第 1 卷")
+    print("     更高卷号时，无卷号的漫画自动推断为第 1 卷；存在小数卷号")
+    print("     （如 2.5）时向上取整为 3，原整数卷顺延为 4")
     print("  3. 交互式输入 — 逐文件夹手动输入卷号")
     vi = ask_option("请选择 (1-3，直接回车默认跳过): ", {"1", "2", "3"}, "1")
     return {"1": "skip", "2": "auto", "3": "input"}[vi]
@@ -270,17 +274,26 @@ def choose_language(
 
 
 def resolve_volume(
-    title: str, display: str, mode: str, inferred: int | None
-) -> tuple[str, int | None]:
+    title: str,
+    display: str,
+    mode: str,
+    inferred: int | None,
+    precomputed: int | None = None,
+) -> tuple[str, int | float | None]:
     """
     逐项解析卷号，返回 (清理后的标题, 卷号)（打包/更新模式共用）
     - skip: 不生成（标题不变）
-    - auto: 显式检测（detect_volume）+ 系列推断（inferred 为推断卷号）
+    - auto: 显式检测（detect_volume）+ 系列推断（inferred 为推断卷号）；
+      传入 precomputed（系列重编号/推断后的最终卷号）时直接使用
+      （小数卷已向上取整、整数已顺延）
     - input: 交互输入（非数字视为跳过）
     """
     if mode == "skip":
         return title, None
     if mode == "auto":
+        if precomputed is not None:
+            clean, _ = detect_volume(title)  # 仅清理标题，卷号以预计算结果为准
+            return clean, precomputed
         clean, vol = detect_volume(title)
         if vol is not None:
             return clean, vol
@@ -301,11 +314,11 @@ _LEADING_TAG_PAREN_RE = re.compile(r"^\s*[（(][^（）()]*[）)]\s*")
 # 末尾标注：标题尾部的 [DL]、[中文翻译] 等（0 个或多个，可选空格隔开），忽略
 _TRAILING_TAG_RE = re.compile(r"(?:\s*\[[^\[\]]*\])+$")
 
-# 卷号检测：末尾的纯数字、#1、Vol.1、vol 1 等（可选空格）
-_VOLUME_RE = re.compile(r"\s*(?:#\s*|[Vv][Oo][Ll]\.?\s*)?(\d+)\s*$")
+# 卷号检测：末尾的纯数字、小数（2.5）、#1、Vol.1、vol 1 等（可选空格）
+_VOLUME_RE = re.compile(r"\s*(?:#\s*|[Vv][Oo][Ll]\.?\s*)?(\d+(?:\.\d+)?)\s*$")
 
 # 内嵌卷号检测：数字紧跟波浪线（如 "系列A3〜副标题" 中的 3），保留在标题中
-_EMBEDDED_VOLUME_RE = re.compile(r"(\d+)[〜~]")
+_EMBEDDED_VOLUME_RE = re.compile(r"(\d+(?:\.\d+)?)[〜~]")
 
 
 def strip_original_work(name: str) -> str:
@@ -329,47 +342,88 @@ def strip_original_work(name: str) -> str:
     return re.sub(r"\s+", " ", name).strip()
 
 
-def detect_volume(name: str) -> tuple[str, int | None]:
+def _to_volume(raw: str) -> int | float:
+    """将卷号字符串转为 int（整数卷）或 float（小数卷，如 2.5）"""
+    v = float(raw)
+    return int(v) if v.is_integer() else v
+
+
+def detect_volume(name: str) -> tuple[str, int | float | None]:
     """
     检测卷号，返回 (处理后的名称, 卷号)
 
     两种模式：
-    1. 末尾卷号（移除并返回）："作品A 1"、"作品A #1"、"作品A Vol.1"
+    1. 末尾卷号（移除并返回）："作品A 1"、"作品A #1"、"作品A Vol.1"、"作品A 2.5"
     2. 内嵌卷号（保留名称，仅提取数值）："作品A3〜副标题" 中的 3
+
+    整数卷返回 int，小数卷返回 float（如 2.5）
 
     例：
     "作品A 1"                     -> ("作品A", 1)
     "作品A #1"                    -> ("作品A", 1)
     "作品A Vol.1"                 -> ("作品A", 1)
     "作品A vol 1"                 -> ("作品A", 1)
+    "作品A 2.5"                   -> ("作品A", 2.5)  # 小数卷
     "作品A3〜副标题…"             -> ("作品A3〜副标题…", 3)  # 内嵌，保留
     "作品A 3〜副标题…"            -> ("作品A 3〜副标题…", 3)  # 内嵌，保留
     "系列B3〜副标题…"             -> ("系列B3〜副标题…", 3)  # 内嵌，保留
+    "系列B2.5〜副标题…"           -> ("系列B2.5〜副标题…", 2.5)  # 内嵌小数
     "无卷号标题"                   -> ("无卷号标题", None)
     """
     # 1) 末尾纯卷号：移除
     m = _VOLUME_RE.search(name)
     if m:
-        volume = int(m.group(1))
+        volume = _to_volume(m.group(1))
         clean = name[: m.start()].strip()
         return clean, volume
     # 2) 内嵌卷号：仅提取数值，不修改名称
     m2 = _EMBEDDED_VOLUME_RE.search(name)
     if m2:
-        return name, int(m2.group(1))
+        return name, _to_volume(m2.group(1))
     return name, None
+
+
+def renumber_series_volumes(volumes: list[int | float | None]) -> list[int | None]:
+    """
+    系列卷号重编号（仅当系列中存在小数卷时使用）
+
+    规则：
+    - 无卷号（None）保持 None
+    - 小数卷向上取整（2.5 -> 3）
+    - 整数卷若被小数取整后的数字占用，则顺延 +1（可连锁）
+    - 保持原数值顺序不变
+
+    例：
+    [2, 2.5, 3]        -> [2, 3, 4]
+    [1, 1.5, 2, 3]     -> [1, 2, 3, 4]
+    [1, 2, 2.5, 3]     -> [1, 2, 3, 4]
+    [2, 2.5, 3, 3.5, 4] -> [2, 3, 4, 5, 6]
+    """
+    indexed = [(i, v) for i, v in enumerate(volumes) if v is not None]
+    indexed.sort(key=lambda x: x[1])  # 数值升序，确保小数先于其后整数处理
+    used: set[int] = set()
+    assigned: dict[int, int] = {}
+    for i, v in indexed:
+        target = math.ceil(v)
+        while target in used:
+            target += 1
+        assigned[i] = target
+        used.add(target)
+    return [assigned.get(i) for i in range(len(volumes))]
 
 
 def infer_volumes(metas: list[dict]) -> dict[Path, int | None]:
     """
-    推断每个漫画文件夹的卷号（含"无卷号推断为第 1 卷"的规则）
+    推断每个漫画文件夹的卷号（含"无卷号推断为第 1 卷"与"小数卷重编号"规则）
 
     规则：
-    1. 显式卷号：从标题检测（末尾 " 1"、"#1"、"Vol.1" 或内嵌 "3〜"），检测到则使用
+    1. 显式卷号：从标题检测（末尾 " 1"、"#1"、"Vol.1"、"2.5" 或内嵌 "3〜"），检测到则使用
     2. 推断卷号：同一系列（series_key）下存在大于 1 的显式卷号，
        且"无显式卷号"的漫画恰好只有 1 本时，将该本推断为第 1 卷
        （例：系列同时有 系列A2、系列A3 时，"系列A" 推断为 Vol.1）
-    3. 其余情况无卷号（None，不生成 <Volume>）
+    3. 小数卷重编号：系列中存在小数卷（如 2.5）时，小数向上取整
+       （2.5 -> 3），原整数卷号被占用则顺延 +1（如 3 -> 4）
+    4. 其余情况无卷号（None，不生成 <Volume>）
 
     metas: derive_metadata 结果，须含 "folder"、"title"、"series_key"
 
@@ -382,16 +436,22 @@ def infer_volumes(metas: list[dict]) -> dict[Path, int | None]:
         groups.setdefault(m["series_key"], []).append(m["folder"])
 
     result: dict[Path, int | None] = {}
-    for m in metas:
-        folder = m["folder"]
-        vol = explicit[folder]
-        if vol is None:
-            siblings = groups[m["series_key"]]
-            no_vol = [p for p in siblings if explicit[p] is None]
-            has_vol = [explicit[p] for p in siblings if explicit[p] is not None]
-            if len(no_vol) == 1 and has_vol and max(has_vol) > 1:
-                vol = 1
-        result[folder] = vol
+    for folders in groups.values():
+        # 1) 无卷号推断为第 1 卷（现有规则）
+        vols = {f: explicit[f] for f in folders}
+        no_vol = [f for f in folders if vols[f] is None]
+        has_vol = [v for v in vols.values() if v is not None]
+        if len(no_vol) == 1 and has_vol and max(has_vol) > 1:
+            vols[no_vol[0]] = 1
+        # 2) 系列存在小数卷时整体重编号（小数向上取整、整数顺延）
+        series_vals = [vols[f] for f in folders]
+        if any(v is not None and v != int(v) for v in series_vals):
+            renumbered = renumber_series_volumes(series_vals)
+            for f, nv in zip(folders, renumbered):
+                result[f] = nv
+        else:
+            for f in folders:
+                result[f] = vols[f]
     return result
 
 
@@ -700,18 +760,26 @@ def update_main(
                 "series_key": f"{writer}|{series}",
             }
         )
-    inferred_map: dict[Path, int] = {}
+    final_vol_map: dict[Path, int | None] = {}
     if volume_mode == "auto":
         groups: dict[str, list[dict]] = {}
         for m in metas:
             groups.setdefault(m["series_key"], []).append(m)
-        for m in metas:
-            if m["explicit_vol"] is None:
-                sibs = groups[m["series_key"]]
-                no_vol = [x for x in sibs if x["explicit_vol"] is None]
-                has_vol = [x["explicit_vol"] for x in sibs if x["explicit_vol"] is not None]
-                if len(no_vol) == 1 and has_vol and max(has_vol) > 1:
-                    inferred_map[m["cbz"]] = 1  # 推断为第 1 卷
+        for sibs in groups.values():
+            vols = {m["cbz"]: m["explicit_vol"] for m in sibs}
+            no_vol = [m["cbz"] for m in sibs if m["explicit_vol"] is None]
+            has_vol = [v for v in vols.values() if v is not None]
+            if len(no_vol) == 1 and has_vol and max(has_vol) > 1:
+                vols[no_vol[0]] = 1  # 推断为第 1 卷
+            # 系列存在小数卷时整体重编号（小数向上取整、整数顺延）
+            series_vals = [vols[m["cbz"]] for m in sibs]
+            if any(v is not None and v != int(v) for v in series_vals):
+                renumbered = renumber_series_volumes(series_vals)
+                for m, nv in zip(sibs, renumbered):
+                    final_vol_map[m["cbz"]] = nv
+            else:
+                for m in sibs:
+                    final_vol_map[m["cbz"]] = vols[m["cbz"]]
 
     print("=" * 60)
     print(f"CBZ 更新工具：找到 {len(cbz_files)} 个 CBZ")
@@ -723,8 +791,13 @@ def update_main(
         try:
             cur_lang = _read_cbz_language(cbz) if language_iso_mode == "interactive" else None
             # Volume 解析（auto 静默；input 交互，prompt 含文件名可识别）
+            # auto 模式：final_vol_map 已含系列推断/小数重编号后的最终卷号
             title, volume = resolve_volume(
-                m["raw_title"], cbz.name, volume_mode, inferred_map.get(cbz)
+                m["raw_title"],
+                cbz.name,
+                volume_mode,
+                None,
+                precomputed=final_vol_map.get(cbz) if volume_mode == "auto" else None,
             )
             vol_str = f"Vol.{volume}" if volume is not None else "无卷号"
             lang_str = cur_lang if cur_lang else "无"
@@ -820,7 +893,8 @@ def main() -> None:
         default=None,
         help=(
             "Volume 模式：skip 不生成 / auto 自动检测（同系列有更高卷号时"
-            "无卷号漫画推断为第 1 卷，并按卷号排序）/ input 逐文件夹输入"
+            "无卷号漫画推断为第 1 卷；存在小数卷号时向上取整（2.5 → 3）"
+            "原整数卷顺延（3 → 4），并按卷号排序）/ input 逐文件夹输入"
             "（缺省交互式询问）"
         ),
     )
@@ -867,6 +941,10 @@ def main() -> None:
     print("=" * 60)
     print("批量 CBZ 打包工具")
     print(f"运行环境: {platform.system()}")
+    if args.update:
+        print("运行模式: 更新模式（-u，重写已有 CBZ 的 ComicInfo.xml）")
+    else:
+        print("运行模式: 打包模式（图片文件夹 → CBZ）")
     print("=" * 60)
     print()
 
@@ -1067,8 +1145,13 @@ def main() -> None:
             meta = derive_metadata(folder, root_dir, depth)
 
             # ---- Volume 处理（复用抽象函数，与更新模式一致）----
+            # auto 模式：volume_map 已含系列推断/小数重编号后的最终卷号，直接使用
             clean, volume = resolve_volume(
-                meta["title"], meta["cbz_name"], volume_mode, volume_map.get(folder)
+                meta["title"],
+                meta["cbz_name"],
+                volume_mode,
+                None,
+                precomputed=volume_map.get(folder) if volume_mode == "auto" else None,
             )
             meta["title"] = clean
             if depth <= 1:
