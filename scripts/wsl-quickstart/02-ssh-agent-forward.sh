@@ -92,14 +92,28 @@ ensure_file() {
 ensure_file "$WIN_SSH_PS1_PATH" win_ps1
 ensure_file "$WSL_SSH_PATH" wsl_wrapper
 
-# 4) 设置 GIT_SSH_COMMAND：仅 WSL 使用，用 fish universal variable 持久化（不写入跨平台配置文件）
-#    默认 shell 为 fish，~/.bashrc 注入对其无效，故改用 fish -U（universal）设置
+# 4) 设置 GIT_SSH_COMMAND：仅 WSL 使用（win-ssh 为 WSL 本地生成）
+#    同时覆盖 fish（universal variable）与 bash（~/.bashrc 幂等追加），两种 shell 均可用
+#    GIT_SSH_COMMAND is WSL-only; set for both fish (universal) and bash (~/.bashrc, idempotent)
+
+# fish：universal variable 持久化（fish 不读 ~/.bashrc）
 if command -v fish >/dev/null 2>&1; then
 	step "设置 GIT_SSH_COMMAND（fish universal）/ Setting GIT_SSH_COMMAND (fish universal)"
 	fish -c 'set -Ux GIT_SSH_COMMAND "$HOME/bin/win-ssh"'
-	ok "GIT_SSH_COMMAND 已设置（fish universal）/ GIT_SSH_COMMAND set (fish universal)"
+	ok "fish: GIT_SSH_COMMAND 已设置 / GIT_SSH_COMMAND set (fish universal)"
+fi
+
+# bash：幂等追加到 ~/.bashrc（WSL 本地文件，非跨平台 chezmoi 配置）
+if ! grep -q 'GIT_SSH_COMMAND' "$HOME/.bashrc" 2>/dev/null; then
+	step "配置 ~/.bashrc（bash 支持）/ Updating ~/.bashrc (bash support)"
+	cat >>"$HOME/.bashrc" <<'EOF'
+
+# WSL: git 经 Windows OpenSSH(win-ssh) 调用 KeePassXC 注入的 agent
+export GIT_SSH_COMMAND="$HOME/bin/win-ssh"
+EOF
+	ok "bash: GIT_SSH_COMMAND 已写入 ~/.bashrc / GIT_SSH_COMMAND exported in ~/.bashrc"
 else
-	warn "未检测到 fish，跳过 GIT_SSH_COMMAND / fish not found, skipping GIT_SSH_COMMAND"
+	note "bash: ~/.bashrc 已有 GIT_SSH_COMMAND，跳过 / already configured, skipping"
 fi
 
 # 5) 自检（可选）
