@@ -73,6 +73,16 @@ else
 	ok "fnm 安装完成（~/.fnm/fnm，shell 配置已写入 ~/.bashrc）/ fnm installed (~/.fnm/fnm, shell config written to ~/.bashrc)"
 fi
 
+# codex：使用官方独立安装器（原生 Rust 二进制，无需 Node）
+# codex: install via the official standalone installer (native Rust binary, no Node needed)
+step "安装 codex（官方独立安装器）/ Installing codex (official standalone installer)"
+if command -v codex >/dev/null 2>&1; then
+	ok "codex 已安装，跳过 / codex already installed, skipping"
+else
+	curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh
+	ok "codex 安装完成（~/.local/bin/codex，数据在 ~/.codex）/ codex installed (~/.local/bin/codex, data in ~/.codex)"
+fi
+
 # 手动安装（官方脚本）工具的更新命令提示
 # Update commands for manually-installed (official-script) tools
 header "手动安装工具 / Manually-Installed Tools"
@@ -80,5 +90,6 @@ note "它们的更新命令 / Their update commands:"
 note "  chezmoi  → chezmoi upgrade"
 note "  uv      → uv self update"
 note "  fnm     → fnm self install"
+note "  codex   → codex update（或重跑 install.sh）/ codex update (or re-run install.sh)"
 
 ok "常用软件安装完成 / Essential packages installed"
