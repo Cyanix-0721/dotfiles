@@ -73,16 +73,6 @@ else
 	ok "fnm 安装完成（~/.fnm/fnm，shell 配置已写入 ~/.bashrc）/ fnm installed (~/.fnm/fnm, shell config written to ~/.bashrc)"
 fi
 
-# opencode：使用官方安装脚本（而非 apt）
-# opencode: install via the official installer script
-step "安装 opencode（官方脚本）/ Installing opencode (official installer)"
-if command -v opencode >/dev/null 2>&1; then
-	ok "opencode 已安装，跳过 / opencode already installed, skipping"
-else
-	curl -fsSL https://opencode.ai/install | bash
-	ok "opencode 安装完成（~/.opencode/bin/opencode）/ opencode installed (~/.opencode/bin/opencode)"
-fi
-
 # 手动安装（官方脚本）工具的更新命令提示
 # Update commands for manually-installed (official-script) tools
 header "手动安装工具 / Manually-Installed Tools"
@@ -90,6 +80,5 @@ note "它们的更新命令 / Their update commands:"
 note "  chezmoi  → chezmoi upgrade"
 note "  uv      → uv self update"
 note "  fnm     → fnm self install"
-note "  opencode → opencode upgrade"
 
 ok "常用软件安装完成 / Essential packages installed"

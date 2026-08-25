@@ -232,8 +232,8 @@ else {
     Install-WingetApps $wingApps
 }
 
-# WSL2 + Debian + opencode
-Write-Header "WSL2 / Debian / opencode 安装 / WSL2 / Debian / opencode setup"
+# WSL2 + Debian
+Write-Header "WSL2 / Debian 安装 / WSL2 / Debian setup"
 
 $installWsl = Confirm-Install "是否安装 WSL2、Debian 发行版并配置默认开发环境？(Y/n) / Install WSL2, Debian distro and configure the default dev environment? (Y/n)"
 if ($installWsl -notmatch '^[Nn]$') {
@@ -332,20 +332,15 @@ fi
 apt-get update
 apt-get full-upgrade -y
 apt-get install -y git curl ca-certificates gnupg lsb-release
-if [ '$useRoot' = 'True' ]; then
-    curl -fsSL https://opencode.ai/install | bash
-else
-    sudo -u $defaultUser -H bash -lc 'curl -fsSL https://opencode.ai/install | bash'
-fi
 "@
 
-        Write-Step "在 Debian 中初始化用户、完成系统更新并安装 Git / opencode / Initializing Debian user, applying system updates, and installing Git / opencode"
+        Write-Step "在 Debian 中初始化用户、完成系统更新并安装 Git / Initializing Debian user, applying system updates, and installing Git"
         wsl.exe -d Debian --user root -- sh -lc $wslSetupScript
         if ($LASTEXITCODE -eq 0) {
-            Write-Ok "WSL2 / Debian / opencode 配置完成 / WSL2 / Debian / opencode setup completed"
+            Write-Ok "WSL2 / Debian 配置完成 / WSL2 / Debian setup completed"
         }
         else {
-            Write-Warn "WSL2 / Debian / opencode 配置命令返回非零状态，可能需要手动重试 / WSL2 / Debian / opencode setup returned a non-zero status; manual retry may be needed"
+            Write-Warn "WSL2 / Debian 配置命令返回非零状态，可能需要手动重试 / WSL2 / Debian setup returned a non-zero status; manual retry may be needed"
         }
     }
     else {
@@ -353,7 +348,7 @@ fi
     }
 }
 else {
-    Write-Note "跳过 WSL2 / Debian / opencode 安装 / Skipping WSL2 / Debian / opencode installation"
+    Write-Note "跳过 WSL2 / Debian 安装 / Skipping WSL2 / Debian installation"
 }
 
 Write-Header "开发工具安装完成 / Development tools installation completed"
