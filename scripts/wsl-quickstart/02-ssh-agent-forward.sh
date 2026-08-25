@@ -39,7 +39,7 @@ WSL_SSH_PATH="$HOME/bin/win-ssh"
 write_win_ps1() {
 	local target="${1:-$WIN_SSH_PS1_PATH}"
 	mkdir -p "$(dirname "$target")"
-	cat > "$target" <<'PS1'
+	cat >"$target" <<'PS1'
 Remove-Item Env:SSH_AUTH_SOCK -ErrorAction SilentlyContinue
 & 'C:\Windows\System32\OpenSSH\ssh.exe' @args
 exit $LASTEXITCODE
@@ -50,7 +50,7 @@ PS1
 write_wsl_wrapper() {
 	local target="${1:-$WSL_SSH_PATH}"
 	mkdir -p "$(dirname "$target")"
-	cat > "$target" <<EOF
+	cat >"$target" <<EOF
 #!/usr/bin/env sh
 exec /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$WIN_SSH_PS1_PATH_WIN" "\$@"
 EOF
@@ -92,24 +92,21 @@ ensure_file() {
 ensure_file "$WIN_SSH_PS1_PATH" win_ps1
 ensure_file "$WSL_SSH_PATH" wsl_wrapper
 
-# 4) 注入 GIT_SSH_COMMAND 到 ~/.bashrc（幂等）
-if ! grep -q 'GIT_SSH_COMMAND' "$HOME/.bashrc" 2>/dev/null; then
-	step "配置 ~/.bashrc / Updating ~/.bashrc"
-	cat >> "$HOME/.bashrc" <<'EOF'
-
-# WSL: git 经 Windows OpenSSH(win-ssh) 调用 KeePassXC 注入的 agent
-export GIT_SSH_COMMAND="$HOME/bin/win-ssh"
-EOF
-	ok "已在 ~/.bashrc 注入 GIT_SSH_COMMAND / GIT_SSH_COMMAND exported in ~/.bashrc"
+# 4) 设置 GIT_SSH_COMMAND：仅 WSL 使用，用 fish universal variable 持久化（不写入跨平台配置文件）
+#    默认 shell 为 fish，~/.bashrc 注入对其无效，故改用 fish -U（universal）设置
+if command -v fish >/dev/null 2>&1; then
+	step "设置 GIT_SSH_COMMAND（fish universal）/ Setting GIT_SSH_COMMAND (fish universal)"
+	fish -c 'set -Ux GIT_SSH_COMMAND "$HOME/bin/win-ssh"'
+	ok "GIT_SSH_COMMAND 已设置（fish universal）/ GIT_SSH_COMMAND set (fish universal)"
 else
-	note "GIT_SSH_COMMAND 已配置，跳过 / GIT_SSH_COMMAND already configured, skipping"
+	warn "未检测到 fish，跳过 GIT_SSH_COMMAND / fish not found, skipping GIT_SSH_COMMAND"
 fi
 
 # 5) 自检（可选）
 note "部署完成 / Deployment complete"
 note "验证命令 / Verify with: GIT_SSH_COMMAND=\"\$HOME/bin/win-ssh\" git ls-remote <remote> HEAD"
 if confirm_install 0 "现在验证 GitHub 连通性（需 Windows agent 已注入密钥）？/ Verify GitHub connectivity now (requires a key injected into the Windows agent)?"; then
-	if GIT_SSH_COMMAND="$WSL_SSH_PATH" ssh -o BatchMode=yes -o ConnectTimeout=10 -T git@github.com >/dev/null 2>&1; then
+	if "$WSL_SSH_PATH" -o BatchMode=yes -o ConnectTimeout=10 -T git@github.com >/dev/null 2>&1; then
 		ok "GitHub SSH 转发验证通过 / GitHub SSH forwarding verified"
 	else
 		err "GitHub SSH 转发验证失败（请确认 KeePassXC 已解锁并注入密钥）"
