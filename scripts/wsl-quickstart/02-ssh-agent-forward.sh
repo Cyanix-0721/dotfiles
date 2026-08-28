@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # 默认启用项：WSL → Windows OpenSSH agent（KeePassXC）SSH 转发
-# 生成 win-ssh 包装脚本（WSL ~/bin 与 Windows .local/bin），并注入 GIT_SSH_COMMAND
+# 生成 win-ssh 包装脚本（WSL ~/bin 与 Windows .local/bin）；git 经 ~/.gitconfig 的 core.sshCommand 调用 win-ssh
 # Default-enabled: forward WSL git SSH to the Windows OpenSSH agent (KeePassXC)
+# git calls win-ssh via core.sshCommand in ~/.gitconfig (managed by chezmoi)
 
 set -e # 遇到错误立即退出
 
@@ -92,33 +93,14 @@ ensure_file() {
 ensure_file "$WIN_SSH_PS1_PATH" win_ps1
 ensure_file "$WSL_SSH_PATH" wsl_wrapper
 
-# 4) 设置 GIT_SSH_COMMAND：仅 WSL 使用（win-ssh 为 WSL 本地生成）
-#    同时覆盖 fish（universal variable）与 bash（~/.bashrc 幂等追加），两种 shell 均可用
-#    GIT_SSH_COMMAND is WSL-only; set for both fish (universal) and bash (~/.bashrc, idempotent)
-
-# fish：universal variable 持久化（fish 不读 ~/.bashrc）
-if command -v fish >/dev/null 2>&1; then
-	step "设置 GIT_SSH_COMMAND（fish universal）/ Setting GIT_SSH_COMMAND (fish universal)"
-	fish -c 'set -Ux GIT_SSH_COMMAND "$HOME/bin/win-ssh"'
-	ok "fish: GIT_SSH_COMMAND 已设置 / GIT_SSH_COMMAND set (fish universal)"
-fi
-
-# bash：幂等追加到 ~/.bashrc（WSL 本地文件，非跨平台 chezmoi 配置）
-if ! grep -q 'GIT_SSH_COMMAND' "$HOME/.bashrc" 2>/dev/null; then
-	step "配置 ~/.bashrc（bash 支持）/ Updating ~/.bashrc (bash support)"
-	cat >>"$HOME/.bashrc" <<'EOF'
-
-# WSL: git 经 Windows OpenSSH(win-ssh) 调用 KeePassXC 注入的 agent
-export GIT_SSH_COMMAND="$HOME/bin/win-ssh"
-EOF
-	ok "bash: GIT_SSH_COMMAND 已写入 ~/.bashrc / GIT_SSH_COMMAND exported in ~/.bashrc"
-else
-	note "bash: ~/.bashrc 已有 GIT_SSH_COMMAND，跳过 / already configured, skipping"
-fi
+# 4) git 不再在此设置 GIT_SSH_COMMAND：chezmoi 管理的 ~/.gitconfig 已把 core.sshCommand 指向 win-ssh，
+#    保证任意 shell（含非交互）下 git 均经 Windows OpenSSH agent 认证（详见 dot_gitconfig.tmpl）
+#    GIT_SSH_COMMAND is no longer set here: chezmoi-managed ~/.gitconfig points core.sshCommand at win-ssh,
+#    so git authenticates via the Windows OpenSSH agent in any shell (see dot_gitconfig.tmpl)
 
 # 5) 自检（可选）
 note "部署完成 / Deployment complete"
-note "验证命令 / Verify with: GIT_SSH_COMMAND=\"\$HOME/bin/win-ssh\" git ls-remote <remote> HEAD"
+note "验证命令 / Verify with: git ls-remote <remote> HEAD"
 if confirm_install 0 "现在验证 GitHub 连通性（需 Windows agent 已注入密钥）？/ Verify GitHub connectivity now (requires a key injected into the Windows agent)?"; then
 	# 注意：ssh -T git@github.com 认证成功时 GitHub 仍以退出码 1 结束（git 用户无 shell），
 	# 所以不能按退出码判断，必须检测输出中的 "successfully authenticated"。
