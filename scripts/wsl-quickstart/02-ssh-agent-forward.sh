@@ -120,7 +120,23 @@ fi
 note "部署完成 / Deployment complete"
 note "验证命令 / Verify with: GIT_SSH_COMMAND=\"\$HOME/bin/win-ssh\" git ls-remote <remote> HEAD"
 if confirm_install 0 "现在验证 GitHub 连通性（需 Windows agent 已注入密钥）？/ Verify GitHub connectivity now (requires a key injected into the Windows agent)?"; then
-	if "$WSL_SSH_PATH" -o BatchMode=yes -o ConnectTimeout=10 -T git@github.com >/dev/null 2>&1; then
+	# 注意：ssh -T git@github.com 认证成功时 GitHub 仍以退出码 1 结束（git 用户无 shell），
+	# 所以不能按退出码判断，必须检测输出中的 "successfully authenticated"。
+	# 另加 3 次重试，容忍代理节点的偶发抖动（偶发连接失败 rc=255）。
+	attempt=0
+	verified=1
+	while [ "$attempt" -lt 3 ]; do
+		attempt=$((attempt + 1))
+		if "$WSL_SSH_PATH" -o BatchMode=yes -o ConnectTimeout=10 -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+			verified=0
+			break
+		fi
+		if [ "$attempt" -lt 3 ]; then
+			warn "GitHub 连接第 ${attempt} 次未通过，2 秒后重试… / attempt $attempt failed, retrying…"
+			sleep 2
+		fi
+	done
+	if [ "$verified" -eq 0 ]; then
 		ok "GitHub SSH 转发验证通过 / GitHub SSH forwarding verified"
 	else
 		err "GitHub SSH 转发验证失败（请确认 KeePassXC 已解锁并注入密钥）"
