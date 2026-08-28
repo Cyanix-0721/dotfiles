@@ -86,16 +86,14 @@ else
 	ok "uv 安装完成（~/.local/bin/uv）/ uv installed (~/.local/bin/uv)"
 fi
 
-# fnm：使用官方安装脚本（Debian stable 无对应包）
-# fish 集成已由 ~/.config/fish/conf.d/12-fnm.fish 提供，故跳过自动 shell 配置
-# fnm: install via the official installer script (not in Debian stable)
-# fish integration is already provided by ~/.config/fish/conf.d/12-fnm.fish, skip auto shell setup
+# fnm：使用官方安装脚本（Debian stable 无对应包）；fish 集成由 12-fnm.fish 提供，故始终 --skip-shell
+# fnm: install via the official installer script; fish integration lives in 12-fnm.fish, always --skip-shell
 step "安装 fnm（官方脚本）/ Installing fnm (official installer)"
-if command -v fnm >/dev/null 2>&1; then
+if command -v fnm >/dev/null 2>&1 || [ -x "${XDG_DATA_HOME:-$HOME/.local/share}/fnm/fnm" ] || [ -x "$HOME/.fnm/fnm" ]; then
 	ok "fnm 已安装，跳过 / fnm already installed, skipping"
 else
-	curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir "$HOME/.fnm" --skip-shell
-	ok "fnm 安装完成（~/.fnm/fnm）/ fnm installed (~/.fnm/fnm)"
+	curl -fsSL https://fnm.vercel.app/install | bash -s -- --skip-shell
+	ok "fnm 安装完成 / fnm installed"
 fi
 
 # codex：使用官方独立安装器（原生 Rust 二进制，无需 Node）
