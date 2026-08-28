@@ -94,7 +94,7 @@ step "安装 fnm（官方脚本）/ Installing fnm (official installer)"
 if command -v fnm >/dev/null 2>&1; then
 	ok "fnm 已安装，跳过 / fnm already installed, skipping"
 else
-	curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir "$HOME/.fnm" --skip-shell-setup
+	curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir "$HOME/.fnm" --skip-shell
 	ok "fnm 安装完成（~/.fnm/fnm）/ fnm installed (~/.fnm/fnm)"
 fi
 

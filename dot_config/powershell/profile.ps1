@@ -49,11 +49,6 @@ if (Get-Command uv -ErrorAction SilentlyContinue) {
 #endregion
 
 #region fnm init
-if (-not (Get-Command fnm -ErrorAction SilentlyContinue)) {
-    if (Get-Command scoop -ErrorAction SilentlyContinue) {
-        scoop install fnm
-    }
-}
 if (Get-Command fnm -ErrorAction SilentlyContinue) {
     fnm env --use-on-cd --shell powershell | Out-String | Invoke-Expression
 }
