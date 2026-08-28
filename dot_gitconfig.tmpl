@@ -20,6 +20,9 @@
 	sshCommand = C:/Windows/System32/OpenSSH/ssh.exe
 {{- else }}
 	autocrlf = input
+	{{- if env "WSL_DISTRO_NAME" }}
+	sshCommand = {{ .chezmoi.homeDir }}/bin/win-ssh
+	{{- end }}
 {{- end }}
 [interactive]
 	diffFilter = delta --color-only
