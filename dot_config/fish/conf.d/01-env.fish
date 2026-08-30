@@ -10,3 +10,7 @@ fish_add_path ~/.local/bin
 # fish_add_path 会自动跳过不存在的目录，故两条同时添加是安全的
 fish_add_path "$XDG_DATA_HOME/fnm"
 fish_add_path ~/.local/share/fnm
+
+# pnpm 官方 standalone 脚本默认安装目录（$PNPM_HOME 默认 ~/.local/share/pnpm）
+# pnpm official standalone installer default dir ($PNPM_HOME defaults to ~/.local/share/pnpm)
+fish_add_path ~/.local/share/pnpm

@@ -97,6 +97,38 @@ else
 	ok "fnm 安装完成 / fnm installed"
 fi
 
+# Node.js + pnpm：用 fnm 安装最新 LTS Node，pnpm 用官方 standalone 脚本安装
+# DSH 是 Node 项目，要求 Node 22.19+；Debian 13 无 pnpm 包、系统 nodejs 20 不满足，故必须用 fnm
+# Node.js + pnpm: install latest LTS Node via fnm, pnpm via the official standalone installer
+# DSH is a Node project needing Node 22.19+; Debian 13 has no pnpm package and its nodejs 20 is too old
+step "安装 Node.js LTS + pnpm（官方脚本）/ Installing Node.js LTS + pnpm (official installer)"
+export PATH="${XDG_DATA_HOME:-$HOME/.local/share}/fnm:$HOME/.fnm:$PATH"
+if command -v fnm >/dev/null 2>&1; then
+	# 本次会话加载 fnm（fish 集成由 12-fnm.fish 提供）
+	# Load fnm for this session (fish integration lives in 12-fnm.fish)
+	eval "$(fnm env --use-on-cd --shell bash)"
+	# 仅安装兜底 LTS；不强制改写默认版本，按项目切换由 12-fnm.fish 的 --use-on-cd 提供（读取 .node-version / .nvmrc）
+	# Install a fallback LTS only; never force the default, per-project switching is handled by --use-on-cd in 12-fnm.fish (.node-version / .nvmrc)
+	fnm install --lts
+	ok "Node.js LTS 已安装（默认版本按项目/兜底由 fnm 解析）/ Node.js LTS installed (default resolved per-project/fallback by fnm)"
+	# pnpm：官方 standalone 脚本（pnpm 自身无需 Node 即可运行；DSH 运行仍需上面的 Node）
+	# pnpm: official standalone installer (pnpm itself runs without Node; DSH still needs the Node above)
+	if command -v pnpm >/dev/null 2>&1; then
+		ok "pnpm 已安装，跳过 / pnpm already installed, skipping"
+	else
+		# glibc 构建需要 libatomic.so.1（WSL 完整发行版通常已含，缺失时补装）
+		# The glibc build needs libatomic.so.1 (normally present on full distros; install if missing)
+		sudo apt-get install -y --no-install-recommends libatomic1 >/dev/null 2>&1 || true
+		curl -fsSL https://get.pnpm.io/install.sh | sh -
+		# standalone 默认装到 ~/.local/share/pnpm；本次会话立即可用，fish 侧由 01-env.fish 的 fish_add_path 提供
+		# Default install dir is ~/.local/share/pnpm; exported for this session, fish PATH comes from 01-env.fish
+		export PATH="$HOME/.local/share/pnpm:$PATH"
+		ok "pnpm 安装完成（~/.local/share/pnpm）/ pnpm installed (~/.local/share/pnpm)"
+	fi
+else
+	warn "fnm 不可用，跳过 Node.js/pnpm 安装 / fnm unavailable, skipping Node.js/pnpm install"
+fi
+
 # vfox：使用官方 apt 仓库安装（apt.fury.io/versionfox）
 # vfox: install from the official apt repository (apt.fury.io/versionfox)
 step "安装 vfox（官方 apt 仓库）/ Installing vfox (official apt repo)"

@@ -82,7 +82,22 @@ $versionManager = @{
 
 Install-ScoopPackages $versionManager
 
-# 2. Python 包管理器 (可选一个或都安装，默认 uv / Optional, can install one or both, default uv)
+# 2. Node 包管理器（pnpm，独立二进制；运行 JS 项目仍需 Node）
+# Node package manager (pnpm, standalone binary; running JS projects still needs Node)
+Write-Step "Node 包管理器 / Node Package Manager (pnpm)"
+$nodePackageManagers = @{
+    "pnpm" = @{
+        Desc     = "pnpm (Node 包管理器 / Node package manager)"
+        Global   = $false
+        PostNote = @(
+            "pnpm 为独立二进制，运行自身无需 Node / pnpm is a standalone binary, no Node needed to run itself"
+            "运行 JS 项目仍需 Node：请先执行 fnm install --lts / Running JS projects still needs Node: run 'fnm install --lts' first"
+        )
+    }
+}
+Install-ScoopPackages $nodePackageManagers
+
+# 3. Python 包管理器 (可选一个或都安装，默认 uv / Optional, can install one or both, default uv)
 Write-Step "Python 包管理器 / Python Package Manager (Optional)"
 Write-Note "可以选择安装 uv、miniconda3 或两者都装 / Can install uv, miniconda3, or both"
 
@@ -205,7 +220,7 @@ Install-ScoopPackages $devTools
 Write-Header "AI 开发工具 / AI Development Tools"
 
 $aiTools = @{
-    "ollama" = @{
+    "ollama"    = @{
         Desc     = "ollama (本地大模型运行器 / Local LLM runner)"
         Global   = $false
         PostNote = @(
