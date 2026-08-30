@@ -96,6 +96,18 @@ else
 	ok "fnm 安装完成 / fnm installed"
 fi
 
+# vfox：使用官方 apt 仓库安装（apt.fury.io/versionfox）
+# vfox: install from the official apt repository (apt.fury.io/versionfox)
+step "安装 vfox（官方 apt 仓库）/ Installing vfox (official apt repo)"
+if command -v vfox >/dev/null 2>&1; then
+	ok "vfox 已安装，跳过 / vfox already installed, skipping"
+else
+	echo "deb [trusted=yes lang=none] https://apt.fury.io/versionfox/ /" | sudo tee /etc/apt/sources.list.d/versionfox.list >/dev/null
+	sudo apt-get update -qq
+	sudo apt-get install -y vfox
+	ok "vfox 安装完成 / vfox installed"
+fi
+
 # codex：使用官方独立安装器（原生 Rust 二进制，无需 Node）
 # codex: install via the official standalone installer (native Rust binary, no Node needed)
 step "安装 codex（官方独立安装器）/ Installing codex (official standalone installer)"
@@ -113,6 +125,7 @@ note "它们的更新命令 / Their update commands:"
 note "  chezmoi  → chezmoi upgrade"
 note "  uv      → uv self update"
 note "  fnm     → fnm self install"
+note "  vfox    → sudo apt-get update && sudo apt-get install -y vfox"
 note "  codex   → codex update（或重跑 install.sh）/ codex update (or re-run install.sh)"
 
 ok "常用软件安装完成 / Essential packages installed"
