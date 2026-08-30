@@ -33,7 +33,7 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
 Write-Header "编辑器 / Editors and IDEs"
 
 $editors = @{
-    "vscode" = @{ Desc = "Visual Studio Code"; Global = $false; Default = $true }
+    "vscode" = @{ Desc = "Visual Studio Code"; Global = $false }
 }
 
 Install-ScoopPackages $editors
@@ -42,9 +42,9 @@ Install-ScoopPackages $editors
 Write-Header "Git 工具 / Git Tools"
 
 $gitTools = @{
-    "lazygit" = @{ Desc = "lazygit"; Global = $false; Default = $true }
-    "delta"   = @{ Desc = "delta"; Global = $false; Default = $true }
-    "gh"      = @{ Desc = "gh (GitHub CLI)"; Global = $false; Default = $true }
+    "lazygit" = @{ Desc = "lazygit"; Global = $false }
+    "delta"   = @{ Desc = "delta"; Global = $false }
+    "gh"      = @{ Desc = "gh (GitHub CLI)"; Global = $false }
 }
 
 Install-ScoopPackages $gitTools
@@ -53,8 +53,8 @@ Install-ScoopPackages $gitTools
 Write-Header "Shell 脚本工具 / Shell Script Tools"
 
 $shellTools = @{
-    "shellcheck" = @{ Desc = "shellcheck (bash 静态检查 / bash static analysis)"; Global = $false; Default = $true }
-    "shfmt"      = @{ Desc = "shfmt (bash 格式化 / bash formatter)"; Global = $false; Default = $true }
+    "shellcheck" = @{ Desc = "shellcheck (bash 静态检查 / bash static analysis)"; Global = $false }
+    "shfmt"      = @{ Desc = "shfmt (bash 格式化 / bash formatter)"; Global = $false }
 }
 
 Install-ScoopPackages $shellTools
@@ -76,8 +76,8 @@ Write-Header "环境管理 / Environment Management"
 # 1. 版本管理器 (必装 / Required)
 Write-Step "版本管理器 / Version Manager (Required)"
 $versionManager = @{
-    "vfox" = @{ Desc = "vfox (多语言版本管理器 / Multi-language version manager)"; Global = $false; Default = $true }
-    "fnm"  = @{ Desc = "fnm (Node.js 版本管理器 / Node.js version manager)"; Global = $false; Default = $true }
+    "vfox" = @{ Desc = "vfox (多语言版本管理器 / Multi-language version manager)"; Global = $false }
+    "fnm"  = @{ Desc = "fnm (Node.js 版本管理器 / Node.js version manager)"; Global = $false }
 }
 
 Install-ScoopPackages $versionManager
@@ -88,9 +88,8 @@ Write-Note "可以选择安装 uv、miniconda3 或两者都装 / Can install uv,
 
 $pythonPackageManagers = @{
     "uv"         = @{
-        Desc    = "uv (现代 Python 包管理器，推荐个人开发 / Modern Python package manager, recommended)"
-        Global  = $false
-        Default = $true
+        Desc   = "uv (现代 Python 包管理器，推荐个人开发 / Modern Python package manager, recommended)"
+        Global = $false
     }
     "miniconda3" = @{
         Desc        = "miniconda3 (适用于公司项目或科学计算 / For company projects or scientific computing)"
@@ -209,28 +208,21 @@ $aiTools = @{
     "ollama" = @{
         Desc     = "ollama (本地大模型运行器 / Local LLM runner)"
         Global   = $false
-        Default  = $true
         PostNote = @(
             "启动服务 / Start the server: ollama serve"
             "下载模型示例 / Pull a model e.g.: ollama pull qwen3:8b"
         )
     }
+    "cc-switch" = @{
+        Desc     = "cc-switch (Claude Code / Codex / Gemini CLI 配置切换器 / Config switcher for AI coding CLIs)"
+        Global   = $false
+        PostNote = @(
+            "WSL 中使用时：设置 → 配置目录覆盖 → 指向 WSL 配置目录 / For WSL: Settings → config directory override → point to the WSL config dir"
+        )
+    }
 }
 
 Install-ScoopPackages $aiTools
-
-# 容器与虚拟化 / Containers and Virtualization
-Write-Header "容器与虚拟化 / Containers and Virtualization"
-
-if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    Write-Warn "winget 未安装，跳过 Docker Desktop 安装 / winget not installed, skipping Docker Desktop installation"
-}
-else {
-    $wingApps = @{
-        "Docker.DockerDesktop" = @{ Desc = "Docker Desktop"; InstallArgs = @("--exact", "--silent"); Default = $true }
-    }
-    Install-WingetApps $wingApps
-}
 
 # WSL2 + Debian
 Write-Header "WSL2 / Debian 安装 / WSL2 / Debian setup"

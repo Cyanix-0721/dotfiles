@@ -29,6 +29,7 @@ sudo apt-get install -y --no-install-recommends \
 	7zip \
 	bat \
 	btop \
+	bubblewrap \
 	git-delta \
 	eza \
 	fastfetch \
