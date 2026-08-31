@@ -1,8 +1,32 @@
 
-#region conda initialize
-# !! Contents within this block are managed by 'conda init' !!
+#region conda lazy initialize
+# 懒加载：仅在首次调用 conda/activate/deactivate 时才执行完整初始化，
+# 避免每次启动 pwsh 都运行 conda hook（约 0.5s）拖慢启动。
 If (Test-Path "C:\Users\Administrator\scoop\apps\miniconda3\current\Scripts\conda.exe") {
-    (& "C:\Users\Administrator\scoop\apps\miniconda3\current\Scripts\conda.exe" "shell.powershell" "hook") | Out-String | ?{$_} | Invoke-Expression
+    $script:__CondaExe = "C:\Users\Administrator\scoop\apps\miniconda3\current\Scripts\conda.exe"
+    $script:__CondaInitDone = $false
+
+    function Initialize-Conda {
+        If (-not $script:__CondaInitDone) {
+            $script:__CondaInitDone = $true
+            (& $script:__CondaExe "shell.powershell" "hook") | Out-String | ?{ $_ } | Invoke-Expression
+        }
+    }
+
+    function conda {
+        Initialize-Conda
+        conda @args
+    }
+
+    function activate {
+        Initialize-Conda
+        activate @args
+    }
+
+    function deactivate {
+        Initialize-Conda
+        deactivate @args
+    }
 }
 #endregion
 
