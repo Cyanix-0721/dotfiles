@@ -191,6 +191,15 @@ $apiTools = @{
 
 Install-ScoopPackages $apiTools
 
+# 数据库工具
+Write-Header "数据库工具 / Database Tools"
+
+$dbTools = @{
+    "dbeaver" = @{ Desc = "DBeaver (数据库管理工具 / Database management tool)"; Global = $false }
+}
+
+Install-ScoopPackages $dbTools
+
 # 其他开发工具
 Write-Header "其他开发工具 / Other Development Tools"
 
