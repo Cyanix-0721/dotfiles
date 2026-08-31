@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # 默认启用项：WSL → Windows OpenSSH agent（KeePassXC）SSH 转发
-# 生成 win-ssh 包装脚本（WSL ~/bin 与 Windows .local/bin），并注入 GIT_SSH_COMMAND
+# 生成 win-ssh 包装脚本（WSL ~/bin 与 Windows .local/bin）；git 经 ~/.gitconfig 的 core.sshCommand 调用 win-ssh
 # Default-enabled: forward WSL git SSH to the Windows OpenSSH agent (KeePassXC)
+# git calls win-ssh via core.sshCommand in ~/.gitconfig (managed by chezmoi)
 
 set -e # 遇到错误立即退出
 
@@ -39,7 +40,7 @@ WSL_SSH_PATH="$HOME/bin/win-ssh"
 write_win_ps1() {
 	local target="${1:-$WIN_SSH_PS1_PATH}"
 	mkdir -p "$(dirname "$target")"
-	cat > "$target" <<'PS1'
+	cat >"$target" <<'PS1'
 Remove-Item Env:SSH_AUTH_SOCK -ErrorAction SilentlyContinue
 & 'C:\Windows\System32\OpenSSH\ssh.exe' @args
 exit $LASTEXITCODE
@@ -50,7 +51,7 @@ PS1
 write_wsl_wrapper() {
 	local target="${1:-$WSL_SSH_PATH}"
 	mkdir -p "$(dirname "$target")"
-	cat > "$target" <<EOF
+	cat >"$target" <<EOF
 #!/usr/bin/env sh
 exec /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$WIN_SSH_PS1_PATH_WIN" "\$@"
 EOF
@@ -92,24 +93,32 @@ ensure_file() {
 ensure_file "$WIN_SSH_PS1_PATH" win_ps1
 ensure_file "$WSL_SSH_PATH" wsl_wrapper
 
-# 4) 注入 GIT_SSH_COMMAND 到 ~/.bashrc（幂等）
-if ! grep -q 'GIT_SSH_COMMAND' "$HOME/.bashrc" 2>/dev/null; then
-	step "配置 ~/.bashrc / Updating ~/.bashrc"
-	cat >> "$HOME/.bashrc" <<'EOF'
-
-# WSL: git 经 Windows OpenSSH(win-ssh) 调用 KeePassXC 注入的 agent
-export GIT_SSH_COMMAND="$HOME/bin/win-ssh"
-EOF
-	ok "已在 ~/.bashrc 注入 GIT_SSH_COMMAND / GIT_SSH_COMMAND exported in ~/.bashrc"
-else
-	note "GIT_SSH_COMMAND 已配置，跳过 / GIT_SSH_COMMAND already configured, skipping"
-fi
+# 4) git 不再在此设置 GIT_SSH_COMMAND：chezmoi 管理的 ~/.gitconfig 已把 core.sshCommand 指向 win-ssh，
+#    保证任意 shell（含非交互）下 git 均经 Windows OpenSSH agent 认证（详见 dot_gitconfig.tmpl）
+#    GIT_SSH_COMMAND is no longer set here: chezmoi-managed ~/.gitconfig points core.sshCommand at win-ssh,
+#    so git authenticates via the Windows OpenSSH agent in any shell (see dot_gitconfig.tmpl)
 
 # 5) 自检（可选）
 note "部署完成 / Deployment complete"
-note "验证命令 / Verify with: GIT_SSH_COMMAND=\"\$HOME/bin/win-ssh\" git ls-remote <remote> HEAD"
+note "验证命令 / Verify with: git ls-remote <remote> HEAD"
 if confirm_install 0 "现在验证 GitHub 连通性（需 Windows agent 已注入密钥）？/ Verify GitHub connectivity now (requires a key injected into the Windows agent)?"; then
-	if GIT_SSH_COMMAND="$WSL_SSH_PATH" ssh -o BatchMode=yes -o ConnectTimeout=10 -T git@github.com >/dev/null 2>&1; then
+	# 注意：ssh -T git@github.com 认证成功时 GitHub 仍以退出码 1 结束（git 用户无 shell），
+	# 所以不能按退出码判断，必须检测输出中的 "successfully authenticated"。
+	# 另加 3 次重试，容忍代理节点的偶发抖动（偶发连接失败 rc=255）。
+	attempt=0
+	verified=1
+	while [ "$attempt" -lt 3 ]; do
+		attempt=$((attempt + 1))
+		if "$WSL_SSH_PATH" -o BatchMode=yes -o ConnectTimeout=10 -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+			verified=0
+			break
+		fi
+		if [ "$attempt" -lt 3 ]; then
+			warn "GitHub 连接第 ${attempt} 次未通过，2 秒后重试… / attempt $attempt failed, retrying…"
+			sleep 2
+		fi
+	done
+	if [ "$verified" -eq 0 ]; then
 		ok "GitHub SSH 转发验证通过 / GitHub SSH forwarding verified"
 	else
 		err "GitHub SSH 转发验证失败（请确认 KeePassXC 已解锁并注入密钥）"

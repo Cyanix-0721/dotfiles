@@ -33,13 +33,13 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
 Write-Header "Sysinternals 工具集 / Sysinternals Suite"
 
 $sysinternalsTools = @{
-    "sysmon"           = @{ Desc = "Sysmon (系统监视器 / System Monitor)"; Global = $true; Default = $true }
-    "handle"           = @{ Desc = "Handle (句柄查看工具 / View open handles)"; Global = $true; Default = $true }
-    "autoruns"         = @{ Desc = "Autoruns (启动项管理工具 / Startup manager)"; Global = $true; Default = $true }
-    "process-explorer" = @{ Desc = "Process Explorer (高级任务管理器 / Advanced Task Manager)"; Global = $true; Default = $true }
-    "procmon"          = @{ Desc = "Process Monitor (文件/注册表监视 / File & Registry monitor)"; Global = $true; Default = $true }
-    "tcpview"          = @{ Desc = "TCPView (网络连接查看 / TCP/UDP connection viewer)"; Global = $true; Default = $true }
-    "sigcheck"         = @{ Desc = "Sigcheck (文件签名检查 / File signature checker)"; Global = $true; Default = $true }
+    "sysmon"           = @{ Desc = "Sysmon (系统监视器 / System Monitor)"; Global = $true }
+    "handle"           = @{ Desc = "Handle (句柄查看工具 / View open handles)"; Global = $true }
+    "autoruns"         = @{ Desc = "Autoruns (启动项管理工具 / Startup manager)"; Global = $true }
+    "process-explorer" = @{ Desc = "Process Explorer (高级任务管理器 / Advanced Task Manager)"; Global = $true }
+    "procmon"          = @{ Desc = "Process Monitor (文件/注册表监视 / File & Registry monitor)"; Global = $true }
+    "tcpview"          = @{ Desc = "TCPView (网络连接查看 / TCP/UDP connection viewer)"; Global = $true }
+    "sigcheck"         = @{ Desc = "Sigcheck (文件签名检查 / File signature checker)"; Global = $true }
 }
 
 Install-ScoopPackages $sysinternalsTools
@@ -48,8 +48,8 @@ Install-ScoopPackages $sysinternalsTools
 Write-Header "系统信息和监控工具 / System Info and Monitoring Tools"
 
 $monitorTools = @{
-    "fastfetch"      = @{ Desc = "fastfetch (系统信息显示 / System information display)"; Global = $false; Default = $true }
-    "trafficmonitor" = @{ Desc = "TrafficMonitor (网速监控悬浮窗 / Network traffic monitor)"; Global = $false; Default = $true }
+    "fastfetch"      = @{ Desc = "fastfetch (系统信息显示 / System information display)"; Global = $false }
+    "trafficmonitor" = @{ Desc = "TrafficMonitor (网速监控悬浮窗 / Network traffic monitor)"; Global = $false }
 }
 
 Install-ScoopPackages $monitorTools
@@ -58,7 +58,7 @@ Install-ScoopPackages $monitorTools
 Write-Header "文件管理器 / File Managers"
 
 $fileManagers = @{
-    "yazi" = @{ Desc = "Yazi (终端文件管理器 / Terminal file manager)"; Global = $false; Default = $true; PostNote = @("提示：Yazi 会自动安装以下依赖：imagemagick, poppler, resvg / Note: Yazi auto-installs deps: imagemagick, poppler, resvg") }
+    "yazi" = @{ Desc = "Yazi (终端文件管理器 / Terminal file manager)"; Global = $false; PostNote = @("提示：Yazi 会自动安装以下依赖：imagemagick, poppler, resvg / Note: Yazi auto-installs deps: imagemagick, poppler, resvg") }
 }
 
 Install-ScoopPackages $fileManagers
@@ -67,9 +67,9 @@ Install-ScoopPackages $fileManagers
 Write-Header "压缩工具 / Compression Tools"
 
 $compressionTools = @{
-    "7zip"    = @{ Desc = "7zip (压缩/解压工具 / Archive utility)"; Global = $false; Default = $true }
-    "peazip"  = @{ Desc = "PeaZip (压缩/解压工具 / Archive utility)"; Global = $false; Default = $true }
-    "innounp" = @{ Desc = "innounp (Inno Setup 解包工具 / Inno Setup unpacker)"; Global = $true; Default = $true }
+    "7zip"    = @{ Desc = "7zip (压缩/解压工具 / Archive utility)"; Global = $false }
+    "peazip"  = @{ Desc = "PeaZip (压缩/解压工具 / Archive utility)"; Global = $false }
+    "innounp" = @{ Desc = "innounp (Inno Setup 解包工具 / Inno Setup unpacker)"; Global = $true }
 }
 
 Install-ScoopPackages $compressionTools
@@ -78,20 +78,20 @@ Install-ScoopPackages $compressionTools
 Write-Header "Windows 增强工具 / Windows Enhancement Tools"
 
 $winTools = @{
-    "powertoys"       = @{ Desc = "PowerToys (微软官方工具集 / Microsoft official utilities)"; Global = $false; Default = $true }
-    "everything-beta" = @{ Desc = "Everything (快速文件搜索 / Fast file search)"; Global = $false; Default = $true }
-    "fancontrol"      = @{ Desc = "FanControl (风扇控制工具 / Fan control utility)"; Global = $false; Default = $true }
-    "hwinfo"          = @{ Desc = "HWiNFO (系统信息与诊断工具 / System information and diagnostics)"; Global = $false; Default = $true }
-    "flow-launcher"   = @{ Desc = "Flow Launcher (文件搜索和启动器 / File search and launcher)"; Global = $false; Default = $true }
-    "krokiet"         = @{ Desc = "Krokiet (图片查重工具 / picture duplicate finder)"; Global = $false; Default = $true }
-    "ventoy"          = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $false; Default = $true }
-    "rufus"           = @{ Desc = "Rufus (USB 启动盘制作工具 / USB bootable creator)"; Global = $false; Default = $true }
-    "wiztree"         = @{ Desc = "WizTree (磁盘空间分析工具 / Disk space analyzer)"; Global = $false; Default = $true }
-    "spacesniffer"    = @{ Desc = "SpaceSniffer (磁盘空间可视化工具 / Disk space visualizer)"; Global = $false; Default = $true }
-    "memreduct"       = @{ Desc = "Mem Reduct (内存优化工具 / Memory optimizer)"; Global = $false; Default = $true }
-    "msiafterburner"  = @{ Desc = "MSI Afterburner (GPU 超频与监控 / GPU overclocking and monitoring)"; Global = $true; Default = $true }
-    "rtss"            = @{ Desc = "RivaTuner Statistics Server (OSD & FPS 限制 / OSD & FPS limiter)"; Global = $true; Default = $true }
-    "ddu"             = @{ Desc = "Display Driver Uninstaller (显卡驱动清理工具 / GPU driver cleaner)"; Global = $false; Default = $true }
+    "powertoys"       = @{ Desc = "PowerToys (微软官方工具集 / Microsoft official utilities)"; Global = $false }
+    "everything-beta" = @{ Desc = "Everything (快速文件搜索 / Fast file search)"; Global = $false }
+    "fancontrol"      = @{ Desc = "FanControl (风扇控制工具 / Fan control utility)"; Global = $false }
+    "hwinfo"          = @{ Desc = "HWiNFO (系统信息与诊断工具 / System information and diagnostics)"; Global = $false }
+    "flow-launcher"   = @{ Desc = "Flow Launcher (文件搜索和启动器 / File search and launcher)"; Global = $false }
+    "krokiet"         = @{ Desc = "Krokiet (图片查重工具 / picture duplicate finder)"; Global = $false }
+    "ventoy"          = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $false }
+    "rufus"           = @{ Desc = "Rufus (USB 启动盘制作工具 / USB bootable creator)"; Global = $false }
+    "wiztree"         = @{ Desc = "WizTree (磁盘空间分析工具 / Disk space analyzer)"; Global = $false }
+    "spacesniffer"    = @{ Desc = "SpaceSniffer (磁盘空间可视化工具 / Disk space visualizer)"; Global = $false }
+    "memreduct"       = @{ Desc = "Mem Reduct (内存优化工具 / Memory optimizer)"; Global = $false }
+    "msiafterburner"  = @{ Desc = "MSI Afterburner (GPU 超频与监控 / GPU overclocking and monitoring)"; Global = $true }
+    "rtss"            = @{ Desc = "RivaTuner Statistics Server (OSD & FPS 限制 / OSD & FPS limiter)"; Global = $true }
+    "ddu"             = @{ Desc = "Display Driver Uninstaller (显卡驱动清理工具 / GPU driver cleaner)"; Global = $false }
 }
 
 Install-ScoopPackages $winTools
@@ -113,17 +113,17 @@ else {
 Write-Header "终端与命令行工具 / Terminal & CLI Tools"
 
 $termTools = @{
-    "wezterm-nightly"     = @{ Desc = "WezTerm (GPU 加速终端 / GPU-accelerated terminal)"; Global = $false; Default = $true }
-    "less"                = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false; Default = $true }
-    "microsoft-coreutils" = @{ Desc = "GNU Coreutils (ls/cp/mv 等 Linux 核心命令 / GNU core utilities)"; Global = $false; Default = $true }
-    "starship"            = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false; Default = $true }
-    "zoxide"              = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false; Default = $true }
-    "fzf"                 = @{ Desc = "fzf (模糊查找器 / Fuzzy finder)"; Global = $false; Default = $true }
-    "ripgrep"             = @{ Desc = "ripgrep (快速搜索工具 / Fast search tool)"; Global = $false; Default = $true }
-    "fd"                  = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false; Default = $true }
-    "bat"                 = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false; Default = $true }
-    "eza"                 = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false; Default = $true }
-    "dark"                = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true; Default = $true }
+    "wezterm-nightly"     = @{ Desc = "WezTerm (GPU 加速终端 / GPU-accelerated terminal)"; Global = $false }
+    "less"                = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false }
+    "microsoft-coreutils" = @{ Desc = "GNU Coreutils (ls/cp/mv 等 Linux 核心命令 / GNU core utilities)"; Global = $false }
+    "starship"            = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false }
+    "zoxide"              = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false }
+    "fzf"                 = @{ Desc = "fzf (模糊查找器 / Fuzzy finder)"; Global = $false }
+    "ripgrep"             = @{ Desc = "ripgrep (快速搜索工具 / Fast search tool)"; Global = $false }
+    "fd"                  = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false }
+    "bat"                 = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false }
+    "eza"                 = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false }
+    "dark"                = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true }
 }
 
 Install-ScoopPackages $termTools

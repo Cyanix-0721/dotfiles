@@ -33,7 +33,7 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
 Write-Header "编辑器 / Editors and IDEs"
 
 $editors = @{
-    "vscode" = @{ Desc = "Visual Studio Code"; Global = $false; Default = $true }
+    "vscode" = @{ Desc = "Visual Studio Code"; Global = $false }
 }
 
 Install-ScoopPackages $editors
@@ -42,9 +42,9 @@ Install-ScoopPackages $editors
 Write-Header "Git 工具 / Git Tools"
 
 $gitTools = @{
-    "lazygit" = @{ Desc = "lazygit"; Global = $false; Default = $true }
-    "delta"   = @{ Desc = "delta"; Global = $false; Default = $true }
-    "gh"      = @{ Desc = "gh (GitHub CLI)"; Global = $false; Default = $true }
+    "lazygit" = @{ Desc = "lazygit"; Global = $false }
+    "delta"   = @{ Desc = "delta"; Global = $false }
+    "gh"      = @{ Desc = "gh (GitHub CLI)"; Global = $false }
 }
 
 Install-ScoopPackages $gitTools
@@ -53,8 +53,8 @@ Install-ScoopPackages $gitTools
 Write-Header "Shell 脚本工具 / Shell Script Tools"
 
 $shellTools = @{
-    "shellcheck" = @{ Desc = "shellcheck (bash 静态检查 / bash static analysis)"; Global = $false; Default = $true }
-    "shfmt"      = @{ Desc = "shfmt (bash 格式化 / bash formatter)"; Global = $false; Default = $true }
+    "shellcheck" = @{ Desc = "shellcheck (bash 静态检查 / bash static analysis)"; Global = $false }
+    "shfmt"      = @{ Desc = "shfmt (bash 格式化 / bash formatter)"; Global = $false }
 }
 
 Install-ScoopPackages $shellTools
@@ -76,21 +76,35 @@ Write-Header "环境管理 / Environment Management"
 # 1. 版本管理器 (必装 / Required)
 Write-Step "版本管理器 / Version Manager (Required)"
 $versionManager = @{
-    "vfox" = @{ Desc = "vfox (多语言版本管理器 / Multi-language version manager)"; Global = $false; Default = $true }
-    "fnm"  = @{ Desc = "fnm (Node.js 版本管理器 / Node.js version manager)"; Global = $false; Default = $true }
+    "vfox" = @{ Desc = "vfox (多语言版本管理器 / Multi-language version manager)"; Global = $false }
+    "fnm"  = @{ Desc = "fnm (Node.js 版本管理器 / Node.js version manager)"; Global = $false }
 }
 
 Install-ScoopPackages $versionManager
 
-# 2. Python 包管理器 (可选一个或都安装，默认 uv / Optional, can install one or both, default uv)
+# 2. Node 包管理器（pnpm，独立二进制；运行 JS 项目仍需 Node）
+# Node package manager (pnpm, standalone binary; running JS projects still needs Node)
+Write-Step "Node 包管理器 / Node Package Manager (pnpm)"
+$nodePackageManagers = @{
+    "pnpm" = @{
+        Desc     = "pnpm (Node 包管理器 / Node package manager)"
+        Global   = $false
+        PostNote = @(
+            "pnpm 为独立二进制，运行自身无需 Node / pnpm is a standalone binary, no Node needed to run itself"
+            "运行 JS 项目仍需 Node：请先执行 fnm install --lts / Running JS projects still needs Node: run 'fnm install --lts' first"
+        )
+    }
+}
+Install-ScoopPackages $nodePackageManagers
+
+# 3. Python 包管理器 (可选一个或都安装，默认 uv / Optional, can install one or both, default uv)
 Write-Step "Python 包管理器 / Python Package Manager (Optional)"
 Write-Note "可以选择安装 uv、miniconda3 或两者都装 / Can install uv, miniconda3, or both"
 
 $pythonPackageManagers = @{
     "uv"         = @{
-        Desc    = "uv (现代 Python 包管理器，推荐个人开发 / Modern Python package manager, recommended)"
-        Global  = $false
-        Default = $true
+        Desc   = "uv (现代 Python 包管理器，推荐个人开发 / Modern Python package manager, recommended)"
+        Global = $false
     }
     "miniconda3" = @{
         Desc        = "miniconda3 (适用于公司项目或科学计算 / For company projects or scientific computing)"
@@ -215,34 +229,27 @@ Install-ScoopPackages $devTools
 Write-Header "AI 开发工具 / AI Development Tools"
 
 $aiTools = @{
-    "ollama" = @{
+    "ollama"    = @{
         Desc     = "ollama (本地大模型运行器 / Local LLM runner)"
         Global   = $false
-        Default  = $true
         PostNote = @(
             "启动服务 / Start the server: ollama serve"
             "下载模型示例 / Pull a model e.g.: ollama pull qwen3:8b"
+        )
+    }
+    "cc-switch" = @{
+        Desc     = "cc-switch (Claude Code / Codex / Gemini CLI 配置切换器 / Config switcher for AI coding CLIs)"
+        Global   = $false
+        PostNote = @(
+            "WSL 中使用时：设置 → 配置目录覆盖 → 指向 WSL 配置目录 / For WSL: Settings → config directory override → point to the WSL config dir"
         )
     }
 }
 
 Install-ScoopPackages $aiTools
 
-# 容器与虚拟化 / Containers and Virtualization
-Write-Header "容器与虚拟化 / Containers and Virtualization"
-
-if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    Write-Warn "winget 未安装，跳过 Docker Desktop 安装 / winget not installed, skipping Docker Desktop installation"
-}
-else {
-    $wingApps = @{
-        "Docker.DockerDesktop" = @{ Desc = "Docker Desktop"; InstallArgs = @("--exact", "--silent"); Default = $true }
-    }
-    Install-WingetApps $wingApps
-}
-
-# WSL2 + Debian + opencode
-Write-Header "WSL2 / Debian / opencode 安装 / WSL2 / Debian / opencode setup"
+# WSL2 + Debian
+Write-Header "WSL2 / Debian 安装 / WSL2 / Debian setup"
 
 $installWsl = Confirm-Install "是否安装 WSL2、Debian 发行版并配置默认开发环境？(Y/n) / Install WSL2, Debian distro and configure the default dev environment? (Y/n)"
 if ($installWsl -notmatch '^[Nn]$') {
@@ -341,20 +348,15 @@ fi
 apt-get update
 apt-get full-upgrade -y
 apt-get install -y git curl ca-certificates gnupg lsb-release
-if [ '$useRoot' = 'True' ]; then
-    curl -fsSL https://opencode.ai/install | bash
-else
-    sudo -u $defaultUser -H bash -lc 'curl -fsSL https://opencode.ai/install | bash'
-fi
 "@
 
-        Write-Step "在 Debian 中初始化用户、完成系统更新并安装 Git / opencode / Initializing Debian user, applying system updates, and installing Git / opencode"
+        Write-Step "在 Debian 中初始化用户、完成系统更新并安装 Git / Initializing Debian user, applying system updates, and installing Git"
         wsl.exe -d Debian --user root -- sh -lc $wslSetupScript
         if ($LASTEXITCODE -eq 0) {
-            Write-Ok "WSL2 / Debian / opencode 配置完成 / WSL2 / Debian / opencode setup completed"
+            Write-Ok "WSL2 / Debian 配置完成 / WSL2 / Debian setup completed"
         }
         else {
-            Write-Warn "WSL2 / Debian / opencode 配置命令返回非零状态，可能需要手动重试 / WSL2 / Debian / opencode setup returned a non-zero status; manual retry may be needed"
+            Write-Warn "WSL2 / Debian 配置命令返回非零状态，可能需要手动重试 / WSL2 / Debian setup returned a non-zero status; manual retry may be needed"
         }
     }
     else {
@@ -362,7 +364,7 @@ fi
     }
 }
 else {
-    Write-Note "跳过 WSL2 / Debian / opencode 安装 / Skipping WSL2 / Debian / opencode installation"
+    Write-Note "跳过 WSL2 / Debian 安装 / Skipping WSL2 / Debian installation"
 }
 
 Write-Header "开发工具安装完成 / Development tools installation completed"

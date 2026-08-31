@@ -126,7 +126,9 @@ function Install-ScoopPackages {
     )
     foreach ($entry in $Packages.GetEnumerator()) {
         $info = $entry.Value
-        Install-ScoopPackage -Name $entry.Key -Desc $info.Desc -AsGlobal:$info.Global -DefaultYes:($info.Default) -PostNote $info.PostNote -AlreadyNote $info.AlreadyNote
+        # 未显式指定 Default 时默认推荐安装（$true）；只有显式写 $false 才表示可选
+        $defaultYes = if ($info.ContainsKey('Default')) { [bool]$info.Default } else { $true }
+        Install-ScoopPackage -Name $entry.Key -Desc $info.Desc -AsGlobal:$info.Global -DefaultYes:$defaultYes -PostNote $info.PostNote -AlreadyNote $info.AlreadyNote
     }
 }
 
@@ -182,11 +184,13 @@ function Install-WingetApps {
     )
     foreach ($entry in $Apps.GetEnumerator()) {
         $info = $entry.Value
+        # 未显式指定 Default 时默认推荐安装（$true）；只有显式写 $false 才表示可选
+        $defaultYes = if ($info.ContainsKey('Default')) { [bool]$info.Default } else { $true }
         if ($info.InstallArgs) {
-            Install-WingetApp -Id $entry.Key -Desc $info.Desc -InstallArgs $info.InstallArgs -Force:$Force -DefaultYes:($info.Default)
+            Install-WingetApp -Id $entry.Key -Desc $info.Desc -InstallArgs $info.InstallArgs -Force:$Force -DefaultYes:$defaultYes
         }
         else {
-            Install-WingetApp -Id $entry.Key -Desc $info.Desc -Force:$Force -DefaultYes:($info.Default)
+            Install-WingetApp -Id $entry.Key -Desc $info.Desc -Force:$Force -DefaultYes:$defaultYes
         }
     }
 }

@@ -119,6 +119,7 @@ $productivityApps = @{
     "stranslate"     = @{ Desc = "Stranslate (翻译工具 / Translation tool)"; Global = $false }
     "umi-ocr"        = @{ Desc = "Umi OCR (OCR 工具 / OCR tool)"; Global = $false }
     "quickclipboard" = @{ Desc = "QuickClipboard (剪贴板管理工具 / Clipboard manager)"; Global = $false }
+    "zeal"           = @{ Desc = "Zeal (离线 API 文档浏览器 / Offline API documentation browser)"; Global = $false }
 }
 
 Install-ScoopPackages $productivityApps
@@ -127,7 +128,7 @@ Install-ScoopPackages $productivityApps
 Write-Header "密码管理器 / Password Managers"
 
 $passwordManagers = @{
-    "keepassxc" = @{ Desc = "KeePassXC"; Global = $false; Default = $true }
+    "keepassxc" = @{ Desc = "KeePassXC"; Global = $false }
 }
 
 Install-ScoopPackages $passwordManagers
@@ -136,7 +137,7 @@ Install-ScoopPackages $passwordManagers
 Write-Header "邮件客户端 / Email Clients"
 
 $emailClients = @{
-    "thunderbird" = @{ Desc = "Thunderbird"; Global = $false; Default = $true }
+    "thunderbird" = @{ Desc = "Thunderbird"; Global = $false }
 }
 
 Install-ScoopPackages $emailClients
@@ -155,10 +156,10 @@ Install-ScoopPackages $commApps
 Write-Header "文件同步 / File Synchronization"
 
 $syncApps = @{
-    "syncthing"     = @{ Desc = "Syncthing (P2P 文件同步 / P2P file sync)"; Global = $false; Default = $true }
-    "syncthingtray" = @{ Desc = "Syncthing Tray (系统托盘工具 / System tray utility)"; Global = $false; Default = $true }
-    "localsend"     = @{ Desc = "LocalSend (局域网文件传输 / LAN file transfer)"; Global = $false; Default = $true }
-    "winscp"        = @{ Desc = "WinSCP (SFTP/FTP 文件传输 / SFTP/FTP file transfer)"; Global = $false; Default = $true }
+    "syncthing"     = @{ Desc = "Syncthing (P2P 文件同步 / P2P file sync)"; Global = $false }
+    "syncthingtray" = @{ Desc = "Syncthing Tray (系统托盘工具 / System tray utility)"; Global = $false }
+    "localsend"     = @{ Desc = "LocalSend (局域网文件传输 / LAN file transfer)"; Global = $false }
+    "winscp"        = @{ Desc = "WinSCP (SFTP/FTP 文件传输 / SFTP/FTP file transfer)"; Global = $false }
 }
 
 Install-ScoopPackages $syncApps
@@ -167,7 +168,7 @@ Install-ScoopPackages $syncApps
 Write-Header "远程控制 / Remote Control"
 
 $remoteApps = @{
-    "rustdesk" = @{ Desc = "RustDesk (远程桌面工具 / Remote desktop)"; Global = $false; Default = $true }
+    "rustdesk" = @{ Desc = "RustDesk (远程桌面工具 / Remote desktop)"; Global = $false }
 }
 
 Install-ScoopPackages $remoteApps
@@ -208,8 +209,8 @@ Install-ScoopPackages $readerApps
 Write-Header "字体 / Fonts"
 
 $fonts = @{
-    "JetBrainsMono-NF-Mono" = @{ Desc = "JetBrains Mono Nerd Font"; Global = $false; Default = $true }
-    "SarasaGothic-SC"       = @{ Desc = "Sarasa Gothic (更纱黑体)"; Global = $false; Default = $true }
+    "JetBrainsMono-NF-Mono" = @{ Desc = "JetBrains Mono Nerd Font"; Global = $false }
+    "SarasaGothic-SC"       = @{ Desc = "Sarasa Gothic (更纱黑体)"; Global = $false }
 }
 
 Install-ScoopPackages $fonts
