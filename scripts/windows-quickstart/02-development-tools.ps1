@@ -82,6 +82,44 @@ $versionManager = @{
 
 Install-ScoopPackages $versionManager
 
+# 1.5 Node.js LTS（可选，默认否；AutoYes 时安装最新 LTS 并设为全局默认）
+# Node.js LTS (optional, default no; AutoYes installs latest LTS and sets it as the global default)
+if (Get-Command fnm -ErrorAction SilentlyContinue) {
+    Write-Step "Node.js LTS / Node.js LTS (optional)"
+    $installLts = Confirm-Install "是否安装最新 LTS Node.js？(y/N) / Install latest LTS Node.js? (y/N)"
+    if ($installLts -match '^[Yy]$') {
+        Write-Step "通过 fnm 安装最新 LTS Node.js / Installing latest LTS Node.js via fnm"
+        fnm install --lts
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "最新 LTS Node.js 安装完成 / Latest LTS Node.js installed"
+            # 默认非全局；是否设为全局默认同样可选（AutoYes 时自动设为全局默认）
+            # Global default is off by default; setting it is also optional (AutoYes sets it automatically)
+            $setGlobal = Confirm-Install "是否将最新 LTS 设为全局默认？(y/N) / Set latest LTS as global default? (y/N)"
+            if ($setGlobal -match '^[Yy]$') {
+                $ltsLine = fnm list 2>$null | Where-Object { $_ -match 'lts-latest' } | Select-Object -First 1
+                $ltsVersion = [regex]::Match($ltsLine, 'v?\d+\.\d+\.\d+').Value
+                if ($ltsVersion) {
+                    fnm default $ltsVersion
+                    fnm use $ltsVersion | Out-Null
+                    Write-Ok "已将 Node.js $ltsVersion 设为全局默认 / Node.js $ltsVersion set as global default"
+                }
+                else {
+                    Write-Warn "未能识别 LTS 版本，跳过设为全局默认 / Could not identify LTS version, skipping global default"
+                }
+            }
+        }
+        else {
+            Write-Err "最新 LTS Node.js 安装失败 / Latest LTS Node.js installation failed"
+        }
+    }
+    else {
+        Write-Note "跳过 Node.js LTS 安装 / Skipping Node.js LTS installation"
+    }
+}
+else {
+    Write-Warn "fnm 不可用，跳过 Node.js LTS 安装 / fnm unavailable, skipping Node.js LTS installation"
+}
+
 # 2. Node 包管理器（pnpm，独立二进制；运行 JS 项目仍需 Node）
 # Node package manager (pnpm, standalone binary; running JS projects still needs Node)
 Write-Step "Node 包管理器 / Node Package Manager (pnpm)"

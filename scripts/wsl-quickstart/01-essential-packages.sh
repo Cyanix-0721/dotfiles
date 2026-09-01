@@ -97,18 +97,31 @@ else
 	ok "fnm 安装完成 / fnm installed"
 fi
 
-# Node.js：用 fnm 安装最新 LTS（DSH 要求 Node 22.19+；Debian 13 系统 nodejs 20 不满足）
-# Node.js: install latest LTS via fnm (DSH needs Node 22.19+; Debian 13's nodejs 20 is too old)
+# Node.js：可选安装最新 LTS（默认否）；AUTO_YES 时安装最新 LTS 并设为全局默认
+# Node.js: optionally install latest LTS (default no); AUTO_YES installs latest LTS and sets it as global default
 step "安装 Node.js LTS（fnm）/ Installing Node.js LTS (fnm)"
 export PATH="${XDG_DATA_HOME:-$HOME/.local/share}/fnm:$HOME/.fnm:$PATH"
 if command -v fnm >/dev/null 2>&1; then
 	# 本次会话加载 fnm（fish 集成由 12-fnm.fish 提供）
 	# Load fnm for this session (fish integration lives in 12-fnm.fish)
 	eval "$(fnm env --use-on-cd --shell bash)"
-	# 仅安装兜底 LTS；不强制改写默认版本，按项目切换由 12-fnm.fish 的 --use-on-cd 提供（读取 .node-version / .nvmrc）
-	# Install a fallback LTS only; never force the default, per-project switching is handled by --use-on-cd in 12-fnm.fish (.node-version / .nvmrc)
-	fnm install --lts
-	ok "Node.js LTS 已安装（默认版本按项目/兜底由 fnm 解析）/ Node.js LTS installed (default resolved per-project/fallback by fnm)"
+	# 询问是否安装最新 LTS（默认否，回车跳过）；按项目切换由 12-fnm.fish 的 --use-on-cd 提供（读取 .node-version / .nvmrc）
+	# Ask whether to install latest LTS (default no); per-project switching handled by --use-on-cd in 12-fnm.fish (.node-version / .nvmrc)
+	if confirm_install 0 "是否安装最新 LTS Node.js？(y/N) / Install latest LTS Node.js?"; then
+		fnm install --lts
+		ok "最新 LTS Node.js 安装完成 / Latest LTS Node.js installed"
+		# 默认非全局；是否设为全局默认同样可选（AUTO_YES 时自动设为全局默认）
+		# Global default is off by default; setting it is also optional (AUTO_YES sets it automatically)
+		if confirm_install 0 "是否将最新 LTS 设为全局默认？(y/N) / Set latest LTS as global default?"; then
+			lts_version="$(fnm list 2>/dev/null | grep 'lts-latest' | head -n1 | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
+			if [ -n "$lts_version" ]; then
+				fnm default "$lts_version"
+				ok "已将 Node.js $lts_version 设为全局默认 / Node.js $lts_version set as global default"
+			else
+				warn "未能识别 LTS 版本，跳过设为全局默认 / Could not identify LTS version, skipping global default"
+			fi
+		fi
+	fi
 else
 	warn "fnm 不可用，跳过 Node.js 安装 / fnm unavailable, skipping Node.js install"
 fi
