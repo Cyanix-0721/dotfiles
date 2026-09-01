@@ -1,1 +1,0 @@
-vfox activate fish | source

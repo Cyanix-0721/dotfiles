@@ -129,16 +129,28 @@ else
 	ok "pnpm 安装完成（~/.local/share/pnpm）/ pnpm installed (~/.local/share/pnpm)"
 fi
 
-# vfox：使用官方 apt 仓库安装（apt.fury.io/versionfox）
-# vfox: install from the official apt repository (apt.fury.io/versionfox)
-step "安装 vfox（官方 apt 仓库）/ Installing vfox (official apt repo)"
-if command -v vfox >/dev/null 2>&1; then
-	ok "vfox 已安装，跳过 / vfox already installed, skipping"
+# mise：使用官方安装脚本（mise.run，自带 self-update）
+# mise: install via the official installer (mise.run, with self-update)
+step "安装 mise（官方安装脚本）/ Installing mise (official installer)"
+if command -v mise >/dev/null 2>&1; then
+	ok "mise 已安装，跳过 / mise already installed, skipping"
 else
-	echo "deb [trusted=yes lang=none] https://apt.fury.io/versionfox/ /" | sudo tee /etc/apt/sources.list.d/versionfox.list >/dev/null
-	sudo apt-get update -qq
-	sudo apt-get install -y vfox
-	ok "vfox 安装完成 / vfox installed"
+	curl https://mise.run | sh
+	ok "mise 安装完成（~/.local/bin/mise）/ mise installed (~/.local/bin/mise)"
+fi
+
+# bash 激活：官方推荐写法，追加到 ~/.bashrc（幂等）
+# bash activation: official recommended line, appended to ~/.bashrc (idempotent)
+# fish 激活由 chezmoi 管理的 dot_config/fish/conf.d/11-mise.fish 提供，这里无需重复
+# fish activation is provided by the chezmoi-managed dot_config/fish/conf.d/11-mise.fish
+step "配置 mise bash 激活 / Configuring mise bash activation"
+MISE_ACT_BASH='eval "$(mise activate bash)"'
+BASHRC="$HOME/.bashrc"
+if [ -f "$BASHRC" ] && grep -qF "$MISE_ACT_BASH" "$BASHRC"; then
+	ok "bash 已配置 mise 激活 / bash already has mise activation"
+else
+	printf '\n# mise activate (added by wsl-quickstart)\n%s\n' "$MISE_ACT_BASH" >> "$BASHRC"
+	ok "已追加 mise 激活行到 ~/.bashrc / mise activation appended to ~/.bashrc"
 fi
 
 # codex：使用官方独立安装器（原生 Rust 二进制，无需 Node）
@@ -158,7 +170,7 @@ note "它们的更新命令 / Their update commands:"
 note "  chezmoi  → chezmoi upgrade"
 note "  uv      → uv self update"
 note "  fnm     → fnm self install"
-note "  vfox    → sudo apt-get update && sudo apt-get install -y vfox"
+note "  mise    → mise self-update"
 note "  codex   → codex update（或重跑 install.sh）/ codex update (or re-run install.sh)"
 
 ok "常用软件安装完成 / Essential packages installed"

@@ -7,9 +7,6 @@ __pycache__/
 # Local virtual environments / 本地虚拟环境目录
 .venv/
 
-# Kilo worktree (node_modules, worktrees, plans) / Kilo 工作区
-.kilo/
-
 # 操作系统/平台垃圾文件 / OS & platform junk files
 .DS_Store
 .DS_Store?
@@ -22,3 +19,7 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 *.log
+
+# AI 助手缓存目录 / AI assistant cache directories
+.kilo/
+.workbuddy/

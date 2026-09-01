@@ -36,9 +36,9 @@ if (Get-Command starship -ErrorAction SilentlyContinue) {
 }
 #endregion
 
-#region vfox init
-if (Get-Command vfox -ErrorAction SilentlyContinue) {
-    Invoke-Expression "$(vfox activate pwsh)"
+#region mise init
+if (Get-Command mise -ErrorAction SilentlyContinue) {
+    (&mise activate pwsh) | Out-String | Invoke-Expression
 }
 #endregion
 

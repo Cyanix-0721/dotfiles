@@ -84,13 +84,13 @@ else
 	note "跳过 LazyVim 安装 / Skipping LazyVim"
 fi
 
-# 询问是否安装 vfox
-if confirm_install 1 "安装 vfox（版本管理工具）？/ Install vfox (version manager)?"; then
-	step "安装 vfox / Installing vfox"
-	curl -sSL https://raw.githubusercontent.com/version-fox/vfox/main/install.sh | bash
-	ok "vfox 安装完成 / vfox installed"
+# 询问是否安装 mise
+if confirm_install 1 "安装 mise（版本管理工具）？/ Install mise (version manager)?"; then
+	step "安装 mise / Installing mise"
+	sudo pacman -S --noconfirm mise
+	ok "mise 安装完成 / mise installed"
 else
-	note "跳过 vfox 安装 / Skipping vfox"
+	note "跳过 mise 安装 / Skipping mise"
 fi
 
 # 询问是否启用 MPD 服务
