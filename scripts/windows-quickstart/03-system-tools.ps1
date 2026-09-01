@@ -36,6 +36,7 @@ $sysinternalsTools = @{
     "sysmon"           = @{ Desc = "Sysmon (系统监视器 / System Monitor)"; Global = $true }
     "handle"           = @{ Desc = "Handle (句柄查看工具 / View open handles)"; Global = $true }
     "autoruns"         = @{ Desc = "Autoruns (启动项管理工具 / Startup manager)"; Global = $true }
+    "autologon"        = @{ Desc = "AutoLogon (自动登录工具 / Auto login utility)"; Global = $true }
     "process-explorer" = @{ Desc = "Process Explorer (高级任务管理器 / Advanced Task Manager)"; Global = $true }
     "procmon"          = @{ Desc = "Process Monitor (文件/注册表监视 / File & Registry monitor)"; Global = $true }
     "tcpview"          = @{ Desc = "TCPView (网络连接查看 / TCP/UDP connection viewer)"; Global = $true }
