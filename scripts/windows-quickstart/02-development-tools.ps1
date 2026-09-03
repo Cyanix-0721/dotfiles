@@ -218,7 +218,7 @@ else {
 
             if (-not $isInstalled) {
                 Write-Step "通过 winget 安装 $appId / Installing $appId via winget"
-                winget install --id $appId --exact --silent --accept-source-agreements --accept-package-agreements
+                Invoke-WingetInstall -Id $appId -InstallArgs @("--exact", "--silent")
                 if ($LASTEXITCODE -eq 0) {
                     Write-Ok "$appId 安装完成 / $appId installation completed"
                 }
@@ -230,6 +230,43 @@ else {
                 Write-Ok "$appId 已安装 / $appId is already installed"
             }
         }
+    }
+}
+
+# C/C++ 构建工具（Visual Studio BuildTools，跟随 winget 源最新版）
+# C/C++ build tools (Visual Studio BuildTools, tracks the latest version on the winget source)
+Write-Header "C/C++ 构建工具 / C/C++ Build Tools (Visual Studio BuildTools)"
+
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    Write-Warn "winget 未安装，跳过 VS BuildTools 安装 / winget not installed, skipping VS BuildTools installation"
+}
+else {
+    # BuildTools 体积大且非必需：交互时默认不装 (y/N)；-AutoYes 全选模式下自动安装
+    # BuildTools is large and optional: skipped by default when prompted (y/N); auto-installed in -AutoYes mode
+    $installVcTools = Confirm-Install "是否安装 Visual Studio BuildTools（含 C++ 桌面开发工作负载）？(y/N) / Install Visual Studio BuildTools (with C++ desktop workload)? (y/N)"
+    if ($installVcTools -match '^[Yy]$') {
+        Write-Step "检查 VS BuildTools 安装状态 / Checking VS BuildTools installation status"
+        try {
+            $vcToolsInstalled = winget list --id Microsoft.VisualStudio.BuildTools --exact -s winget 2>$null | Select-String -SimpleMatch "Microsoft.VisualStudio.BuildTools"
+        }
+        catch { $vcToolsInstalled = $null }
+
+        if (-not $vcToolsInstalled) {
+            Write-Step "通过 winget 安装 VS BuildTools（VCTools workload）/ Installing VS BuildTools (VCTools workload) via winget"
+            Invoke-WingetInstall -Id "Microsoft.VisualStudio.BuildTools" -InstallArgs @("--exact", "--override", "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive --norestart")
+            if ($LASTEXITCODE -eq 0) {
+                Write-Ok "VS BuildTools 安装完成 / VS BuildTools installation completed"
+            }
+            else {
+                Write-Err "VS BuildTools 安装失败，请稍后手动运行 winget 命令重试 / VS BuildTools installation failed; retry the winget command manually later"
+            }
+        }
+        else {
+            Write-Ok "VS BuildTools 已安装 / VS BuildTools is already installed"
+        }
+    }
+    else {
+        Write-Note "跳过 VS BuildTools 安装 / Skipping VS BuildTools installation"
     }
 }
 
@@ -296,7 +333,7 @@ if ($installWsl -notmatch '^[Nn]$') {
     if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
         Write-Warn "当前系统未检测到 wsl.exe，尝试通过 winget 安装 WSL / wsl.exe not found, attempting to install WSL via winget"
         if (Get-Command winget -ErrorAction SilentlyContinue) {
-            winget install --id Microsoft.WSL --exact --silent --accept-source-agreements --accept-package-agreements
+            Invoke-WingetInstall -Id "Microsoft.WSL" -InstallArgs @("--exact", "--silent")
             if ($LASTEXITCODE -ne 0) {
                 Write-Err "WSL 安装失败 / WSL installation failed"
             }

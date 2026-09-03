@@ -132,6 +132,16 @@ function Install-ScoopPackages {
     }
 }
 
+# ===== winget 底层安装执行 =====
+# 统一携带 --source winget 与协议接受参数；供 Install-WingetApp 封装及各脚本直接调用
+function Invoke-WingetInstall {
+    param(
+        [Parameter(Mandatory = $true)][string]$Id,
+        [string[]]$InstallArgs = @("--exact", "--silent")
+    )
+    winget install --id $Id @($InstallArgs) --source winget --accept-source-agreements --accept-package-agreements
+}
+
 # ===== winget 安装封装 =====
 function Install-WingetApp {
     param(
@@ -168,7 +178,7 @@ function Install-WingetApp {
     if (-not $shouldInstall) { return }
 
     Write-Step "通过 winget 安装 $Desc ($Id) / Installing $Desc via winget"
-    winget install --id $Id @($InstallArgs) --accept-source-agreements --accept-package-agreements
+    Invoke-WingetInstall -Id $Id -InstallArgs $InstallArgs
     if ($LASTEXITCODE -eq 0) {
         Write-Ok "$Id 安装完成 / $Id installation completed"
     }
