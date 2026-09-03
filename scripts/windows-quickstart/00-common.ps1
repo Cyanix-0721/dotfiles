@@ -132,6 +132,18 @@ function Install-ScoopPackages {
     }
 }
 
+# ===== winget 已安装检测 =====
+function Test-WingetInstalled {
+    param([Parameter(Mandatory = $true)][string]$Id)
+    try {
+        # -SimpleMatch 按字面匹配，避免 ID 中的 + 等正则特殊字符导致误判
+        return [bool](winget list --id $Id --exact -s winget 2>$null | Select-String -SimpleMatch $Id)
+    }
+    catch {
+        return $false
+    }
+}
+
 # ===== winget 底层安装执行 =====
 # 统一携带 --source winget 与协议接受参数；供 Install-WingetApp 封装及各脚本直接调用
 function Invoke-WingetInstall {
@@ -152,14 +164,7 @@ function Install-WingetApp {
         [switch]$DefaultYes
     )
 
-    try {
-        # -SimpleMatch 按字面匹配，避免 ID 中的 + 等正则特殊字符导致误判
-        $isInstalled = winget list --id $Id --exact -s winget 2>$null | Select-String -SimpleMatch $Id
-    }
-    catch {
-        $isInstalled = $null
-    }
-    if ($isInstalled) {
+    if (Test-WingetInstalled -Id $Id) {
         Write-Ok "$Id 已安装 / $Id is already installed"
         return
     }

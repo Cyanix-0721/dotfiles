@@ -191,7 +191,7 @@ else {
         $installDotNet = Confirm-Install "是否安装 .NET $version.0？(y/N) / Install .NET $version.0? (y/N)"
         if ($installDotNet -notmatch '^[Yy]$') { continue }
 
-        Write-Step "安装 .NET $version.0 / Installing .NET $version.0"
+        Write-Step "选择 .NET $version.0 安装类型 / Choosing .NET $version.0 install type"
         Write-Host "1. 仅 SDK (包含运行时) / SDK only (includes runtime) (默认 / default)" -ForegroundColor Yellow
         Write-Host "2. 仅运行时 / Runtime only" -ForegroundColor Yellow
 
@@ -203,33 +203,18 @@ else {
             if ([string]::IsNullOrWhiteSpace($choice)) { $choice = "1" }
         }
 
-        $toInstall = @()
-        switch ($choice) {
-            "1" { $toInstall += "Microsoft.DotNet.SDK.$version" }
-            "2" { $toInstall += "Microsoft.DotNet.Runtime.$version" }
-            default { Write-Warn "无效选项，跳过 .NET $version.0 安装 / Invalid option, skipping .NET $version.0 installation" }
+        # 组装包 ID，交由 Install-WingetApp 处理（内置已安装检测、日志与退出码）
+        $appId = switch ($choice) {
+            "1" { "Microsoft.DotNet.SDK.$version" }
+            "2" { "Microsoft.DotNet.Runtime.$version" }
+            default { $null }
         }
-
-        foreach ($appId in $toInstall) {
-            try {
-                $isInstalled = winget list --id $appId --exact -s winget 2>$null | Select-String -SimpleMatch $appId
-            }
-            catch { $isInstalled = $null }
-
-            if (-not $isInstalled) {
-                Write-Step "通过 winget 安装 $appId / Installing $appId via winget"
-                Invoke-WingetInstall -Id $appId -InstallArgs @("--exact", "--silent")
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Ok "$appId 安装完成 / $appId installation completed"
-                }
-                else {
-                    Write-Err "$appId 安装失败 / $appId installation failed"
-                }
-            }
-            else {
-                Write-Ok "$appId 已安装 / $appId is already installed"
-            }
+        if (-not $appId) {
+            Write-Warn "无效选项，跳过 .NET $version.0 安装 / Invalid option, skipping .NET $version.0 installation"
+            continue
         }
+        $kindLabel = if ($choice -eq "1") { "SDK (含运行时) / SDK (includes runtime)" } else { "运行时 / Runtime" }
+        Install-WingetApp -Id $appId -Desc ".NET $version.0 $kindLabel" -Force
     }
 }
 
@@ -246,12 +231,7 @@ else {
     $installVcTools = Confirm-Install "是否安装 Visual Studio BuildTools（含 C++ 桌面开发工作负载）？(y/N) / Install Visual Studio BuildTools (with C++ desktop workload)? (y/N)"
     if ($installVcTools -match '^[Yy]$') {
         Write-Step "检查 VS BuildTools 安装状态 / Checking VS BuildTools installation status"
-        try {
-            $vcToolsInstalled = winget list --id Microsoft.VisualStudio.BuildTools --exact -s winget 2>$null | Select-String -SimpleMatch "Microsoft.VisualStudio.BuildTools"
-        }
-        catch { $vcToolsInstalled = $null }
-
-        if (-not $vcToolsInstalled) {
+        if (-not (Test-WingetInstalled -Id "Microsoft.VisualStudio.BuildTools")) {
             Write-Step "通过 winget 安装 VS BuildTools（VCTools workload）/ Installing VS BuildTools (VCTools workload) via winget"
             Invoke-WingetInstall -Id "Microsoft.VisualStudio.BuildTools" -InstallArgs @("--exact", "--override", "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive --norestart")
             if ($LASTEXITCODE -eq 0) {
