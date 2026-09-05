@@ -4,8 +4,6 @@
 # Essential packages: intersection of Arch quickstart list and Debian stable packages
 # 排除：GUI 桌面工具（WSL 无需）
 #       ruff/yazi（Debian trixie 无对应包）
-# fish 4：Debian stable 的 fish 为旧版 3.x，单独从 openSUSE 官方仓库安装
-# fish 4: Debian stable ships old 3.x, installed separately from the openSUSE official repo
 
 set -e # 遇到错误立即退出
 
@@ -35,6 +33,7 @@ sudo apt-get install -y --no-install-recommends \
 	fastfetch \
 	fd-find \
 	ffmpeg \
+	fish \
 	fzf \
 	gh \
 	git \
@@ -55,17 +54,6 @@ sudo apt-get install -y --no-install-recommends \
 	podman \
 	podman-compose
 ok "命令行工具安装完成 / Command line tools installed"
-
-step "安装 fish 4（openSUSE 官方仓库）/ Installing fish 4 (openSUSE official repo)"
-if command -v fish >/dev/null 2>&1 && fish --version 2>/dev/null | grep -q 'version 4'; then
-	ok "fish 4 已安装，跳过 / fish 4 already installed, skipping"
-else
-	echo 'deb http://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_13/ /' | sudo tee /etc/apt/sources.list.d/shells:fish:release:4.list >/dev/null
-	curl -fsSL "https://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_13/Release.key" | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_4.gpg >/dev/null
-	sudo apt-get update -qq
-	sudo apt-get install -y fish
-	ok "fish 4 安装完成 / fish 4 installed"
-fi
 
 # 将 fish 设为默认 shell（重新登录后生效）
 # Set fish as the default shell (effective after re-login)
