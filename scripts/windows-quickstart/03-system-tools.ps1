@@ -115,6 +115,7 @@ Write-Header "终端与命令行工具 / Terminal & CLI Tools"
 
 $termTools = @{
     "wezterm-nightly"     = @{ Desc = "WezTerm (GPU 加速终端 / GPU-accelerated terminal)"; Global = $false }
+    "windows-terminal"    = @{ Desc = "Windows Terminal (微软官方终端 / Microsoft official terminal)"; Global = $false }
     "less"                = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false }
     "microsoft-coreutils" = @{ Desc = "GNU Coreutils (ls/cp/mv 等 Linux 核心命令 / GNU core utilities)"; Global = $false }
     "starship"            = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false }
