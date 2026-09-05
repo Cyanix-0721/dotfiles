@@ -55,6 +55,17 @@ sudo apt-get install -y --no-install-recommends \
 	podman-compose
 ok "命令行工具安装完成 / Command line tools installed"
 
+# bat：Debian 因与 bacula-console-qt 撞名把二进制装成 batcat，这里补回习惯的 bat 命令
+# bat: Debian ships the binary as batcat (name clash with bacula-console-qt); symlink it back to bat
+step "为 bat 创建 batcat 符号链接 / Symlinking bat -> batcat"
+if [ -x "$(command -v batcat)" ] && [ ! -e "$HOME/.local/bin/bat" ]; then
+	mkdir -p "$HOME/.local/bin"
+	ln -s "$(command -v batcat)" "$HOME/.local/bin/bat"
+	ok "已创建 ~/.local/bin/bat -> batcat / bat symlink created"
+else
+	ok "batcat 不可用或链接已存在，跳过 / batcat unavailable or link exists, skipping"
+fi
+
 # 将 fish 设为默认 shell（重新登录后生效）
 # Set fish as the default shell (effective after re-login)
 step "设置 fish 为默认 shell / Setting fish as the default shell"
