@@ -82,36 +82,32 @@ $versionManager = @{
 
 Install-ScoopPackages $versionManager
 
-# 1.2 Java (temurin-17) 全局默认：供 android-clt 的 sdkmanager 使用
-# Java (temurin-17) global default via mise: used by android-clt's sdkmanager
+# 1.2 按全局 mise 配置安装全部工具(Java temurin-17 供 android-clt 的 sdkmanager;另有 Flutter latest 等)
+# Install all tools declared in the global mise config (Java temurin-17 for sdkmanager, plus Flutter latest, etc.)
+# 全局工具声明已由 chezmoi 纳管(dot_config/mise/config.toml → ~/.config/mise/config.toml),
+# 不再逐个 `mise use -g`,统一按声明安装;mise install 幂等,只补缺失版本。
 if (Get-Command mise -ErrorAction SilentlyContinue) {
-    # 首次运行需下载整个 JDK，放独立窗口跑以便观察进度；主脚本等待完成再继续
-    # First run downloads the whole JDK; run it in its own window and -Wait before continuing
-    $javaHome = (mise where java 2>$null | Select-Object -First 1)
-    $javaReady = ($LASTEXITCODE -eq 0 -and $javaHome -and (Test-Path "$javaHome\bin\java.exe"))
-    if (-not $javaReady) {
-        Write-Step "在新窗口通过 mise 下载并设置全局 Java temurin-17（完成后自动继续）/ Downloading & setting global Java temurin-17 via mise in a new window (continues when done)"
-        $miseJavaProc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "mise use -g java@temurin-17" -Wait -PassThru
-        if ($miseJavaProc.ExitCode -ne 0) {
-            Write-Warn "mise use -g java@temurin-17 失败（退出码 $($miseJavaProc.ExitCode)）/ mise use -g java@temurin-17 failed (exit $($miseJavaProc.ExitCode))"
-        }
-        $javaHome = (mise where java 2>$null | Select-Object -First 1)
+    $globalMiseConfig = Join-Path $HOME ".config/mise/config.toml"
+    if (-not (Test-Path $globalMiseConfig)) {
+        Write-Warn "未找到全局 mise 配置 $globalMiseConfig,无法按声明安装。请先运行 chezmoi apply(部署 dot_config/mise/config.toml)后再重试 / Global mise config not found; run 'chezmoi apply' first to deploy dot_config/mise/config.toml, then rerun"
     }
     else {
-        # 已安装：mise use -g 仅秒级写全局配置，直接内联即可
-        # Already installed: mise use -g only writes global config (fast), run inline
-        Write-Step "确保 mise 全局默认 Java (temurin-17) / Ensuring global default Java (temurin-17) via mise"
-        mise use -g java@temurin-17
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warn "mise use -g java@temurin-17 失败 / mise use -g java@temurin-17 failed"
+        # 首次运行需下载声明中的全部大件(JDK、Flutter 等),放独立窗口跑以便观察进度;主脚本等待完成再继续
+        # First run downloads all declared tools (JDK, Flutter, etc.); run in its own window and -Wait before continuing
+        Write-Step "在新窗口按全局 mise 配置安装全部工具(含 Java temurin-17、Flutter latest;完成后自动继续)/ Installing all tools from global mise config (incl. Java temurin-17, Flutter latest) in a new window (continues when done)"
+        $miseInstallProc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "mise install" -Wait -PassThru
+        if ($miseInstallProc.ExitCode -eq 0) {
+            Write-Ok "全局 mise 配置中的工具已安装 / All tools in global mise config installed"
+        }
+        else {
+            Write-Warn "mise install 返回非零(退出码 $($miseInstallProc.ExitCode));可稍后手动运行 mise install 重试 / mise install returned non-zero (exit $($miseInstallProc.ExitCode)); rerun 'mise install' later"
         }
     }
-    # java 注入当前会话 PATH 由 android-clt 块在调用 sdkmanager 前统一处理（java 仅 sdkmanager 消费）
+    # java 注入当前会话 PATH 由 android-clt 块在调用 sdkmanager 前统一处理(java 仅 sdkmanager 消费)
     # PATH injection happens in the android-clt block right before sdkmanager (java is only consumed there)
-    Write-Ok "全局默认 Java 已设为 temurin-17 / Global default Java set to temurin-17"
 }
 else {
-    Write-Warn "mise 不可用，跳过全局 Java 设置 / mise unavailable, skipping global Java setup"
+    Write-Warn "mise 不可用,跳过按全局配置安装 / mise unavailable, skipping install from global mise config"
 }
 
 # 1.5 Node.js LTS（可选，默认否；AutoYes 时安装最新 LTS 并设为全局默认）
