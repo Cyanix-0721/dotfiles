@@ -82,19 +82,19 @@ $versionManager = @{
 
 Install-ScoopPackages $versionManager
 
-# 1.2 按全局 mise 配置安装全部工具(Java temurin-17 供 android-clt 的 sdkmanager;另有 Flutter latest 等)
-# Install all tools declared in the global mise config (Java temurin-17 for sdkmanager, plus Flutter latest, etc.)
-# 全局工具声明已由 chezmoi 纳管(dot_config/mise/config.toml → ~/.config/mise/config.toml),
-# 不再逐个 `mise use -g`,统一按声明安装;mise install 幂等,只补缺失版本。
+# 1.2 按全局 mise 配置安装全部声明工具
+# Install all tools declared in the global mise config.
+# 全局工具声明由 chezmoi 纳管(dot_config/mise/config.toml → ~/.config/mise/config.toml),
+# 此处不逐个指定工具,统一 `mise install` 按声明安装(幂等,只补缺失版本)。
 if (Get-Command mise -ErrorAction SilentlyContinue) {
     $globalMiseConfig = Join-Path $HOME ".config/mise/config.toml"
     if (-not (Test-Path $globalMiseConfig)) {
-        Write-Warn "未找到全局 mise 配置 $globalMiseConfig,无法按声明安装。请先运行 chezmoi apply(部署 dot_config/mise/config.toml)后再重试 / Global mise config not found; run 'chezmoi apply' first to deploy dot_config/mise/config.toml, then rerun"
+        Write-Warn "未找到全局 mise 配置 $globalMiseConfig,无法按声明安装。请先运行 chezmoi apply 部署配置后再重试 / Global mise config not found; run 'chezmoi apply' to deploy it, then rerun"
     }
     else {
-        # 首次运行需下载声明中的全部大件(JDK、Flutter 等),放独立窗口跑以便观察进度;主脚本等待完成再继续
-        # First run downloads all declared tools (JDK, Flutter, etc.); run in its own window and -Wait before continuing
-        Write-Step "在新窗口按全局 mise 配置安装全部工具(含 Java temurin-17、Flutter latest;完成后自动继续)/ Installing all tools from global mise config (incl. Java temurin-17, Flutter latest) in a new window (continues when done)"
+        # 首次运行需下载声明中的全部工具,放独立窗口跑以便观察进度;主脚本等待完成再继续
+        # First run downloads all declared tools; run in its own window and -Wait before continuing
+        Write-Step "在新窗口按全局 mise 配置安装全部声明工具(完成后自动继续)/ Installing all tools declared in global mise config in a new window (continues when done)"
         $miseInstallProc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "mise install" -Wait -PassThru
         if ($miseInstallProc.ExitCode -eq 0) {
             Write-Ok "全局 mise 配置中的工具已安装 / All tools in global mise config installed"
@@ -103,8 +103,6 @@ if (Get-Command mise -ErrorAction SilentlyContinue) {
             Write-Warn "mise install 返回非零(退出码 $($miseInstallProc.ExitCode));可稍后手动运行 mise install 重试 / mise install returned non-zero (exit $($miseInstallProc.ExitCode)); rerun 'mise install' later"
         }
     }
-    # java 注入当前会话 PATH 由 android-clt 块在调用 sdkmanager 前统一处理(java 仅 sdkmanager 消费)
-    # PATH injection happens in the android-clt block right before sdkmanager (java is only consumed there)
 }
 else {
     Write-Warn "mise 不可用,跳过按全局配置安装 / mise unavailable, skipping install from global mise config"
