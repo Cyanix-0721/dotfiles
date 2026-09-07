@@ -1,6 +1,8 @@
 # Dotfiles
 
-个人 dotfiles 配置仓库，使用 [Chezmoi](https://www.chezmoi.io/) 进行跨平台（Windows / Arch Linux）管理。
+个人 dotfiles 配置仓库，使用 [Chezmoi](https://www.chezmoi.io/) 进行跨平台（Windows / Arch Linux / WSL Debian）管理。
+
+> 本文档面向**使用者**（部署与日常使用）。AI 助手与维护者请阅读 [AGENTS.md](./AGENTS.md)：仓库内部机制、平台生效规则、模板与改动规范都在那里。
 
 ## 快速开始
 
@@ -46,7 +48,7 @@ cd ~/.local/share/chezmoi
 ./scripts/wsl-quickstart/00-main.sh
 ```
 
-WSL quickstart 内置 Windows OpenSSH agent 转发（默认启用），让 git 的 SSH 直接调用 Windows 侧 `ssh.exe`（经 KeePassXC 注入的密钥），避免 WSL 侧无法桥接 Windows agent 的问题。脚本会生成 `~/bin/win-ssh` 与 Windows 侧 `.local/bin/win-ssh.ps1`，并在 `~/.bashrc` 注入 `GIT_SSH_COMMAND`。
+WSL quickstart 默认启用 **Windows OpenSSH agent 转发（win-ssh）**：WSL 内 git 借助 Windows OpenSSH agent（KeePassXC 注入的密钥）完成认证，接线由 chezmoi 模板 `dot_gitconfig.tmpl` 自动完成（检测到 `WSL_DISTRO_NAME` 时写入 `core.sshCommand = ~/bin/win-ssh`）。机制细节与排查见 [AGENTS.md](./AGENTS.md)「机制说明：WSL git SSH 转发」。
 
 交互式菜单，可选择安装：
 
@@ -70,25 +72,18 @@ WSL quickstart 内置 Windows OpenSSH agent 转发（默认启用），让 git �
 
 | 脚本 | 用途 |
 | ------ | ------ |
-| `scripts/rsync/rsync.py` | 通用文件同步（Linux/Windows 跨平台，基于 rsync） |
+| `scripts/rsync/rsync.py` | 通用文件同步（Linux/Windows 跨平台，rsync 驱动，在 Linux 端执行；用法见 `scripts/rsync/README.md`） |
 | `scripts/rename/batch_rename_images.py` | 批量重命名图片（按子文件夹前缀，支持名称/时间/大小排序） |
+| `scripts/rename/batch_pack_cbz.py` | 图片文件夹打包为 CBZ 漫画（自动推导目录结构、生成 ComicInfo.xml，依赖 Pillow） |
 | `scripts/reflector/setup_reflector.sh` | Arch 镜像源自动更新（systemd timer） |
-| `scripts/install_uv_dependencies.py` | uv 虚拟环境 + 依赖安装（占位，当前无第三方依赖） |
+| `scripts/install_uv_dependencies.py` | 按 `scripts/.python-version`（3.14）用 uv 建虚拟环境并安装 `requirements*.txt` 依赖（当前为 Pillow） |
 
 ## 代码质量
 
-VS Code 插件覆盖日常检查，无需额外安装命令行工具：
-
-| 语言 | VS Code 插件 | 配置文件 |
-| ------ | ------------- | --------- |
-| Python | Ruff | `ruff.toml` |
-| Bash | ShellCheck（需装 `scoop install shellcheck`） | — |
-| PowerShell | 官方 PowerShell 插件（内置 PSScriptAnalyzer） | — |
-| JSON/MD/YAML | Prettier | `.prettierrc` / `.prettierignore` |
-
-CI（GitHub Actions）在每次 push/PR 自动校验：模板渲染、ruff、shellcheck、PSScriptAnalyzer。
+push/PR 由 GitHub Actions（`.github/workflows/ci.yml`）自动校验：模板渲染、ruff、shellcheck、PSScriptAnalyzer。本地自测命令、编辑器插件与维护规范见 [AGENTS.md](./AGENTS.md)「代码质量」。
 
 ## 相关
 
+- [AGENTS.md](./AGENTS.md) — 面向 AI 助手与维护者的仓库内部规范
 - [Chezmoi 文档](https://www.chezmoi.io/)
 - [Conventional Commits](https://www.conventionalcommits.org/zh-hans/)（提交规范）
