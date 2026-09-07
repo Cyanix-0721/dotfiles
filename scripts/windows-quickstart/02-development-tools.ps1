@@ -82,6 +82,38 @@ $versionManager = @{
 
 Install-ScoopPackages $versionManager
 
+# 1.2 Java (temurin-17) 全局默认：供 android-clt 的 sdkmanager 使用
+# Java (temurin-17) global default via mise: used by android-clt's sdkmanager
+if (Get-Command mise -ErrorAction SilentlyContinue) {
+    # 首次运行需下载整个 JDK，放独立窗口跑以便观察进度；主脚本等待完成再继续
+    # First run downloads the whole JDK; run it in its own window and -Wait before continuing
+    $javaHome = (mise where java 2>$null | Select-Object -First 1)
+    $javaReady = ($LASTEXITCODE -eq 0 -and $javaHome -and (Test-Path "$javaHome\bin\java.exe"))
+    if (-not $javaReady) {
+        Write-Step "在新窗口通过 mise 下载并设置全局 Java temurin-17（完成后自动继续）/ Downloading & setting global Java temurin-17 via mise in a new window (continues when done)"
+        $miseJavaProc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "mise use -g java@temurin-17" -Wait -PassThru
+        if ($miseJavaProc.ExitCode -ne 0) {
+            Write-Warn "mise use -g java@temurin-17 失败（退出码 $($miseJavaProc.ExitCode)）/ mise use -g java@temurin-17 failed (exit $($miseJavaProc.ExitCode))"
+        }
+        $javaHome = (mise where java 2>$null | Select-Object -First 1)
+    }
+    else {
+        # 已安装：mise use -g 仅秒级写全局配置，直接内联即可
+        # Already installed: mise use -g only writes global config (fast), run inline
+        Write-Step "确保 mise 全局默认 Java (temurin-17) / Ensuring global default Java (temurin-17) via mise"
+        mise use -g java@temurin-17
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warn "mise use -g java@temurin-17 失败 / mise use -g java@temurin-17 failed"
+        }
+    }
+    # java 注入当前会话 PATH 由 android-clt 块在调用 sdkmanager 前统一处理（java 仅 sdkmanager 消费）
+    # PATH injection happens in the android-clt block right before sdkmanager (java is only consumed there)
+    Write-Ok "全局默认 Java 已设为 temurin-17 / Global default Java set to temurin-17"
+}
+else {
+    Write-Warn "mise 不可用，跳过全局 Java 设置 / mise unavailable, skipping global Java setup"
+}
+
 # 1.5 Node.js LTS（可选，默认否；AutoYes 时安装最新 LTS 并设为全局默认）
 # Node.js LTS (optional, default no; AutoYes installs latest LTS and sets it as the global default)
 if (Get-Command fnm -ErrorAction SilentlyContinue) {
@@ -273,12 +305,35 @@ Install-ScoopPackages $dbTools
 Write-Header "其他开发工具 / Other Development Tools"
 
 $devTools = @{
-    "jq"     = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
-    "pandoc" = @{ Desc = "Pandoc (文档转换器 / Document converter)"; Global = $true }
-    "adb"    = @{ Desc = "adb (Android Debug Bridge)"; Global = $false }
+    "jq"          = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
+    "pandoc"      = @{ Desc = "Pandoc (文档转换器 / Document converter)"; Global = $true }
+    "android-clt" = @{ Desc = "Android Command Line Tools"; Global = $false }
 }
 
 Install-ScoopPackages $devTools
+
+# android-clt 装完后用 sdkmanager 补装 platform-tools
+# After android-clt, install platform-tools via sdkmanager
+if (Test-ScoopInstalled "android-clt") {
+    # sdkmanager 由 android-clt 的 env_add_path 写入 User PATH，但仅新 shell 生效；
+    # 本会话 PATH 是旧快照（全新机器刚装 android-clt 时尤甚），故先把其 bin 目录补入当前会话 PATH，
+    # 新开的 cmd 窗口才能继承到；license 提示、下载进度在独立窗口可见可交互，主脚本 -Wait 等其结束
+    # sdkmanager's env_add_path only applies to new shells; this session's PATH is a stale snapshot
+    # (especially on fresh installs), so prepend its bin dir here — the spawned cmd window inherits it.
+    # License prompts / progress stay visible in the new window; -Wait until it finishes.
+    $sdkBin = Join-Path $HOME "scoop/apps/android-clt/current/cmdline-tools/latest/bin"
+    if ((Test-Path "$sdkBin\sdkmanager.bat") -and ($env:Path -notlike "*$sdkBin*")) {
+        $env:Path = "$sdkBin;$env:Path"
+    }
+    Write-Step "在新窗口通过 sdkmanager 安装 platform-tools（完成后自动继续）/ Installing platform-tools via sdkmanager in a new window (continues when done)"
+    $sdkProc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "sdkmanager platform-tools" -Wait -PassThru
+    if ($sdkProc.ExitCode -eq 0) {
+        Write-Ok "platform-tools 安装完成 / platform-tools installed"
+    }
+    else {
+        Write-Err "platform-tools 安装失败（退出码 $($sdkProc.ExitCode)；可稍后手动运行：sdkmanager \"platform-tools\"）/ platform-tools installation failed (exit $($sdkProc.ExitCode)); run later manually: sdkmanager \"platform-tools\""
+    }
+}
 
 # AI 开发工具
 Write-Header "AI 开发工具 / AI Development Tools"
