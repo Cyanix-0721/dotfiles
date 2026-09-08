@@ -82,6 +82,32 @@ $versionManager = @{
 
 Install-ScoopPackages $versionManager
 
+# 1.2 按全局 mise 配置安装全部声明工具
+# Install all tools declared in the global mise config.
+# 全局工具声明由 chezmoi 纳管(dot_config/mise/config.toml → ~/.config/mise/config.toml),
+# 此处不逐个指定工具,统一 `mise install` 按声明安装(幂等,只补缺失版本)。
+if (Get-Command mise -ErrorAction SilentlyContinue) {
+    $globalMiseConfig = Join-Path $HOME ".config/mise/config.toml"
+    if (-not (Test-Path $globalMiseConfig)) {
+        Write-Warn "未找到全局 mise 配置 $globalMiseConfig,无法按声明安装。请先运行 chezmoi apply 部署配置后再重试 / Global mise config not found; run 'chezmoi apply' to deploy it, then rerun"
+    }
+    else {
+        # 首次运行需下载声明中的全部工具,放独立窗口跑以便观察进度;主脚本等待完成再继续
+        # First run downloads all declared tools; run in its own window and -Wait before continuing
+        Write-Step "在新窗口按全局 mise 配置安装全部声明工具(完成后自动继续)/ Installing all tools declared in global mise config in a new window (continues when done)"
+        $miseInstallProc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "mise install" -Wait -PassThru
+        if ($miseInstallProc.ExitCode -eq 0) {
+            Write-Ok "全局 mise 配置中的工具已安装 / All tools in global mise config installed"
+        }
+        else {
+            Write-Warn "mise install 返回非零(退出码 $($miseInstallProc.ExitCode));可稍后手动运行 mise install 重试 / mise install returned non-zero (exit $($miseInstallProc.ExitCode)); rerun 'mise install' later"
+        }
+    }
+}
+else {
+    Write-Warn "mise 不可用,跳过按全局配置安装 / mise unavailable, skipping install from global mise config"
+}
+
 # 1.5 Node.js LTS（可选，默认否；AutoYes 时安装最新 LTS 并设为全局默认）
 # Node.js LTS (optional, default no; AutoYes installs latest LTS and sets it as the global default)
 if (Get-Command fnm -ErrorAction SilentlyContinue) {
@@ -273,12 +299,35 @@ Install-ScoopPackages $dbTools
 Write-Header "其他开发工具 / Other Development Tools"
 
 $devTools = @{
-    "jq"     = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
-    "pandoc" = @{ Desc = "Pandoc (文档转换器 / Document converter)"; Global = $true }
-    "adb"    = @{ Desc = "adb (Android Debug Bridge)"; Global = $false }
+    "jq"          = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
+    "pandoc"      = @{ Desc = "Pandoc (文档转换器 / Document converter)"; Global = $true }
+    "android-clt" = @{ Desc = "Android Command Line Tools"; Global = $false }
 }
 
 Install-ScoopPackages $devTools
+
+# android-clt 装完后用 sdkmanager 补装 platform-tools
+# After android-clt, install platform-tools via sdkmanager
+if (Test-ScoopInstalled "android-clt") {
+    # sdkmanager 由 android-clt 的 env_add_path 写入 User PATH，但仅新 shell 生效；
+    # 本会话 PATH 是旧快照（全新机器刚装 android-clt 时尤甚），故先把其 bin 目录补入当前会话 PATH，
+    # 新开的 cmd 窗口才能继承到；license 提示、下载进度在独立窗口可见可交互，主脚本 -Wait 等其结束
+    # sdkmanager's env_add_path only applies to new shells; this session's PATH is a stale snapshot
+    # (especially on fresh installs), so prepend its bin dir here — the spawned cmd window inherits it.
+    # License prompts / progress stay visible in the new window; -Wait until it finishes.
+    $sdkBin = Join-Path $HOME "scoop/apps/android-clt/current/cmdline-tools/latest/bin"
+    if ((Test-Path "$sdkBin\sdkmanager.bat") -and ($env:Path -notlike "*$sdkBin*")) {
+        $env:Path = "$sdkBin;$env:Path"
+    }
+    Write-Step "在新窗口通过 sdkmanager 安装 platform-tools（完成后自动继续）/ Installing platform-tools via sdkmanager in a new window (continues when done)"
+    $sdkProc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "sdkmanager platform-tools" -Wait -PassThru
+    if ($sdkProc.ExitCode -eq 0) {
+        Write-Ok "platform-tools 安装完成 / platform-tools installed"
+    }
+    else {
+        Write-Err "platform-tools 安装失败（退出码 $($sdkProc.ExitCode)；可稍后手动运行：sdkmanager \"platform-tools\"）/ platform-tools installation failed (exit $($sdkProc.ExitCode)); run later manually: sdkmanager \"platform-tools\""
+    }
+}
 
 # AI 开发工具
 Write-Header "AI 开发工具 / AI Development Tools"
