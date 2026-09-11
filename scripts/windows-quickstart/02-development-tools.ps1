@@ -299,9 +299,10 @@ Install-ScoopPackages $dbTools
 Write-Header "其他开发工具 / Other Development Tools"
 
 $devTools = @{
-    "jq"          = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
-    "pandoc"      = @{ Desc = "Pandoc (文档转换器 / Document converter)"; Global = $true }
-    "android-clt" = @{ Desc = "Android Command Line Tools"; Global = $false }
+    "jq"             = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
+    "pandoc"         = @{ Desc = "Pandoc (文档转换器 / Document converter)"; Global = $true }
+    "android-clt"    = @{ Desc = "Android Command Line Tools"; Global = $false }
+    "android-studio" = @{ Desc = "Android Studio"; Global = $false }
 }
 
 Install-ScoopPackages $devTools
