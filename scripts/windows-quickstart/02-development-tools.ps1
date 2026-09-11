@@ -299,35 +299,102 @@ Install-ScoopPackages $dbTools
 Write-Header "其他开发工具 / Other Development Tools"
 
 $devTools = @{
-    "jq"             = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
-    "pandoc"         = @{ Desc = "Pandoc (文档转换器 / Document converter)"; Global = $true }
-    "android-clt"    = @{ Desc = "Android Command Line Tools"; Global = $false }
-    "android-studio" = @{ Desc = "Android Studio"; Global = $false }
+    "jq"     = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
+    "pandoc" = @{ Desc = "Pandoc (文档转换器 / Document converter)"; Global = $true }
 }
 
 Install-ScoopPackages $devTools
 
-# android-clt 装完后用 sdkmanager 补装 platform-tools
-# After android-clt, install platform-tools via sdkmanager
-if (Test-ScoopInstalled "android-clt") {
-    # sdkmanager 由 android-clt 的 env_add_path 写入 User PATH，但仅新 shell 生效；
-    # 本会话 PATH 是旧快照（全新机器刚装 android-clt 时尤甚），故先把其 bin 目录补入当前会话 PATH，
-    # 新开的 cmd 窗口才能继承到；license 提示、下载进度在独立窗口可见可交互，主脚本 -Wait 等其结束
-    # sdkmanager's env_add_path only applies to new shells; this session's PATH is a stale snapshot
-    # (especially on fresh installs), so prepend its bin dir here — the spawned cmd window inherits it.
-    # License prompts / progress stay visible in the new window; -Wait until it finishes.
-    $sdkBin = Join-Path $HOME "scoop/apps/android-clt/current/cmdline-tools/latest/bin"
-    if ((Test-Path "$sdkBin\sdkmanager.bat") -and ($env:Path -notlike "*$sdkBin*")) {
-        $env:Path = "$sdkBin;$env:Path"
+# Android 工具 / Android tools
+Write-Header "Android 工具 / Android Tools"
+
+# 默认只装 adb：scoop 的 adb 包就是 platform-tools，含 adb 与 fastboot，全局可用且不需要 Android SDK。
+# 全选 Y / -AutoYes（整机全量装机）时改装 Android Studio，并用 cmdline-tools 以 --sdk_root 把 SDK
+# 引导到 Studio 的默认根（%LOCALAPPDATA%\Android\Sdk），使 adb / fastboot / sdkmanager 全局可用。
+# Default: install only adb — scoop's adb package IS platform-tools (adb + fastboot), globally usable with no SDK.
+# With 全选 Y / -AutoYes (full machine setup): install Android Studio instead and bootstrap its SDK into the
+# default root (%LOCALAPPDATA%\Android\Sdk) via cmdline-tools + --sdk_root.
+$androidSdk = Join-Path $env:LOCALAPPDATA "Android\Sdk"
+
+if ($Script:AutoYes) {
+    $androidTools = @{
+        "android-studio" = @{ Desc = "Android Studio"; Global = $false }
+        "android-clt"    = @{
+            Desc     = "Android Command Line Tools（仅作 SDK 引导，本步骤末尾卸载）"
+            Global   = $false
+            PostNote = @("仅用于引导 SDK，本步骤结束后会自动卸载 / bootstrap only, removed at the end of this step")
+        }
     }
-    Write-Step "在新窗口通过 sdkmanager 安装 platform-tools（完成后自动继续）/ Installing platform-tools via sdkmanager in a new window (continues when done)"
-    $sdkProc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "sdkmanager platform-tools" -Wait -PassThru
-    if ($sdkProc.ExitCode -eq 0) {
-        Write-Ok "platform-tools 安装完成 / platform-tools installed"
+    Install-ScoopPackages $androidTools
+
+    # Android Studio 不设环境变量、无人值守时也不装组件；这段用 cmdline-tools 补齐这个缺口
+    # Android Studio sets no env vars and installs nothing unattended; fill that gap with cmdline-tools
+    $sdkManager = Join-Path $androidSdk "cmdline-tools\latest\bin\sdkmanager.bat"
+    if (-not (Test-Path $sdkManager)) {
+        $bootstrapSdkManager = Join-Path $HOME "scoop/apps/android-clt/current/cmdline-tools/latest/bin/sdkmanager.bat"
+        if (Test-Path $bootstrapSdkManager) {
+            Write-Step "把 cmdline-tools 装进 SDK 根 / Installing cmdline-tools into the SDK root"
+            # --sdk_root 是关键：不加它，组件会落进 android-clt 自己的包目录，等于长出第二份 SDK
+            # --sdk_root is essential: without it components land in android-clt's own dir (a second SDK)
+            & $bootstrapSdkManager --sdk_root=$androidSdk "cmdline-tools;latest"
+        }
+    }
+
+    if (Test-Path $sdkManager) {
+        Write-Step "安装 platform-tools（adb / fastboot）/ Installing platform-tools"
+        & $sdkManager "platform-tools"
+        Write-Step "接受 SDK 许可证 / Accepting SDK licenses"
+        # --licenses 是交互式的，这里批量喂 y；许可证接受后 Gradle 也能按需自动补装其他平台组件
+        # --licenses is interactive; feed y in bulk. Accepting them also lets Gradle auto-install platforms later
+        "y`ny`ny`ny`ny`ny`ny`ny`n" | & $sdkManager --licenses
     }
     else {
-        Write-Err "platform-tools 安装失败（退出码 $($sdkProc.ExitCode)；可稍后手动运行：sdkmanager \"platform-tools\"）/ platform-tools installation failed (exit $($sdkProc.ExitCode)); run later manually: sdkmanager \"platform-tools\""
+        Write-Warn "未找到 sdkmanager（$($sdkManager)），跳过 SDK 引导 / sdkmanager not found, skipping SDK bootstrap"
     }
+
+    # 卸掉临时的 android-clt（scoop 卸载会 env_rm 清掉它设的 ANDROID_HOME，故环境变量必须在之后设）
+    # Remove the temporary android-clt (its uninstall clears ANDROID_HOME via env_rm → set env vars afterwards)
+    if (Test-ScoopInstalled "android-clt") {
+        Write-Step "卸载临时的 android-clt / Removing the temporary android-clt"
+        scoop uninstall android-clt
+        Reset-ScoopCache
+    }
+
+    [Environment]::SetEnvironmentVariable("ANDROID_HOME", $androidSdk, "User")
+    $androidSdkPaths = @(
+        (Join-Path $androidSdk "platform-tools")
+        (Join-Path $androidSdk "cmdline-tools\latest\bin")
+    )
+    $userPathEntries = @([Environment]::GetEnvironmentVariable("Path", "User") -split ';' | Where-Object { $_ })
+    foreach ($entry in $androidSdkPaths) {
+        if ($userPathEntries -notcontains $entry) { $userPathEntries += $entry }
+    }
+    [Environment]::SetEnvironmentVariable("Path", ($userPathEntries -join ';'), "User")
+
+    # 当前会话也立即生效（后续步骤、同窗口验证不必新开终端）
+    # Apply to the current session as well (no need to reopen a terminal for the rest of this run)
+    foreach ($entry in $androidSdkPaths) {
+        if ($env:Path -notlike "*$entry*") { $env:Path = "$entry;$env:Path" }
+    }
+    Write-Ok "ANDROID_HOME = $($androidSdk)（adb / fastboot / sdkmanager 已全局可用）"
+}
+else {
+    # 默认分支只装 scoop 的 adb；若这台机器已有 SDK 自带的 adb，先提醒别装重
+    # Default branch installs scoop's adb only; warn if an SDK-provided adb already exists on this machine
+    if (Test-Path (Join-Path $androidSdk "platform-tools\adb.exe")) {
+        Write-Warn "检测到已有 Android SDK 自带的 adb（$($androidSdk)\platform-tools）；再装 scoop 的 adb 会有两份不同版本 → 'adb server version mismatch'，建议只留一份 / an SDK-provided adb already exists; a second version triggers 'adb server version mismatch' — keep only one"
+    }
+    $androidTools = @{
+        "adb" = @{
+            Desc     = "adb / fastboot (platform-tools)"
+            Global   = $false
+            PostNote = @(
+                "adb / fastboot 已全局可用，不需要 Android SDK / adb and fastboot are globally available; no SDK required"
+                "以后若要在本机做 Android 开发，请先 scoop uninstall adb 再装 Android Studio——两份 platform-tools 版本不同会报 'adb server version mismatch' / For Android development later, remove this package first: two platform-tools versions cause 'adb server version mismatch'"
+            )
+        }
+    }
+    Install-ScoopPackages $androidTools
 }
 
 # AI 开发工具
