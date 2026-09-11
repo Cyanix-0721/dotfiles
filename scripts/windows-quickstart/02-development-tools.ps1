@@ -348,14 +348,6 @@ $aiTools = @{
             "WSL 中使用时：设置 → 配置目录覆盖 → 指向 WSL 配置目录 / For WSL: Settings → config directory override → point to the WSL config dir"
         )
     }
-    "codex"     = @{
-        Desc     = "codex (OpenAI Codex CLI，终端 AI 编程代理 / OpenAI Codex CLI, terminal AI coding agent)"
-        Global   = $false
-        PostNote = @(
-            "首次使用需登录 / First run: codex login"
-            "多账号 / 供应商切换可用 cc-switch / Switch accounts or providers with cc-switch"
-        )
-    }
 }
 
 Install-ScoopPackages $aiTools
