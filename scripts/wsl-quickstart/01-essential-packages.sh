@@ -51,6 +51,7 @@ sudo apt-get install -y --no-install-recommends \
 	subversion \
 	unzip \
 	zoxide \
+	xdg-utils \
 	podman \
 	podman-compose
 ok "命令行工具安装完成 / Command line tools installed"
