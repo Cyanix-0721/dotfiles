@@ -45,8 +45,8 @@ abbr -a lsd 'eza -D --icons'
 # -----------------------------------------------------------------------------
 # Search tools (ripgrep, fd)
 # -----------------------------------------------------------------------------
-abbr -a grep rg # ripgrep
-abbr -a find fd # fd-find
+abbr -a grep rg     # ripgrep
+abbr -a find fd     # fd-find
 abbr -a rgi 'rg -i' # case-insensitive ripgrep
 abbr -a fdi 'fd -i' # case-insensitive fd
 
@@ -86,7 +86,9 @@ abbr -a p python
 abbr -a p3 python3
 abbr -a ipy ipython
 abbr -a n node
-abbr -a nr 'npm run'
+abbr -a pi 'pnpm install'
+abbr -a pr 'pnpm run build'
+abbr -a dsh 'npx @deepseek-ai/dsh web'
 
 # -----------------------------------------------------------------------------
 # Fish shell management
