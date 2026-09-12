@@ -11,6 +11,9 @@ fish_add_path ~/.local/bin
 fish_add_path "$XDG_DATA_HOME/fnm"
 fish_add_path ~/.local/share/fnm
 
-# pnpm 官方 standalone 脚本默认安装目录（$PNPM_HOME 默认 ~/.local/share/pnpm）
-# pnpm official standalone installer default dir ($PNPM_HOME defaults to ~/.local/share/pnpm)
-fish_add_path ~/.local/share/pnpm
+# pnpm 官方 standalone 脚本默认安装目录（$PNPM_HOME 默认 ~/.local/share/pnpm）；
+# 可执行文件 pnpm/pn/pnpx/pnx 位于其 bin/ 子目录，fish 补全由 13-pnpm.fish 提供
+# pnpm official standalone installer default dir ($PNPM_HOME defaults to ~/.local/share/pnpm);
+# the CLIs (pnpm/pn/pnpx/pnx) live in its bin/ subdir, fish completions come from 13-pnpm.fish
+set -gx PNPM_HOME "$HOME/.local/share/pnpm"
+fish_add_path "$PNPM_HOME/bin"

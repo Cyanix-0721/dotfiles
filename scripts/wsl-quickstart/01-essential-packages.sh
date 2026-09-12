@@ -135,10 +135,13 @@ else
 	# The glibc build needs libatomic.so.1 (normally present on full distros; install if missing)
 	sudo apt-get install -y --no-install-recommends libatomic1 >/dev/null 2>&1 || true
 	curl -fsSL https://get.pnpm.io/install.sh | sh -
-	# standalone 默认装到 ~/.local/share/pnpm；本次会话立即可用，fish 侧由 01-env.fish 的 fish_add_path 提供
-	# Default install dir is ~/.local/share/pnpm; exported for this session, fish PATH comes from 01-env.fish
-	export PATH="$HOME/.local/share/pnpm:$PATH"
-	ok "pnpm 安装完成（~/.local/share/pnpm）/ pnpm installed (~/.local/share/pnpm)"
+	# standalone 默认装到 ~/.local/share/pnpm（PNPM_HOME），CLI 位于其 bin/ 子目录；
+	# 本次会话立即可用，fish 侧由 chezmoi 管理的 dot_config/fish/conf.d/01-env.fish 提供
+	# Default dir is ~/.local/share/pnpm (PNPM_HOME) with CLIs in its bin/ subdir;
+	# exported for this session, the fish PATH comes from the chezmoi-managed
+	# dot_config/fish/conf.d/01-env.fish
+	export PATH="$HOME/.local/share/pnpm/bin:$PATH"
+	ok "pnpm 安装完成（~/.local/share/pnpm/bin）/ pnpm installed (~/.local/share/pnpm/bin)"
 fi
 
 # mise：使用官方安装脚本（mise.run，自带 self-update）
@@ -161,7 +164,7 @@ BASHRC="$HOME/.bashrc"
 if [ -f "$BASHRC" ] && grep -qF "$MISE_ACT_BASH" "$BASHRC"; then
 	ok "bash 已配置 mise 激活 / bash already has mise activation"
 else
-	printf '\n# mise activate (added by wsl-quickstart)\n%s\n' "$MISE_ACT_BASH" >> "$BASHRC"
+	printf '\n# mise activate (added by wsl-quickstart)\n%s\n' "$MISE_ACT_BASH" >>"$BASHRC"
 	ok "已追加 mise 激活行到 ~/.bashrc / mise activation appended to ~/.bashrc"
 fi
 
