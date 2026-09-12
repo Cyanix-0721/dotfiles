@@ -88,7 +88,7 @@ abbr -a ipy ipython
 abbr -a n node
 abbr -a pi 'pnpm install'
 abbr -a pr 'pnpm run build'
-abbr -a dsh 'npx @deepseek-ai/dsh web'
+abbr -a dsh 'npx @deepseek-ai/dsh'
 
 # -----------------------------------------------------------------------------
 # Fish shell management
