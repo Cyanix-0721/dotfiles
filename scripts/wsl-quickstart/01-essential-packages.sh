@@ -179,6 +179,82 @@ else
 	ok "codex 安装完成（~/.local/bin/codex，数据在 ~/.codex）/ codex installed (~/.local/bin/codex, data in ~/.codex)"
 fi
 
+# DSH：DeepSeek Harness 及插件市场（可选，默认否；AUTO_YES 时安装）
+# 依赖上面的 Node LTS 与 pnpm；插件装在 ~/.dsh/profiles/<profile>/ 下
+# DSH: DeepSeek Harness plus the plugin market (optional, default no; AUTO_YES installs it)
+# Depends on the Node LTS and pnpm above; plugins live under ~/.dsh/profiles/<profile>/
+step "安装 DSH 与插件市场 / Installing DSH with the plugin market"
+if confirm_install 0 "是否安装 DSH（含插件市场 dshmarket）？(y/N) / Install DSH with dshmarket?"; then
+	if ! command -v node >/dev/null 2>&1; then
+		warn "未找到 node，跳过 DSH 安装（请先安装 Node.js LTS）/ node not found, skipping DSH (install Node.js LTS first)"
+	else
+		# npx 会自动拉取最新的 @deepseek-ai/dsh 并执行；插件走 profile web
+		# npx fetches the latest @deepseek-ai/dsh and runs it; the plugin targets profile web
+		if npx --yes @deepseek-ai/dsh plugin --profile web add dshmarket; then
+			ok "DSH 与插件市场安装完成 / DSH and dshmarket installed"
+		else
+			warn "DSH 插件市场安装失败，请稍后手动重试 / dshmarket install failed, retry manually later"
+			note "  npx @deepseek-ai/dsh plugin --profile web add dshmarket"
+		fi
+
+		# skills 软链接：把 Windows 侧 ~/.agents/skills 接到 ~/.dsh/skills，
+		# 让 WSL 内的 DSH 直接复用 Chezmoi/ccswitch 在 Windows 上维护的技能库
+		# Skills symlink: link the Windows ~/.agents/skills into ~/.dsh/skills so the
+		# WSL-side DSH reuses the skill library maintained on Windows by chezmoi/ccswitch
+		step "链接 Windows 技能库到 DSH / Linking the Windows skills library into DSH"
+		# 首选 powershell.exe 解析 Windows 用户目录；不可用时（interop 被禁用等）
+		# 回退到常见路径探测，命中后交由用户决定是否采用
+		# Prefer resolving the Windows profile via powershell.exe; when that is
+		# unavailable (interop disabled) fall back to probing common paths and let
+		# the user decide whether to use the one found
+		WIN_HOME="$(get_win_user_home 2>/dev/null)" || WIN_HOME=""
+		if [ -z "$WIN_HOME" ]; then
+			warn "无法解析 Windows 用户目录，尝试探测常见路径 / could not resolve the Windows profile, probing common paths"
+			# 通配符已含 Administrator，故只遍历通配结果并逐个去重，避免同一目录重复询问
+			# The glob already covers Administrator; iterate it alone and dedupe seen
+			# candidates so the same directory is never prompted twice
+			seen_cands=""
+			for cand in /mnt/c/Users/*; do
+				[ -d "$cand/.agents/skills" ] || continue
+				case " $seen_cands " in
+				*" $cand "*) continue ;;
+				esac
+				seen_cands="$seen_cands $cand"
+				note "  发现候选技能库 / candidate: $cand/.agents/skills"
+				if confirm_install 0 "是否使用该技能库？(y/N) / Use this skills library?"; then
+					WIN_HOME="$cand"
+					break
+				else
+					note "  已跳过该候选 / candidate skipped"
+				fi
+			done
+		fi
+		if [ -n "$WIN_HOME" ]; then
+			win_skills="$WIN_HOME/.agents/skills"
+			dsh_skills="$HOME/.dsh/skills"
+			if [ ! -d "$win_skills" ]; then
+				warn "Windows 侧技能库不存在，跳过链接 / Windows skills dir missing, skipping link"
+				note "  期望路径 / expected: $win_skills"
+			elif [ -L "$dsh_skills" ]; then
+				ok "$HOME/.dsh/skills 已是符号链接，跳过 / $HOME/.dsh/skills is already a symlink, skipping"
+			elif [ -e "$dsh_skills" ]; then
+				# 已存在实体目录时绝不覆盖，避免丢用户已装的技能
+				# Never clobber an existing real directory: it may hold locally installed skills
+				warn "$HOME/.dsh/skills 已存在实体目录，保留原样不覆盖 / $HOME/.dsh/skills exists as a real directory, left untouched"
+				note "  如需改为链接请先手动备份并移除 / back it up and remove it manually to switch to a symlink"
+			else
+				mkdir -p "$HOME/.dsh"
+				ln -s "$win_skills" "$dsh_skills"
+				ok "已链接 $dsh_skills -> $win_skills / skills library linked"
+			fi
+		else
+			warn "未找到可用的 Windows 技能库，跳过链接 / no usable Windows skills library found, skipping link"
+			note "  可稍后手动链接 / link it manually later:"
+			note "  ln -s /mnt/c/Users/<你>/.agents/skills \$HOME/.dsh/skills"
+		fi
+	fi
+fi
+
 # 手动安装（官方脚本）工具的更新命令提示
 # Update commands for manually-installed (official-script) tools
 header "手动安装工具 / Manually-Installed Tools"
