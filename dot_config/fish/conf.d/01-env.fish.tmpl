@@ -1,7 +1,17 @@
 # 基础环境变量配置
 set -Ux EDITOR nvim
 set -Ux BROWSER zen-browser
+{{- if not (env "WSL_DISTRO_NAME") }}
+# SSH agent：仅原生 Linux（如 Arch）使用，指向 systemd 的 ssh-agent socket。
+# WSL 下不设置：git 经 core.sshCommand = ~/bin/win-ssh 转发到 Windows 的 ssh.exe，
+# 由 Windows 侧的 KeePassXC SSH agent 提供密钥；此处若设置，WSL 的 socket 路径会
+# 被继承给 ssh.exe 并导致其找不到 agent（win-ssh.ps1 会主动清除该变量）。
+# SSH agent: native Linux only (e.g. Arch), pointing at the systemd ssh-agent socket.
+# Unset under WSL: git goes through core.sshCommand = ~/bin/win-ssh to the Windows
+# ssh.exe, whose keys come from the Windows-side KeePassXC SSH agent. Setting it here
+# would leak a Linux socket path into ssh.exe (win-ssh.ps1 clears it defensively).
 set -gx SSH_AUTH_SOCK "$XDG_RUNTIME_DIR/ssh-agent.socket"
+{{- end }}
 
 # 添加本地二进制目录到 PATH（用户级工具，如 uv、codex 的安装位置）
 fish_add_path ~/.local/bin
