@@ -17,3 +17,15 @@ fish_add_path ~/.local/share/fnm
 # the CLIs (pnpm/pn/pnpx/pnx) live in its bin/ subdir, fish completions come from 13-pnpm.fish
 set -gx PNPM_HOME "$HOME/.local/share/pnpm"
 fish_add_path "$PNPM_HOME/bin"
+{{- if env "WSL_DISTRO_NAME" }}
+{{- $winHome := output "powershell.exe" "-NoProfile" "-NonInteractive" "-Command" "[Environment]::GetFolderPath('UserProfile')" | trim | replace "\\" "/" | replace "C:" "/mnt/c" }}
+# DSH 技能库：指向 Windows 侧由 chezmoi/ccswitch 维护的共享技能目录。
+# DSH 的 skill-filesystem 读取 $DSH_AGENTS_HOME/skills（rank 500），故设此变量后
+# 无需在 ~/.dsh/skills 建软链接；~/.dsh/skills（rank 400）保持空闲，可放 WSL 本地技能。
+# 仅 WSL 需要：原生 Linux 下不存在 /mnt/c 挂载，读该路径无意义。
+# DSH skill library: points at the Windows-side shared skills maintained by
+# chezmoi/ccswitch. DSH's skill-filesystem reads $DSH_AGENTS_HOME/skills (rank 500), so
+# no symlink at ~/.dsh/skills is needed; that path (rank 400) stays free for WSL-local
+# skills. WSL-only: a native Linux box has no /mnt/c mount to read from.
+set -gx DSH_AGENTS_HOME "{{ $winHome }}/.agents"
+{{- end }}

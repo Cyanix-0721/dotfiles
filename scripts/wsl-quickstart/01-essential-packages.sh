@@ -156,20 +156,6 @@ else
 	ok "mise 安装完成（~/.local/bin/mise）/ mise installed (~/.local/bin/mise)"
 fi
 
-# bash 激活：官方推荐写法，追加到 ~/.bashrc（幂等）
-# bash activation: official recommended line, appended to ~/.bashrc (idempotent)
-# fish 激活由 chezmoi 管理的 dot_config/fish/conf.d/11-mise.fish 提供，这里无需重复
-# fish activation is provided by the chezmoi-managed dot_config/fish/conf.d/11-mise.fish
-step "配置 mise bash 激活 / Configuring mise bash activation"
-MISE_ACT_BASH='eval "$(mise activate bash)"'
-BASHRC="$HOME/.bashrc"
-if [ -f "$BASHRC" ] && grep -qF "$MISE_ACT_BASH" "$BASHRC"; then
-	ok "bash 已配置 mise 激活 / bash already has mise activation"
-else
-	printf '\n# mise activate (added by wsl-quickstart)\n%s\n' "$MISE_ACT_BASH" >>"$BASHRC"
-	ok "已追加 mise 激活行到 ~/.bashrc / mise activation appended to ~/.bashrc"
-fi
-
 # codex：使用官方独立安装器（原生 Rust 二进制，无需 Node）
 # codex: install via the official standalone installer (native Rust binary, no Node needed)
 step "安装 codex（官方独立安装器）/ Installing codex (official standalone installer)"
@@ -198,60 +184,32 @@ if confirm_install 0 "是否安装 DSH（含插件市场 dshmarket）？(y/N) / 
 			note "  npx @deepseek-ai/dsh plugin --profile web add dshmarket"
 		fi
 
-		# skills 软链接：把 Windows 侧 ~/.agents/skills 接到 ~/.dsh/skills，
-		# 让 WSL 内的 DSH 直接复用 Chezmoi/ccswitch 在 Windows 上维护的技能库
-		# Skills symlink: link the Windows ~/.agents/skills into ~/.dsh/skills so the
-		# WSL-side DSH reuses the skill library maintained on Windows by chezmoi/ccswitch
-		step "链接 Windows 技能库到 DSH / Linking the Windows skills library into DSH"
-		# 首选 powershell.exe 解析 Windows 用户目录；不可用时（interop 被禁用等）
-		# 回退到常见路径探测，命中后交由用户决定是否采用
-		# Prefer resolving the Windows profile via powershell.exe; when that is
-		# unavailable (interop disabled) fall back to probing common paths and let
-		# the user decide whether to use the one found
-		WIN_HOME="$(get_win_user_home 2>/dev/null)" || WIN_HOME=""
-		if [ -z "$WIN_HOME" ]; then
-			warn "无法解析 Windows 用户目录，尝试探测常见路径 / could not resolve the Windows profile, probing common paths"
-			# 通配符已含 Administrator，故只遍历通配结果并逐个去重，避免同一目录重复询问
-			# The glob already covers Administrator; iterate it alone and dedupe seen
-			# candidates so the same directory is never prompted twice
-			seen_cands=""
-			for cand in /mnt/c/Users/*; do
-				[ -d "$cand/.agents/skills" ] || continue
-				case " $seen_cands " in
-				*" $cand "*) continue ;;
-				esac
-				seen_cands="$seen_cands $cand"
-				note "  发现候选技能库 / candidate: $cand/.agents/skills"
-				if confirm_install 0 "是否使用该技能库？(y/N) / Use this skills library?"; then
-					WIN_HOME="$cand"
-					break
-				else
-					note "  已跳过该候选 / candidate skipped"
-				fi
-			done
-		fi
-		if [ -n "$WIN_HOME" ]; then
-			win_skills="$WIN_HOME/.agents/skills"
-			dsh_skills="$HOME/.dsh/skills"
-			if [ ! -d "$win_skills" ]; then
-				warn "Windows 侧技能库不存在，跳过链接 / Windows skills dir missing, skipping link"
-				note "  期望路径 / expected: $win_skills"
-			elif [ -L "$dsh_skills" ]; then
-				ok "$HOME/.dsh/skills 已是符号链接，跳过 / $HOME/.dsh/skills is already a symlink, skipping"
-			elif [ -e "$dsh_skills" ]; then
-				# 已存在实体目录时绝不覆盖，避免丢用户已装的技能
-				# Never clobber an existing real directory: it may hold locally installed skills
-				warn "$HOME/.dsh/skills 已存在实体目录，保留原样不覆盖 / $HOME/.dsh/skills exists as a real directory, left untouched"
-				note "  如需改为链接请先手动备份并移除 / back it up and remove it manually to switch to a symlink"
-			else
-				mkdir -p "$HOME/.dsh"
-				ln -s "$win_skills" "$dsh_skills"
-				ok "已链接 $dsh_skills -> $win_skills / skills library linked"
-			fi
+		# 技能库接线：由 chezmoi 管理的 dot_config/fish/conf.d/01-env.fish.tmpl 负责，
+		# 它在 WSL 下渲染出 DSH_AGENTS_HOME 指向 Windows 侧 ~/.agents，
+		# DSH 的 skill-filesystem 据此扫描 <DSH_AGENTS_HOME>/skills（rank 500）。
+		# 这里只做校验与提示，不改写任何文件，避免与 chezmoi 争抢同一份配置。
+		# Skill wiring is owned by the chezmoi-managed
+		# dot_config/fish/conf.d/01-env.fish.tmpl, which renders DSH_AGENTS_HOME at the
+		# Windows-side ~/.agents under WSL; DSH's skill-filesystem then scans
+		# <DSH_AGENTS_HOME>/skills (rank 500). This block only verifies and advises —
+		# it never writes files, so chezmoi stays the single source of truth.
+		step "检查 DSH 技能库配置 / Checking the DSH skill library wiring"
+		if [ -f "$HOME/.config/fish/conf.d/01-env.fish" ] &&
+			grep -q "DSH_AGENTS_HOME" "$HOME/.config/fish/conf.d/01-env.fish"; then
+			ok "fish 已配置 DSH_AGENTS_HOME（chezmoi 管理）/ DSH_AGENTS_HOME configured in fish"
 		else
-			warn "未找到可用的 Windows 技能库，跳过链接 / no usable Windows skills library found, skipping link"
-			note "  可稍后手动链接 / link it manually later:"
-			note "  ln -s /mnt/c/Users/<你>/.agents/skills \$HOME/.dsh/skills"
+			warn "fish 尚未配置 DSH_AGENTS_HOME / DSH_AGENTS_HOME not yet configured in fish"
+			note "  请执行 chezmoi apply 应用模板 / run 'chezmoi apply' to render the template"
+			note "  或手动确认 ~/.config/fish/conf.d/01-env.fish / or inspect that file"
+		fi
+		# 旧版脚本曾在 ~/.dsh/skills 建软链接；若残留则提示清理，因为软链接会占住
+		# rank 400 的位置，使 WSL 本地技能无处安放。
+		# Older versions symlinked ~/.dsh/skills; flag a leftover, since that link occupies
+		# the rank-400 slot and leaves no room for WSL-local skills.
+		if [ -L "$HOME/.dsh/skills" ]; then
+			warn "发现遗留的 ~/.dsh/skills 软链接 / leftover ~/.dsh/skills symlink found"
+			note "  该位置现由 rank 400 使用，建议移除 / that slot is rank 400 now; consider removing it:"
+			note "  rm \"$HOME/.dsh/skills\""
 		fi
 	fi
 fi
