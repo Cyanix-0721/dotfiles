@@ -28,6 +28,7 @@ sudo apt-get install -y --no-install-recommends \
 	bat \
 	btop \
 	bubblewrap \
+	build-essential \
 	git-delta \
 	eza \
 	fastfetch \
