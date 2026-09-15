@@ -401,12 +401,14 @@ else {
 Write-Header "AI 开发工具 / AI Development Tools"
 
 $aiTools = @{
-    "ollama"    = @{
-        Desc     = "ollama (本地大模型运行器 / Local LLM runner)"
+    "lmstudio"  = @{
+        Desc     = "lmstudio (本地大模型运行器 / Local LLM runner)"
         Global   = $false
         PostNote = @(
-            "启动服务 / Start the server: ollama serve"
-            "下载模型示例 / Pull a model e.g.: ollama pull qwen3:8b"
+            "注意 CLI 名为 lms，不是 lmstudio / Note the CLI is 'lms', not 'lmstudio'"
+            "启动服务 / Start the server: lms server start（状态 lms server status，停止 lms server stop）"
+            "下载模型 / Pull a model: lms get qwen3-8b（已下载 lms ls，已加载 lms ps）"
+            "首次使用 lms 前需先启动一次 LM Studio 图形界面（依赖其守护进程）/ Launch the LM Studio app once before using lms (it needs the daemon)"
         )
     }
     "cc-switch" = @{
