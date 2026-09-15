@@ -85,13 +85,27 @@
 2. `env` 必须**显式声明**：MCP 子进程环境会清洗掉匹配 `/KEY|PASSWORD|SECRET|TOKEN/i`
    的变量，只有显式赋值才传得进去。
 
-## 3. 调研纪律
+## 3. 密钥与隐私（工具输出会原样落盘）
+**会话日志不脱敏**：`grep` 回显、`cat` 内容等工具输出以明文持久化到
+`~/.dsh/sessions/<workspace>/session-<id>/session.v3.jsonl.zstd`（多帧 zstd，
+需按 magic `28 b5 2f fd` 逐帧解压）。DSH 无内置拦截：`better-sidebar` 的遮蔽仅渲染层
+（源码自述 "display-only"），`tools/result` 是 `emit` 而非 `waterfall`，挂不上改写钩子。
+**密钥进入工具输出即视为已失陷，须轮换。**
+
+- **搜密钥类内容**（`.env`、`*credential*`、`*secret*`、`*token*`）：用 `grep -rl`
+  只列文件名，或 `grep -c` 只数次数；**不要用 `grep -r` 回显匹配行**。
+- **读凭据**：只报形态（长度、前缀、是否等于旧值），不复述值，不写进报告或文档。
+- **写示例**：用 `fc-CANARY-NOT-A-REAL-KEY` 这类一眼假的值，避免扫描器误报。
+- **配置里不放字面量密钥**：用 `!!js process.env.X` + `~/.dsh/.env`（600）。
+  注意 `${VAR}` **不是** DSH 语法（会当字面字符串传给 MCP），凭据库也不进 `process.env`。
+
+## 4. 调研纪律
 - **只认一手来源**：官方文档、源码、RFC/spec、第一方 API；博客/StackOverflow 仅作线索不作引用。
 - **版本敏感事实**须注明 `library@version`，不沿用训练数据旧版本。
 - **长调研用 background agent 执行，主会话继续**；后台 worker **不得再派生 agent** 或再调用本工作流。
 - 结论落盘 `docs/notes/<topic>.md`（无目录则建），每条结论附 URL，并告知用户位置。
 
-## 4. Git 认证链路（WSL 约束）
+## 5. Git 认证链路（WSL 约束）
 - git 认证**不经过 WSL ssh agent**（`SSH_AUTH_SOCK` 在 WSL 下是死变量，且已由
   chezmoi 模板条件化移除）。
 - 链路：`core.sshCommand → ~/bin/win-ssh → powershell → win-ssh.ps1 →
@@ -102,7 +116,7 @@
 - **注意**：`git push` 在 WSL 侧需 `GIT_SSH_COMMAND="$HOME/bin/win-ssh"`，
   因为仓库的 `core.sshCommand` 若为 Windows 路径形式在 WSL 下会 `cannot exec`。
 
-## 5. 用户偏好
+## 6. 用户偏好
 - **不直接改动用户的 Codex / WSL / chezmoi 环境**——安装/配置类操作**只给命令**，由用户执行。
   （例外：用户当回合明确要求代执行。）
 - **避免显式/被托管的 systemd unit**——用户偏好隐式；agent socket 命名以 Arch 习惯
@@ -113,7 +127,7 @@
 - **本文件（`~/.dsh/AGENTS.md`）由 chezmoi 管理**（源为 `dot_dsh/AGENTS.md`）。
   改动本文件后，提醒用户提交并同步 chezmoi 仓库，否则变更只存在于本机。
 
-## 6. 生效优先级（强 → 弱）
+## 7. 生效优先级（强 → 弱）
 1. **用户当回合指令** — 可覆盖 2/3/4 的行为细节；不得违反 §5/§6 的认证链路与用户偏好硬约束。
 2. **项目根目录 `AGENTS.md`**（若存在）— 最具体，项目内优先于全局。
 3. **本文件（全局）** — 通用环境约束与 skills 清单。
