@@ -69,4 +69,12 @@ config.mouse_bindings = {{
     action = 'OpenLinkAtMouseCursor'
 }}
 
+-- Windows: WezTerm 注入的 SSH_AUTH_SOCK 指向不存在的 unix socket，
+-- 反而遮蔽真实的 Windows agent（走命名管道 \\.\pipe\openssh-ssh-agent），
+-- 导致 ssh-add / ssh 报 "No such file or directory"。仅 Windows 关闭；
+-- Linux/macOS 保留该功能（mux 可跨端转发 agent）。
+if is_windows then
+    config.mux_enable_ssh_agent = false
+end
+
 return config
