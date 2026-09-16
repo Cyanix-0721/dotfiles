@@ -29,6 +29,7 @@ sudo apt-get install -y --no-install-recommends \
 	btop \
 	bubblewrap \
 	build-essential \
+	chromium \
 	git-delta \
 	eza \
 	fastfetch \
