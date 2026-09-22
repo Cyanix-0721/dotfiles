@@ -99,28 +99,28 @@ else
 	ok "fnm 安装完成 / fnm installed"
 fi
 
-# Node.js：可选安装最新 LTS（默认否）；AUTO_YES 时安装最新 LTS 并设为全局默认
-# Node.js: optionally install latest LTS (default no); AUTO_YES installs latest LTS and sets it as global default
-step "安装 Node.js LTS（fnm）/ Installing Node.js LTS (fnm)"
+# Node.js：可选安装最新版（默认否）；AUTO_YES 时安装最新版并设为全局默认
+# Node.js: optionally install latest version (default no); AUTO_YES installs latest version and sets it as global default
+step "安装 Node.js Latest（fnm）/ Installing Node.js Latest (fnm)"
 export PATH="${XDG_DATA_HOME:-$HOME/.local/share}/fnm:$HOME/.fnm:$PATH"
 if command -v fnm >/dev/null 2>&1; then
 	# 本次会话加载 fnm（fish 集成由 12-fnm.fish 提供）
 	# Load fnm for this session (fish integration lives in 12-fnm.fish)
 	eval "$(fnm env --use-on-cd --shell bash)"
-	# 询问是否安装最新 LTS（默认否，回车跳过）；按项目切换由 12-fnm.fish 的 --use-on-cd 提供（读取 .node-version / .nvmrc）
-	# Ask whether to install latest LTS (default no); per-project switching handled by --use-on-cd in 12-fnm.fish (.node-version / .nvmrc)
-	if confirm_install 0 "是否安装最新 LTS Node.js？(y/N) / Install latest LTS Node.js?"; then
-		fnm install --lts
-		ok "最新 LTS Node.js 安装完成 / Latest LTS Node.js installed"
+	# 询问是否安装最新版（默认否，回车跳过）；按项目切换由 12-fnm.fish 的 --use-on-cd 提供（读取 .node-version / .nvmrc）
+	# Ask whether to install latest version (default no); per-project switching handled by --use-on-cd in 12-fnm.fish (.node-version / .nvmrc)
+	if confirm_install 0 "是否安装最新版 Node.js？(y/N) / Install latest Node.js?"; then
+		fnm install --latest
+		ok "最新版 Node.js 安装完成 / Latest Node.js installed"
 		# 默认非全局；是否设为全局默认同样可选（AUTO_YES 时自动设为全局默认）
 		# Global default is off by default; setting it is also optional (AUTO_YES sets it automatically)
-		if confirm_install 0 "是否将最新 LTS 设为全局默认？(y/N) / Set latest LTS as global default?"; then
-			lts_version="$(fnm list 2>/dev/null | grep 'lts-latest' | head -n1 | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
-			if [ -n "$lts_version" ]; then
-				fnm default "$lts_version"
-				ok "已将 Node.js $lts_version 设为全局默认 / Node.js $lts_version set as global default"
+		if confirm_install 0 "是否将最新版设为全局默认？(y/N) / Set latest as global default?"; then
+			latest_version="$(fnm list 2>/dev/null | grep -v 'system' | head -n1 | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
+			if [ -n "$latest_version" ]; then
+				fnm default "$latest_version"
+				ok "已将 Node.js $latest_version 设为全局默认 / Node.js $latest_version set as global default"
 			else
-				warn "未能识别 LTS 版本，跳过设为全局默认 / Could not identify LTS version, skipping global default"
+				warn "未能识别最新版本，跳过设为全局默认 / Could not identify latest version, skipping global default"
 			fi
 		fi
 	fi
