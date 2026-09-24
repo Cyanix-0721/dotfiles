@@ -102,7 +102,7 @@
 ## 4. 调研纪律
 - **只认一手来源**：官方文档、源码、RFC/spec、第一方 API；博客/StackOverflow 仅作线索不作引用。
 - **版本敏感事实**须注明 `library@version`，不沿用训练数据旧版本。
-- **长调研用 background agent 执行，主会话继续**；后台 worker **不得再派生 agent** 或再调用本工作流。
+- **长调研用 background agent 执行，主会话继续**。
 - 结论落盘 `docs/notes/<topic>.md`（无目录则建），每条结论附 URL，并告知用户位置。
 
 ## 5. Git 认证链路（WSL 约束）
