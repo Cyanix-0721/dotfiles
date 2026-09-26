@@ -11,6 +11,12 @@
 - 任何用户任务**先按 Superpowers 协议匹配 skill**（brainstorming → writing-plans →
   executing-plans → TDD → debugging → code-review → verification），再决定具体动作。
 - 本文件不重复列 Superpowers 自带的 skill；以插件注入为准。本文件只补环境约束与本地 skills 清单。
+- **任务面板纪律**：任何多步任务，开工第一件事用 `todo_write`（由 `dsh-base` 默认挂载的
+  `@deepseek-ai/dsh-tool-todo` 提供）把**全量**步骤写成清单，**每完成一步立刻标 `completed`，
+  不得留到收尾一次性结账**。依据 = 上述 `executing-plans` 步骤 2 逐字要求「针对每项任务：
+  1. 标记为 `in_progress` … 4. 标记为 `completed`」。**为什么必须全程维护**：面板快照跨上下文
+  压缩持久（整表替换、无部分更新、无回读工具），是压缩后**唯一**能自证进度的载体 ——
+  攒着不更新，用户看到的就是「任务卡住」。
 
 ## 1. 本地 skills 清单
 技能来自两个来源，合并注入（共 38 个）：
