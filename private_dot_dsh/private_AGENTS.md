@@ -11,6 +11,12 @@
 - 任何用户任务**先按 Superpowers 协议匹配 skill**（brainstorming → writing-plans →
   executing-plans → TDD → debugging → code-review → verification），再决定具体动作。
 - 本文件不重复列 Superpowers 自带的 skill；以插件注入为准。本文件只补环境约束与本地 skills 清单。
+- **任务面板纪律**：任何多步任务，开工第一件事用 `todo_write`（由 `dsh-base` 默认挂载的
+  `@deepseek-ai/dsh-tool-todo` 提供）把**全量**步骤写成清单，**每完成一步立刻标 `completed`，
+  不得留到收尾一次性结账**。依据 = 上述 `executing-plans` 步骤 2 逐字要求「针对每项任务：
+  1. 标记为 `in_progress` … 4. 标记为 `completed`」。**为什么必须全程维护**：面板快照跨上下文
+  压缩持久（整表替换、无部分更新、无回读工具），是压缩后**唯一**能自证进度的载体 ——
+  攒着不更新，用户看到的就是「任务卡住」。
 
 ## 1. 本地 skills 清单
 技能来自两个来源，合并注入（共 38 个）：
@@ -102,7 +108,7 @@
 ## 4. 调研纪律
 - **只认一手来源**：官方文档、源码、RFC/spec、第一方 API；博客/StackOverflow 仅作线索不作引用。
 - **版本敏感事实**须注明 `library@version`，不沿用训练数据旧版本。
-- **长调研用 background agent 执行，主会话继续**；后台 worker **不得再派生 agent** 或再调用本工作流。
+- **长调研用 background agent 执行，主会话继续**。
 - 结论落盘 `docs/notes/<topic>.md`（无目录则建），每条结论附 URL，并告知用户位置。
 
 ## 5. Git 认证链路（WSL 约束）
