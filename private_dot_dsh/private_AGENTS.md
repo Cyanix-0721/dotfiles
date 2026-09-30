@@ -134,7 +134,8 @@
 - chezmoi 仓库是双克隆（Windows + WSL，同源 GitHub `Cyanix-0721/dotfiles`），
   改动须两处同步。
 - **Python 一律用 uv，不污染全局**：脚本走 `uv run --with <pkg> python <script>`。
-- **本文件（`~/.dsh/AGENTS.md`）由 chezmoi 管理**（源为 `dot_dsh/AGENTS.md`）。
+- **本文件（`~/.dsh/AGENTS.md`）由 chezmoi 管理**（源为
+  `private_dot_dsh/private_AGENTS.md`，即 `private_` 前缀 ⇒ 0600）。
   改动本文件后，提醒用户提交并同步 chezmoi 仓库，否则变更只存在于本机。
 
 ## 7. 生效优先级（强 → 弱）
