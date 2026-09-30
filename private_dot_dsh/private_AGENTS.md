@@ -104,6 +104,10 @@
 - **写示例**：用 `fc-CANARY-NOT-A-REAL-KEY` 这类一眼假的值，避免扫描器误报。
 - **配置里不放字面量密钥**：用 `!!js process.env.X` + `~/.dsh/.env`（600）。
   注意 `${VAR}` **不是** DSH 语法（会当字面字符串传给 MCP），凭据库也不进 `process.env`。
+- **跑密钥扫描器（betterleaks）**：**默认会把命中值明文打进输出**（因此落盘）⇒
+  **必须显式带 `--redact`**，否则等于亲手把密钥写进会话日志。
+  扫工作树 `betterleaks filesystem <path>`（配置已排除 `.git/`）；查提交历史 `betterleaks git <path>`。
+  回报只给 `rule_id` / 路径 / 行号，**不复述 `match.value`**。
 
 ## 4. 调研纪律
 - **只认一手来源**：官方文档、源码、RFC/spec、第一方 API；博客/StackOverflow 仅作线索不作引用。
