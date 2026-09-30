@@ -20,10 +20,27 @@
 # Version floor; MUST appear before any table header.
 minVersion = "v2.0.0-rc.1"
 
+# 预过滤：在任何正则匹配**之前**按路径快速跳过，只能访问 attributes（如 path）。
+# v2 的默认 prefilter **不再排除 .git**（gitleaks v1 会排除），于是 filesystem
+# 扫描会走进 .git/ 下的对象库、reflog 等 —— 那些是 zlib 压缩内容，几乎不可能匹配到
+# 明文，却要付出完整的遍历与解压开销。这里补回 .git 排除。
+#
+# 关键语义：顶层 prefilter 与内嵌默认是**取并集**而非替换 —— 默认的 node_modules、
+# lockfile、vendor、图片/字体等排除依然生效（已实测：自定义只加 .git 后，
+# node_modules 仍被跳过，.git 同时被跳过）。
+# Prefilter runs BEFORE any regex match and only sees `attributes` (e.g. path);
+# it is a skip predicate. v2's default no longer excludes .git, so restore it.
+# A top-level prefilter is UNIONed with the embedded default, not a replacement.
+prefilter = '''
+matchesAny(attributes["path"], [
+  `(?:^|/)\.git(?:/.*)?$`,
+])
+'''
+
 # 继承内嵌默认规则集（465 条）。自定义配置不会自动继承默认规则，
 # 必须显式 extend，否则只剩本文件里写的规则。
-# 该文件当前不追加自定义规则，因此 config hash 与内嵌默认完全一致，
-# 行为与直接用默认配置完全相同 —— 它的作用是给出一个稳定的自定义落点。
+# 该文件只追加了上面的 prefilter（不新增规则），规则集仍是 465 条；
+# 因 prefilter 是并集语义，检测行为 = 默认规则集 - .git 噪音。
 # [extend] is mandatory: a custom config inherits NOTHING by default.
 [extend]
 useDefault = true
@@ -40,8 +57,9 @@ useDefault = true
 #   FTL unable to load config error="... unknown configuration fields:
 #   extend.prefilter ...: strict mode: fields in the document are missing
 #   in the target struct"
-# 另：顶层 prefilter / filter 与默认值是**取并集**而非替换，且其谓词
-# 方向语义未完全确认，故本文件刻意不覆盖它们。
+# 另：顶层 prefilter / filter 与默认值是**取并集**而非替换（本文件顶部已用
+# prefilter 补回 .git 排除）。顶层 filter 的谓词方向语义未完全确认，
+# 故本文件刻意不覆盖它。
 #
 # [[rules]]
 # id = "example-internal-token"
