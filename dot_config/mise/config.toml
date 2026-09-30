@@ -1,2 +1,15 @@
 [tools]
 java = "temurin-17"
+go = "1.27"
+# betterleaks 2.x 仅发布预发布版;必须写完整版本号
+# 注意:`2.0` / `latest` 均无法解析到 2.x(latest 会退回 1.8.1),不要改写成模糊范围
+# betterleaks 2.x is prerelease-only; the full version string is required.
+# `2.0` / `latest` do NOT resolve to 2.x (`latest` falls back to 1.8.1) -- do not loosen this.
+betterleaks = "2.0.0-rc.1"
+
+[env]
+# betterleaks 不会自动发现 XDG 路径或工程内 .betterleaks.toml,必须显式指向配置文件。
+# {{env.HOME}} 在 Windows 上未定义会直接报错,故用 default() 回退到 USERPROFILE。
+# betterleaks has no XDG / in-repo config auto-discovery; the path must be explicit.
+# {{env.HOME}} is undefined on Windows, hence the USERPROFILE fallback.
+BETTERLEAKS_CONFIG = "{{env.HOME | default(value=env.USERPROFILE)}}/.config/betterleaks/betterleaks.toml"
