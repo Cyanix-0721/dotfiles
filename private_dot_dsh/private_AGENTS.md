@@ -106,7 +106,11 @@
   注意 `${VAR}` **不是** DSH 语法（会当字面字符串传给 MCP），凭据库也不进 `process.env`。
 - **跑密钥扫描器（betterleaks）**：**默认会把命中值明文打进输出**（因此落盘）⇒
   **必须显式带 `--redact`**，否则等于亲手把密钥写进会话日志。
-  扫工作树 `betterleaks filesystem <path>`（配置已排除 `.git/`）；查提交历史 `betterleaks git <path>`。
+  查提交历史 `betterleaks git <path>`——它只扫跟踪内容，天然避开所有被忽略的产物，**日常首选**。
+  扫工作树用 `betterleaks filesystem <path>`：注意它**不读 `.gitignore`**，会连构建产物一起遍历
+  （全局配置已排除 `.git/`、`.uvcache/`、`.gradle/`、`.kotlin/`，以及内嵌默认的 `node_modules/`、
+  lockfile、图片字体等；但**未**排除 `build/`、`dist/`、`target/` 等通用产物名）；
+  在大仓库上先确认路径范围，别直接扫仓库根。
   回报只给 `rule_id` / 路径 / 行号，**不复述 `match.value`**。
 
 ## 4. 调研纪律
