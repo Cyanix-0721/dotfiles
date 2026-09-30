@@ -25,22 +25,43 @@ minVersion = "v2.0.0-rc.1"
 # 扫描会走进 .git/ 下的对象库、reflog 等 —— 那些是 zlib 压缩内容，几乎不可能匹配到
 # 明文，却要付出完整的遍历与解压开销。这里补回 .git 排除。
 #
+# 同时排除构建/缓存目录：betterleaks **不读 .gitignore**（filesystem 无任何
+# gitignore/respect 选项），被忽略的产物目录照样会被完整遍历，而其中的二进制
+# （*.so）与第三方测试数据会产生大量误报。实测 pixfold 仓库（196 个跟踪文件、
+# 磁盘 10937 个文件）：仅排 .git 时扫 720 MB / 20 条命中（全部为误报，来自
+# uv 缓存的 libgnutls/libonnxruntime.so 与 numpy 测试数据）；加上下面三条后
+# 扫 158 MB / 0 条命中。
+#
+# 刻意**不**排除 build/ 与 dist/：这两个是通用名，可能被某些项目用作源码目录，
+# 全局排除会导致漏扫。需要时请在具体仓库用 `betterleaks git .`（只扫跟踪内容，
+# 天然避开所有被忽略的产物），或临时 `-c` 指定更激进的配置。
+# 同理不排除 artifacts/、target/、__pycache__/、.venv/ 等项目特异名。
+#
 # 关键语义：顶层 prefilter 与内嵌默认是**取并集**而非替换 —— 默认的 node_modules、
 # lockfile、vendor、图片/字体等排除依然生效（已实测：自定义只加 .git 后，
 # node_modules 仍被跳过，.git 同时被跳过）。
 # Prefilter runs BEFORE any regex match and only sees `attributes` (e.g. path);
 # it is a skip predicate. v2's default no longer excludes .git, so restore it.
 # A top-level prefilter is UNIONed with the embedded default, not a replacement.
+#
+# 每条都锚定**完整路径段**：`(?:^|/)` + 结尾 `(?:/.*)?$`，因此
+# `my.gradle/x.txt` / `gradle.properties` / `.gradle.kts` / `src/uvcache_helper.py`
+# 都不会被误伤（已实测 6 跳过 / 6 照常命中）。
+# `\.?uvcache` 同时覆盖 `.uvcache/` 与 `uvcache/` 两种拼写（uv 在
+# `app/build/uvcache/` 下用后者）。
 prefilter = '''
 matchesAny(attributes["path"], [
   `(?:^|/)\.git(?:/.*)?$`,
+  `(?:^|/)\.?uvcache(?:/.*)?$`,
+  `(?:^|/)\.gradle(?:/.*)?$`,
+  `(?:^|/)\.kotlin(?:/.*)?$`,
 ])
 '''
 
 # 继承内嵌默认规则集（465 条）。自定义配置不会自动继承默认规则，
 # 必须显式 extend，否则只剩本文件里写的规则。
 # 该文件只追加了上面的 prefilter（不新增规则），规则集仍是 465 条；
-# 因 prefilter 是并集语义，检测行为 = 默认规则集 - .git 噪音。
+# 因 prefilter 是并集语义，检测行为 = 默认规则集 - .git/构建缓存 噪音。
 # [extend] is mandatory: a custom config inherits NOTHING by default.
 [extend]
 useDefault = true
