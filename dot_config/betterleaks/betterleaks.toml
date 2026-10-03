@@ -1,0 +1,93 @@
+# Betterleaks 全局配置 / global config
+#
+# 由 chezmoi 部署到：
+#   WSL     : ~/.config/betterleaks/betterleaks.toml
+#   Windows : C:\Users\<user>\.config\betterleaks\betterleaks.toml
+# 两端同一源文件、同一目标路径（Windows 侧 XDG_CONFIG_HOME 已指向 ~/.config）。
+#
+# betterleaks 自身不会自动发现该路径（无 XDG 自动发现、也不读工程内
+# .betterleaks.toml），必须由 mise [env] 导出的 BETTERLEAKS_CONFIG 显式指向。
+# / betterleaks does NOT auto-discover this path; it is located via the
+# BETTERLEAKS_CONFIG env var exported by mise [env].
+#
+# 手动指定时用绝对路径（`~` 不会被展开）：
+#   betterleaks -c /home/<user>/.config/betterleaks/betterleaks.toml ...
+#   betterleaks -c C:\Users\<user>\.config\betterleaks\betterleaks.toml ...
+
+# 版本下限：必须写在所有表头之前
+# 当前 betterleaks 为预发布版，故此处与安装版本保持一致；
+# 若升级到正式版 v2.0.0，可同步上调。
+# Version floor; MUST appear before any table header.
+minVersion = "v2.0.0-rc.1"
+
+# 预过滤：在任何正则匹配**之前**按路径快速跳过，只能访问 attributes（如 path）。
+# v2 的默认 prefilter **不再排除 .git**（gitleaks v1 会排除），于是 filesystem
+# 扫描会走进 .git/ 下的对象库、reflog 等 —— 那些是 zlib 压缩内容，几乎不可能匹配到
+# 明文，却要付出完整的遍历与解压开销。这里补回 .git 排除。
+#
+# 同时排除构建/缓存目录：betterleaks **不读 .gitignore**（filesystem 无任何
+# gitignore/respect 选项），被忽略的产物目录照样会被完整遍历，而其中的二进制
+# （*.so）与第三方测试数据会产生大量误报。实测 pixfold 仓库（196 个跟踪文件、
+# 磁盘 10937 个文件）：仅排 .git 时扫 720 MB / 20 条命中（全部为误报，来自
+# uv 缓存的 libgnutls/libonnxruntime.so 与 numpy 测试数据）；加上下面三条后
+# 扫 158 MB / 0 条命中。
+#
+# 刻意**不**排除 build/ 与 dist/：这两个是通用名，可能被某些项目用作源码目录，
+# 全局排除会导致漏扫。需要时请在具体仓库用 `betterleaks git .`（只扫跟踪内容，
+# 天然避开所有被忽略的产物），或临时 `-c` 指定更激进的配置。
+# 同理不排除 artifacts/、target/、__pycache__/、.venv/ 等项目特异名。
+#
+# 关键语义：顶层 prefilter 与内嵌默认是**取并集**而非替换 —— 默认的 node_modules、
+# lockfile、vendor、图片/字体等排除依然生效（已实测：自定义只加 .git 后，
+# node_modules 仍被跳过，.git 同时被跳过）。
+# Prefilter runs BEFORE any regex match and only sees `attributes` (e.g. path);
+# it is a skip predicate. v2's default no longer excludes .git, so restore it.
+# A top-level prefilter is UNIONed with the embedded default, not a replacement.
+#
+# 每条都锚定**完整路径段**：`(?:^|/)` + 结尾 `(?:/.*)?$`，因此
+# `my.gradle/x.txt` / `gradle.properties` / `.gradle.kts` / `src/uvcache_helper.py`
+# 都不会被误伤（已实测 6 跳过 / 6 照常命中）。
+# `\.?uvcache` 同时覆盖 `.uvcache/` 与 `uvcache/` 两种拼写（uv 在
+# `app/build/uvcache/` 下用后者）。
+prefilter = '''
+matchesAny(attributes["path"], [
+  `(?:^|/)\.git(?:/.*)?$`,
+  `(?:^|/)\.?uvcache(?:/.*)?$`,
+  `(?:^|/)\.gradle(?:/.*)?$`,
+  `(?:^|/)\.kotlin(?:/.*)?$`,
+])
+'''
+
+# 继承内嵌默认规则集（465 条）。自定义配置不会自动继承默认规则，
+# 必须显式 extend，否则只剩本文件里写的规则。
+# 该文件只追加了上面的 prefilter（不新增规则），规则集仍是 465 条；
+# 因 prefilter 是并集语义，检测行为 = 默认规则集 - .git/构建缓存 噪音。
+# [extend] is mandatory: a custom config inherits NOTHING by default.
+[extend]
+useDefault = true
+
+# ---------------------------------------------------------------------------
+# 自定义扩展落点 / where to add your own rules
+#
+# 生产建议（官方文档）：维护自己的规则集，不要直接改上游默认配置，
+# 这样规则集在升级之间保持稳定，新规则可以先审阅再采纳。
+# 做法：把新增规则**追加**在本文件末尾（[extend] 之后），而不是覆盖默认。
+#
+# 注意：顶层的 minVersion / prefilter / filter 必须写在 `[extend]` 等
+# 任何表头**之前**，否则会被解析成 extend.<key> 并直接报错：
+#   FTL unable to load config error="... unknown configuration fields:
+#   extend.prefilter ...: strict mode: fields in the document are missing
+#   in the target struct"
+# 另：顶层 prefilter / filter 与默认值是**取并集**而非替换（本文件顶部已用
+# prefilter 补回 .git 排除）。顶层 filter 的谓词方向语义未完全确认，
+# 故本文件刻意不覆盖它。
+#
+# [[rules]]
+# id = "example-internal-token"
+# description = "内部临时令牌 / internal temporary token"
+# regex = '''EXAMPLETOK_[A-Za-z0-9]{32}'''
+# keywords = ["EXAMPLETOK_"]
+#
+# 规则级过滤（Expr，在正则命中后执行，可访问 finding 与 attributes）：
+# filter = '''!finding["path"].contains("fixtures")'''
+# ---------------------------------------------------------------------------

@@ -67,6 +67,8 @@ WSL quickstart 默认启用 **Windows OpenSSH agent 转发（win-ssh）**：WSL 
 | `dot_aria2/aria2.conf.tmpl` | Aria2 下载器（RPC 密钥由变量注入） |
 | `private_dot_ssh/config.tmpl` | SSH 配置（github 直连，serv00 走代理） |
 | `dot_config/fish/` / `powershell/` | Shell 配置（starship、zoxide、fzf、mise、yazi） |
+| `dot_config/mise/config.toml` | 全局 mise 工具声明（`java`、`go`、`betterleaks`）与 `[env]`（导出 `BETTERLEAKS_CONFIG`） |
+| `dot_config/betterleaks/betterleaks.toml` | Betterleaks 密钥扫描器全局配置（继承内嵌默认规则集之上的自定义落点） |
 
 ## 辅助脚本
 

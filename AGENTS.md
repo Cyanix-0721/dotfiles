@@ -51,9 +51,11 @@ scripts/                  独立工具脚本(.chezmoiignore 排除,不同步 hom
 | --- | --- | --- |
 | `fish`、`kitty`、`btop`、`niri`、`fuzzel`、`fontconfig`、`mpd`、`rmpc`、`fcitx5`、`environment.d`、`noctalia`(+ `dot_local/share/fcitx5`) | Linux(Arch / WSL) | Windows 侧由 `.chezmoiignore` 忽略 |
 | `powershell`(+ `dot_wslconfig`) | Windows | 非 Windows 侧忽略 |
-| `fastfetch`、`mise`、`starship.toml`、`yazi`、wezterm、gitconfig、condarc、aria2、ssh | 全部 | 通用 |
+| `fastfetch`、`mise`、`starship.toml`、`yazi`、wezterm、gitconfig、condarc、aria2、ssh、`betterleaks` | 全部 | 通用 |
 
 **新增应用配置时的流程**:想清目标平台 → 放入 `dot_config/<app>/`(敏感则 `private_` 前缀)→ 若为平台限定,在 `.chezmoiignore` 对应 `{{- if eq .chezmoi.os "..." }}` 分支补忽略规则。
+
+> `dot_config/mise/config.toml` 承载全局工具声明(`java`/`go`/`betterleaks`)与 `[env]`。其中 `BETTERLEAKS_CONFIG` 指向 `dot_config/betterleaks/betterleaks.toml` 的部署位置;`betterleaks` 无 XDG 自动发现,该变量是唯一接缝。mise 会把整份配置当模板渲染,`[env]` 里的跨平台取家用 `{{env.HOME | default(value=env.USERPROFILE)}}`(`{{env.HOME}}` 在 Windows 上未定义会直接报错)。
 
 ## 模板须知
 

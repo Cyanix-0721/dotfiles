@@ -157,6 +157,25 @@ else
 	ok "mise 安装完成（~/.local/bin/mise）/ mise installed (~/.local/bin/mise)"
 fi
 
+# 按全局 mise 配置安装全部声明工具（go / betterleaks 等）
+# Install all tools declared in the global mise config (go / betterleaks, etc.)
+# 全局工具声明由 chezmoi 纳管（dot_config/mise/config.toml → ~/.config/mise/config.toml），
+# 此处不逐个指定工具，统一 `mise install` 按声明安装（幂等，只补缺失版本）。
+MISE_BIN="$(command -v mise || true)"
+[ -n "$MISE_BIN" ] || MISE_BIN="$HOME/.local/bin/mise"
+if [ ! -x "$MISE_BIN" ]; then
+	warn "mise 不可用，跳过按全局配置安装 / mise unavailable, skipping install from global mise config"
+elif [ ! -f "$HOME/.config/mise/config.toml" ]; then
+	warn "未找到全局 mise 配置 ~/.config/mise/config.toml，请先运行 chezmoi apply 部署配置后重试 / Global mise config not found; run 'chezmoi apply' to deploy it, then rerun '$MISE_BIN install'"
+else
+	step "按全局 mise 配置安装工具 / Installing tools declared in global mise config"
+	if "$MISE_BIN" install; then
+		ok "全局 mise 配置中的工具已安装 / All tools in global mise config installed"
+	else
+		warn "mise install 返回非零，可稍后手动运行 '$MISE_BIN install' 重试 / mise install returned non-zero; rerun '$MISE_BIN install' later"
+	fi
+fi
+
 # codex：使用官方独立安装器（原生 Rust 二进制，无需 Node）
 # codex: install via the official standalone installer (native Rust binary, no Node needed)
 step "安装 codex（官方独立安装器）/ Installing codex (official standalone installer)"

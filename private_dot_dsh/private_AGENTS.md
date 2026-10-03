@@ -104,6 +104,14 @@
 - **写示例**：用 `fc-CANARY-NOT-A-REAL-KEY` 这类一眼假的值，避免扫描器误报。
 - **配置里不放字面量密钥**：用 `!!js process.env.X` + `~/.dsh/.env`（600）。
   注意 `${VAR}` **不是** DSH 语法（会当字面字符串传给 MCP），凭据库也不进 `process.env`。
+- **跑密钥扫描器（betterleaks）**：**默认会把命中值明文打进输出**（因此落盘）⇒
+  **必须显式带 `--redact`**，否则等于亲手把密钥写进会话日志。
+  查提交历史 `betterleaks git <path>`——它只扫跟踪内容，天然避开所有被忽略的产物，**日常首选**。
+  扫工作树用 `betterleaks filesystem <path>`：注意它**不读 `.gitignore`**，会连构建产物一起遍历
+  （全局配置已排除 `.git/`、`.uvcache/`、`.gradle/`、`.kotlin/`，以及内嵌默认的 `node_modules/`、
+  lockfile、图片字体等；但**未**排除 `build/`、`dist/`、`target/` 等通用产物名）；
+  在大仓库上先确认路径范围，别直接扫仓库根。
+  回报只给 `rule_id` / 路径 / 行号，**不复述 `match.value`**。
 
 ## 4. 调研纪律
 - **只认一手来源**：官方文档、源码、RFC/spec、第一方 API；博客/StackOverflow 仅作线索不作引用。
@@ -130,7 +138,8 @@
 - chezmoi 仓库是双克隆（Windows + WSL，同源 GitHub `Cyanix-0721/dotfiles`），
   改动须两处同步。
 - **Python 一律用 uv，不污染全局**：脚本走 `uv run --with <pkg> python <script>`。
-- **本文件（`~/.dsh/AGENTS.md`）由 chezmoi 管理**（源为 `dot_dsh/AGENTS.md`）。
+- **本文件（`~/.dsh/AGENTS.md`）由 chezmoi 管理**（源为
+  `private_dot_dsh/private_AGENTS.md`，即 `private_` 前缀 ⇒ 0600）。
   改动本文件后，提醒用户提交并同步 chezmoi 仓库，否则变更只存在于本机。
 
 ## 7. 生效优先级（强 → 弱）
