@@ -16,7 +16,12 @@ BETTERLEAKS_CONFIG = "{{env.HOME | default(value=env.USERPROFILE)}}/.config/bett
 
 # Windows 侧 betterleaks 的 git 扫描依赖一个小垫片（把 GIT_CONFIG_GLOBAL=NUL 改写成 nul，
 # 见 dot_local/share/git-shim/git.cmd 与 betterleaks#352 / git-for-windows#6449）。
-# mise 会把 _.path 前置进 PATH，这样垫片能抢在 scoop 的 git.exe 之前命中；
-# 目录在 WSL 侧不存在也无害（mise 不校验、Linux 也不会执行 .cmd）。
-# Windows needs a tiny git shim so betterleaks can scan history; mise prepends _.path.
-_.path = ["{{env.HOME | default(value=env.USERPROFILE)}}/.local/share/git-shim"]
+# mise 会把 _.path 前置进 PATH，这样垫片能抢在 scoop 的 git.exe 之前命中。
+#
+# 用 os() 限定只在 Windows 生效（mise 官方模板函数，见 docs/templates.md），
+# 否则 WSL 侧会白留一条指向不存在目录的死路径。
+# os() 不成立时该值是空串 —— mise 会丢弃空条目；这一条是关键：
+# 空的 PATH 项等于「当前目录」，绝不能留。
+# Windows-only via os(): mise dropping the empty entry is load-bearing, since an
+# empty PATH entry would mean the current directory.
+_.path = ["{% if os() == 'windows' %}{{env.HOME | default(value=env.USERPROFILE)}}/.local/share/git-shim{% endif %}"]
