@@ -106,7 +106,11 @@
   注意 `${VAR}` **不是** DSH 语法（会当字面字符串传给 MCP），凭据库也不进 `process.env`。
 - **跑密钥扫描器（betterleaks）**：**默认会把命中值明文打进输出**（因此落盘）⇒
   **必须显式带 `--redact`**，否则等于亲手把密钥写进会话日志。
-  查提交历史 `betterleaks git <path>`——它只扫跟踪内容，天然避开所有被忽略的产物，**日常首选**。
+  查提交历史 `betterleaks git <path>`——只扫跟踪内容，天然避开被忽略的产物，**日常首选**；
+  **但必须在 WSL 里跑**：Windows 侧此模式必失败且**假绿**（只扫 0 字节却打印
+  `no leaks found in incomplete scan`；betterleaks 给 git 注入 `GIT_CONFIG_GLOBAL=NUL`，Git for Windows
+  ≥2.53 不再接受该设备名，上游 issue #352；外层预设 `/dev/null` 会被它覆盖）。
+  合并提交默认被 `git log -p` 跳过 ⇒ 彻底口径加 `--log-opts="--all -m"`。
   扫工作树用 `betterleaks filesystem <path>`：注意它**不读 `.gitignore`**，会连构建产物一起遍历
   （全局配置已排除 `.git/`、`.uvcache/`、`.gradle/`、`.kotlin/`，以及内嵌默认的 `node_modules/`、
   lockfile、图片字体等；但**未**排除 `build/`、`dist/`、`target/` 等通用产物名）；
