@@ -32,6 +32,8 @@ ruff.toml
 
 # Linux/macOS 系统忽略 Windows 特定配置
 {{- if ne .chezmoi.os "windows" }}
+# git 垫片（Windows 专有，betterleaks#352 绕法）
+.local/share/git-shim/
 # WSL
 .wslconfig
 # PowerShell 配置

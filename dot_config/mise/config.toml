@@ -13,3 +13,10 @@ betterleaks = "2.0.0-rc.1"
 # betterleaks has no XDG / in-repo config auto-discovery; the path must be explicit.
 # {{env.HOME}} is undefined on Windows, hence the USERPROFILE fallback.
 BETTERLEAKS_CONFIG = "{{env.HOME | default(value=env.USERPROFILE)}}/.config/betterleaks/betterleaks.toml"
+
+# Windows 侧 betterleaks 的 git 扫描依赖一个小垫片（把 GIT_CONFIG_GLOBAL=NUL 改写成 nul，
+# 见 dot_local/share/git-shim/git.cmd 与 betterleaks#352 / git-for-windows#6449）。
+# mise 会把 _.path 前置进 PATH，这样垫片能抢在 scoop 的 git.exe 之前命中；
+# 目录在 WSL 侧不存在也无害（mise 不校验、Linux 也不会执行 .cmd）。
+# Windows needs a tiny git shim so betterleaks can scan history; mise prepends _.path.
+_.path = ["{{env.HOME | default(value=env.USERPROFILE)}}/.local/share/git-shim"]

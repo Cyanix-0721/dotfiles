@@ -107,9 +107,19 @@
 - **跑密钥扫描器（betterleaks）**：**默认会把命中值明文打进输出**（因此落盘）⇒
   **必须显式带 `--redact`**，否则等于亲手把密钥写进会话日志。
   查提交历史 `betterleaks git <path>`——只扫跟踪内容，天然避开被忽略的产物，**日常首选**；
-  **但必须在 WSL 里跑**：Windows 侧此模式必失败且**假绿**（只扫 0 字节却打印
-  `no leaks found in incomplete scan`；betterleaks 给 git 注入 `GIT_CONFIG_GLOBAL=NUL`，Git for Windows
-  ≥2.53 不再接受该设备名，上游 issue #352；外层预设 `/dev/null` 会被它覆盖）。
+  WSL 侧原生可用；Windows 侧依赖 chezmoi 部署的 git 垫片（`~/.local/share/git-shim/git.cmd`，
+  经 mise 全局 `[env] _.path` 前置到 PATH，改动见 mise 配置里的注释）。
+  **没拿到垫片时**（未同步 chezmoi / 未激活 mise 的裸 cmd），Windows 侧此模式会**假绿**：
+  只扫 0 字节却打印 `no leaks found in incomplete scan`，且日志里还带个 `WRN`。
+  判别口径：真扫描必有 `INF scanned ~NNNN bytes`（百万级）且退出码 0；
+  见到 `scanned ~0 bytes` + `incomplete scan` 一律当**失败**，不许当绿。
+  根因：betterleaks 给 git 注入 `GIT_CONFIG_GLOBAL=NUL` / `GIT_CONFIG_SYSTEM=NUL` /
+  `GIT_CONFIG_NOSYSTEM=1`，而 Git for Windows **恰好自 2.56.0 起**不再接受全大写设备名 `NUL`
+  （2.53–2.55 都正常；根因是**大小写**，小写 `nul` 即可）⇒ `git log` 直接 exit 128；
+  垫片做的就是这个改写，其余情况原样透传、不影响日常 git。
+  ⚠️ 维护该垫片的两条硬约束：**必须保持纯 ASCII** —— cmd.exe 按 OEM 代码页（本机 CP936）解析 `.cmd`，UTF-8 中文注释会让 DBCS 首尾字节跨行配对，"注释"文字被**当命令执行**（实测报 `'…' 不是内部或外部命令`，在批处理里调用还会挂起约 240s）；批处理里调 git **必须写 `call git …`** —— 否则控制权交给 `.cmd` 垫片后不再返回调用方。
+  上游 betterleaks issue #352 **未修**；Git for Windows 修复 PR #6450 已合并、**尚未发版**。
+  另：外层预设的 `/dev/null` 会被 betterleaks 覆盖掉。
   合并提交默认被 `git log -p` 跳过 ⇒ 彻底口径加 `--log-opts="--all -m"`。
   扫工作树用 `betterleaks filesystem <path>`：注意它**不读 `.gitignore`**，会连构建产物一起遍历
   （全局配置已排除 `.git/`、`.uvcache/`、`.gradle/`、`.kotlin/`，以及内嵌默认的 `node_modules/`、
