@@ -33,7 +33,12 @@ If (Test-Path "C:\Users\Administrator\scoop\apps\miniconda3\current\Scripts\cond
 #region fastfetch
 if (Get-Command fastfetch -ErrorAction SilentlyContinue) {
     fastfetch
+    Set-Alias -Name ff -Value fastfetch
 }
+#endregion
+
+#region aliases
+Set-Alias -Name c -Value Clear-Host
 #endregion
 
 #region zoxide init
