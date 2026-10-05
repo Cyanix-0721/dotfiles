@@ -135,7 +135,7 @@ Write-Header "网络工具 / Network Tools"
 
 $networkTools = @{
     "nmap"      = @{ Desc = "nmap (网络扫描工具，含 ncat / Network scanner, includes ncat)"; Global = $false }
-    "scrcpy"    = @{ Desc = "scrcpy (Android 投屏工具 / Android screen mirroring)"; Global = $true }
+    "scrcpy"    = @{ Desc = "scrcpy (Android 投屏工具 / Android screen mirroring)"; Global = $false }
     "mkcert"    = @{ Desc = "mkcert (本地 HTTPS 证书 / Local HTTPS certificates)"; Global = $false }
     "wireshark" = @{ Desc = "Wireshark (网络协议分析器 / Network protocol analyzer)"; Global = $false }
 }
