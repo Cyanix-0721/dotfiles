@@ -91,7 +91,52 @@
 2. `env` 必须**显式声明**：MCP 子进程环境会清洗掉匹配 `/KEY|PASSWORD|SECRET|TOKEN/i`
    的变量，只有显式赋值才传得进去。
 
-## 3. 密钥与隐私（工具输出会原样落盘）
+## 3. 文件检索分工（Windows 侧优先 Everything CLI）
+
+**硬规则：在 Windows 盘（C:/D:/E:）上按「文件名 / 后缀 / 大小 / 修改时间」找文件，
+一律先用 `es.exe`，不要用 `find` / `fdfind` 遍历 `/mnt/c`。**
+
+- 用户已 `scoop install everything-cli`：`C:\Users\Administrator\scoop\shims\es.exe`
+  （ES 1.1.0.38；后端 Everything 1.5.0.1423b 常驻，索引 `C:,D:,E:` 约 287 万对象）。
+- WSL 侧**可直接裸名调用**（shim 在 drvfs 下可执行，无需 `chmod +x`），实测 ≈0.15s/次。
+
+**为什么**：`/mnt/c` 是 9p/drvfs（`trans=fd`），每次 stat 都是一次 9p 往返；`es.exe` 直接查
+预建的 NTFS USN 索引。实测差距是**数量级**：
+
+| 任务 | `es.exe` | WSL `find` / `fdfind` |
+| --- | --- | --- |
+| C: 全部 `*.mp4` | **0.07–0.15s**，4274 条 | 90s 超时，只数到 109 |
+| C:\Users 下 `*.scoop*` | **0.08s** | 29.9s |
+| E: 按大小排序 top20 | **0.11s** | 24s（`sort` 还被 SIGPIPE 打断） |
+| `find .../scoop -type f`（47 万文件） | — | 2m4s；换 `fdfind` 仍 56s |
+
+**三个边界（越过就换工具）**：
+1. **看不到 WSL ext4**：`es.exe -get-result-count "wsl.localhost"` = 0。
+   WSL 仓库内找文件仍用 `fd` / `fdfind`。
+2. **不索引内容**：`content_indexing_enabled=0`（`Everything.ini:989`）⇒ `content:` 查询会挂死
+   （实测 >120s 无返回）。找文件**内容**一律 `rg`。
+3. `Everything.exe` 是 GUI 二进制，**没有** `-export-csv`（写它会弹搜索窗口并挂死）；
+   只有 `es.exe` 有导出开关。
+
+**编码两条坑（均已实测踩过）**：
+- 搜索词**必须是 UTF-8 原文**：`es.exe -get-result-count "青水庵"` → 23；GBK 转码后 → **0**。
+- **stdout 是 GBK 字节**（`-json` 也一样），不是 UTF-8；直接管道给下游会乱码。
+  - 只要文本路径：`es.exe … | iconv -f GBK -t UTF-8`
+  - 要结构化：`es.exe … -export-csv "C:\\…\\out.csv" -utf8-bom`（产物是真 UTF-8 BOM + CRLF）。
+    ⚠️ `/mnt/c` 对 WSL **只读**（挂载选项带 `ro`）⇒ 导出文件只能落 Windows 侧路径，再由 WSL 读。
+
+**常用调用**：
+```bash
+es.exe -n 20 -sort size -size -path 'E:\' '*'   # 某盘最大文件
+es.exe -n 10 'dm:today' -sort dm                 # 今天改过的
+es.exe -path 'D:\' 'pyproject.toml'              # 某目录下找名
+es.exe -regex '^requirements.*\.txt$'            # 正则
+es.exe -get-result-count 'ext:pdf'               # 只数条数
+```
+
+**速查表**：Windows 盘找名 → `es.exe`；WSL ext4 找名 → `fd`；任一找内容 → `rg`。
+
+## 4. 密钥与隐私（工具输出会原样落盘）
 **会话日志不脱敏**：`grep` 回显、`cat` 内容等工具输出以明文持久化到
 `~/.dsh/sessions/<workspace>/session-<id>/session.v3.jsonl.zstd`（多帧 zstd，
 需按 magic `28 b5 2f fd` 逐帧解压）。DSH 无内置拦截：`better-sidebar` 的遮蔽仅渲染层
@@ -127,13 +172,13 @@
   在大仓库上先确认路径范围，别直接扫仓库根。
   回报只给 `rule_id` / 路径 / 行号，**不复述 `match.value`**。
 
-## 4. 调研纪律
+## 5. 调研纪律
 - **只认一手来源**：官方文档、源码、RFC/spec、第一方 API；博客/StackOverflow 仅作线索不作引用。
 - **版本敏感事实**须注明 `library@version`，不沿用训练数据旧版本。
 - **长调研用 background agent 执行，主会话继续**。
 - 结论落盘 `docs/notes/<topic>.md`（无目录则建），每条结论附 URL，并告知用户位置。
 
-## 5. Git 认证链路（WSL 约束）
+## 6. Git 认证链路（WSL 约束）
 - git 认证**不经过 WSL ssh agent**（`SSH_AUTH_SOCK` 在 WSL 下是死变量，且已由
   chezmoi 模板条件化移除）。
 - 链路：`core.sshCommand → ~/bin/win-ssh → powershell → win-ssh.ps1 →
@@ -144,7 +189,7 @@
 - **注意**：`git push` 在 WSL 侧需 `GIT_SSH_COMMAND="$HOME/bin/win-ssh"`，
   因为仓库的 `core.sshCommand` 若为 Windows 路径形式在 WSL 下会 `cannot exec`。
 
-## 6. 用户偏好
+## 7. 用户偏好
 - **不直接改动用户的 Codex / WSL / chezmoi 环境**——安装/配置类操作**只给命令**，由用户执行。
   （例外：用户当回合明确要求代执行。）
 - **避免显式/被托管的 systemd unit**——用户偏好隐式；agent socket 命名以 Arch 习惯
@@ -156,8 +201,8 @@
   `private_dot_dsh/private_AGENTS.md`，即 `private_` 前缀 ⇒ 0600）。
   改动本文件后，提醒用户提交并同步 chezmoi 仓库，否则变更只存在于本机。
 
-## 7. 生效优先级（强 → 弱）
-1. **用户当回合指令** — 可覆盖 2/3/4 的行为细节；不得违反 §5/§6 的认证链路与用户偏好硬约束。
+## 8. 生效优先级（强 → 弱）
+1. **用户当回合指令** — 可覆盖 2/3/4 的行为细节；不得违反 §6/§7 的认证链路与用户偏好硬约束。
 2. **项目根目录 `AGENTS.md`**（若存在）— 最具体，项目内优先于全局。
 3. **本文件（全局）** — 通用环境约束与 skills 清单。
 4. **Superpowers 插件注入的协议引导** — 流程基线，与上三层一般不冲突。
