@@ -1,0 +1,33 @@
+# mise 早期初始化设置(miserc)。必须在所有其他配置之前加载,故只能放这里,不能写进 config.toml。
+# mise early-init settings. Loaded before every other config, hence this file and not config.toml.
+#
+# 问题:Windows 上 mise 会从当前目录逐级向上遍历祖先目录,查找本地配置文件名,而
+# `.config/mise/config.toml` 正是其中之一。当 cwd 位于 \\wsl.localhost\<distro>\home\<user>\...
+# (例如 WSL 里的仓库)时,这次遍历会跨过 9P 边界,把 *WSL* 的配置当成 Windows 的本地配置读进来,
+# 于是 java / go / betterleaks 被解析两遍,每次 `mise activate` 都要多付一次跨 9P 的 UNC 读取
+# (冷读 ~89ms,热读 ~25ms)。
+#
+# Problem: on Windows, mise walks ancestor directories from the cwd looking for local config
+# filenames, and `.config/mise/config.toml` is one of them. When the cwd sits under
+# \\wsl.localhost\<distro>\home\<user>\... (a repo inside WSL), that walk crosses the 9P boundary
+# and loads the *WSL* config as a Windows local config, resolving java/go/betterleaks twice and
+# costing an extra UNC read on every `mise activate` (~89ms cold, ~25ms warm).
+#
+# 解法:ceiling_paths 让向上的遍历在指定目录处停止(语义同 git 的 GIT_CEILING_DIRECTORIES):
+# ceiling 目录自身被排除,其之上的目录一律不再扫描。ceiling 之下的项目级 mise.toml 不受影响,
+# 所以按项目指定工具版本依然正常工作。
+#
+# Fix: ceiling_paths stops the upward walk at the given directory (same semantics as git's
+# GIT_CEILING_DIRECTORIES): the ceiling directory itself is excluded and nothing above it is
+# scanned. Project-level mise.toml files below the ceiling are unaffected, so per-project tool
+# versions keep working.
+#
+# 注意:ceiling_paths 不支持 glob,必须是字面量路径 —— 因此 distro 名与用户名只能硬编码。
+# 若 WSL 发行版改名/重装,或用户名变更,需同步更新下面这一行,否则本修复会静默失效(退化为原来的慢路径)。
+# Note: ceiling_paths does not expand globs and must be a literal path, so the distro name and
+# user name are hardcoded. If the WSL distro is renamed/reinstalled or the user is renamed,
+# update the line below -- otherwise this fix silently degrades back to the slow path.
+#
+# 实测(cwd 在 WSL 仓库内,`mise activate pwsh` p50):137ms(无修复) -> 80ms(本修复);
+# `pwsh -NoLogo` 冷启动 p50:1305ms -> 1064ms。
+ceiling_paths = ['\\wsl.localhost\Debian\home\slayer']

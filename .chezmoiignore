@@ -38,4 +38,6 @@ ruff.toml
 .wslconfig
 # PowerShell 配置
 .config/powershell/
+# mise miserc:内容只针对 Windows 跨 WSL(9P)读取配置的问题,Linux 侧无需此文件
+.config/mise/miserc.toml
 {{- end }}
