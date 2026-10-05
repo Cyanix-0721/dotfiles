@@ -80,6 +80,7 @@ Write-Header "Windows 增强工具 / Windows Enhancement Tools"
 
 $winTools = @{
     "everything-beta" = @{ Desc = "Everything (快速文件搜索 / Fast file search)"; Global = $false }
+    "everything-cli"  = @{ Desc = "Everything CLI (命令行文件搜索 / Command-line file search)"; Global = $false }
     "fancontrol"      = @{ Desc = "FanControl (风扇控制工具 / Fan control utility)"; Global = $false }
     "hwinfo"          = @{ Desc = "HWiNFO (系统信息与诊断工具 / System information and diagnostics)"; Global = $false }
     "flow-launcher"   = @{ Desc = "Flow Launcher (文件搜索和启动器 / File search and launcher)"; Global = $false }
