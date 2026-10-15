@@ -7,9 +7,13 @@
 
 ## 0. 启动协议（Superpowers 接管流程）
 - DSH 已安装 `@wenaixi/dsh-superpower` 插件（`obra/superpowers` 的 DSH 移植版，
-  14 个技能经 `ctx.skills` 注入，全中文）。
+  15 个技能经 `ctx.skills` 注入，全中文）。
 - 任何用户任务**先按 Superpowers 协议匹配 skill**（brainstorming → writing-plans →
-  executing-plans → TDD → debugging → code-review → verification），再决定具体动作。
+  executing-plans 或 subagent-driven-development → TDD → debugging → code-review →
+  verification），再决定具体动作。
+- **委派面判据**：任务可切成互不依赖的独立块 → 用 `subagent` / `subagent_fork` 并行派发
+  （`dispatching-parallel-agents`）；强串行 → 内联 `executing-plans`。`spawn_teammate`
+  （Agent Teams）仅在用户显式要求 teammates 时用。
 - 本文件不重复列 Superpowers 自带的 skill；以插件注入为准。本文件只补环境约束与本地 skills 清单。
 - **任务面板纪律**：任何多步任务，开工第一件事用 `todo_write`（由 `dsh-base` 默认挂载的
   `@deepseek-ai/dsh-tool-todo` 提供）把**全量**步骤写成清单，**每完成一步立刻标 `completed`，
@@ -19,11 +23,13 @@
   攒着不更新，用户看到的就是「任务卡住」。
 
 ## 1. 本地 skills 清单
-技能来自两个来源，合并注入（共 38 个）：
+技能来自三个来源，合并注入（共 40 个，其中 39 个模型可见）：
 
 - **`$DSH_AGENTS_HOME/skills`**（rank 500）— Windows 侧共享技能库，由 chezmoi/ccswitch
-  在 Windows 上维护，经 `DSH_AGENTS_HOME` 指向 `/mnt/c/Users/<user>/.agents`。24 个。
-- **`@wenaixi/dsh-superpower`** — 插件注入的 14 个 `superpower-*`。
+  在 Windows 上维护，经 `DSH_AGENTS_HOME` 指向 `/mnt/c/Users/<user>/.agents`。24 个
+  （`handoff` 带 `disable-model-invocation: true`，模型不可见）。
+- **`@wenaixi/dsh-superpower`** — 插件注入的 15 个 `superpower-*`。
+- **`@deepseek-ai/dsh-experimental-badge-skill-bundle`** — 注入 1 个 `dsh-badge`。
 
 `~/.dsh/skills`（rank 400）当前空闲，留给 WSL 本地技能；同名时 rank 小者胜，
 故本地技能可覆盖 Windows 侧同名项。
@@ -175,7 +181,7 @@ es.exe -get-result-count 'ext:pdf'               # 只数条数
 ## 5. 调研纪律
 - **只认一手来源**：官方文档、源码、RFC/spec、第一方 API；博客/StackOverflow 仅作线索不作引用。
 - **版本敏感事实**须注明 `library@version`，不沿用训练数据旧版本。
-- **长调研用 background agent 执行，主会话继续**。
+- **长调研用 `subagent` 派发，主会话继续**（`background agent` 不是工具名）。
 - 结论落盘 `docs/notes/<topic>.md`（无目录则建），每条结论附 URL，并告知用户位置。
 
 ## 6. Git 认证链路（WSL 约束）
