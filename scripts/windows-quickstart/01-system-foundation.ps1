@@ -109,7 +109,7 @@ else {
 # 添加 Scoop 常用 buckets
 Write-Step "添加 Scoop buckets / Adding Scoop buckets"
 
-$buckets = @("extras", "versions", "nerd-fonts", "sysinternals")
+$buckets = @("extras", "versions", "nerd-fonts", "sysinternals", "nirsoft")
 
 $bucketList = scoop bucket list
 
