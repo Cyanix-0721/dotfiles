@@ -69,6 +69,7 @@ WSL quickstart 默认启用 **Windows OpenSSH agent 转发（win-ssh）**：WSL 
 | `dot_config/fish/` / `powershell/` | Shell 配置（starship、zoxide、fzf、mise、yazi） |
 | `dot_config/mise/config.toml` | 全局 mise 工具声明（`java`、`go`、`betterleaks`）与 `[env]`（导出 `BETTERLEAKS_CONFIG`） |
 | `dot_config/betterleaks/betterleaks.toml` | Betterleaks 密钥扫描器全局配置（继承内嵌默认规则集之上的自定义落点） |
+| `dot_cc-safety-net/private_policy.json` | CC Safety Net 用户级策略（standard 档、`~/.dsh` 凭据目录 deny_paths），部署为 `~/.cc-safety-net/policy.json` |
 
 ## 辅助脚本
 
