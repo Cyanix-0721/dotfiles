@@ -1,0 +1,22 @@
+{
+  "providers": {},
+  "compress": {
+    "protectedLatestTools": [
+      "todo_write",
+      "skill",
+      "skill/*",
+      "acp_status",
+      "team_task_list",
+      "list_agents",
+      "job_list",
+      "get_goal"
+    ],
+    "protectedTools": [
+      "ask_user_question"
+    ],
+    "preserveRecentTools": [
+      "read",
+      "read_image"
+    ]
+  }
+}
