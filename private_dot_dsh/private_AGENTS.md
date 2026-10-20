@@ -158,20 +158,35 @@ es.exe -get-result-count 'ext:pdf'               # 只数条数
 - **跑密钥扫描器（betterleaks）**：**默认会把命中值明文打进输出**（因此落盘）⇒
   **必须显式带 `--redact`**，否则等于亲手把密钥写进会话日志。
   查提交历史 `betterleaks git <path>`——只扫跟踪内容，天然避开被忽略的产物，**日常首选**；
-  WSL 侧原生可用；Windows 侧依赖 chezmoi 部署的 git 垫片（`~/.local/share/git-shim/git.cmd`，
-  经 mise 全局 `[env] _.path` 前置到 PATH，改动见 mise 配置里的注释）。
-  **没拿到垫片时**（未同步 chezmoi / 未激活 mise 的裸 cmd），Windows 侧此模式会**假绿**：
-  只扫 0 字节却打印 `no leaks found in incomplete scan`，且日志里还带个 `WRN`。
-  判别口径：真扫描必有 `INF scanned ~NNNN bytes`（百万级）且退出码 0；
-  见到 `scanned ~0 bytes` + `incomplete scan` 一律当**失败**，不许当绿。
-  根因：betterleaks 给 git 注入 `GIT_CONFIG_GLOBAL=NUL` / `GIT_CONFIG_SYSTEM=NUL` /
-  `GIT_CONFIG_NOSYSTEM=1`，而 Git for Windows **恰好自 2.56.0 起**不再接受全大写设备名 `NUL`
-  （2.53–2.55 都正常；根因是**大小写**，小写 `nul` 即可）⇒ `git log` 直接 exit 128；
-  垫片做的就是这个改写，其余情况原样透传、不影响日常 git。
-  ⚠️ 维护该垫片的两条硬约束：**必须保持纯 ASCII** —— cmd.exe 按 OEM 代码页（本机 CP936）解析 `.cmd`，UTF-8 中文注释会让 DBCS 首尾字节跨行配对，"注释"文字被**当命令执行**（实测报 `'…' 不是内部或外部命令`，在批处理里调用还会挂起约 240s）；批处理里调 git **必须写 `call git …`** —— 否则控制权交给 `.cmd` 垫片后不再返回调用方。
-  上游 betterleaks issue #352 **未修**；Git for Windows 修复 PR #6450 已合并、**尚未发版**。
-  另：外层预设的 `/dev/null` 会被 betterleaks 覆盖掉。
-  合并提交默认被 `git log -p` 跳过 ⇒ 彻底口径加 `--log-opts="--all -m"`。
+  WSL / Windows 两侧同一套用法，无需额外配置。
+  **`2.0.0-rc.3` 起 git 扫描改走 go-git，不再 fork `git` 二进制**（rc.2 及更早会 shell out）。
+  由此产生的变化：
+  - Windows 侧**不再需要 git 垫片**。旧版 betterleaks 会给子进程注入
+    `GIT_CONFIG_GLOBAL=NUL` / `GIT_CONFIG_SYSTEM=NUL` / `GIT_CONFIG_NOSYSTEM=1`，
+    而 Git for Windows ≥2.56.0 拒绝全大写设备名 `NUL` ⇒ `git log` exit 128、
+    只扫 0 字节却打印 `no leaks found in incomplete scan`（假绿）。
+    rc.3 里这条注入路径已随 `cmd.Run()` 一起消失，故 `~/.local/share/git-shim/`、mise 的
+    `_.path` 垫片条目、`.chezmoiignore` 里的对应规则**均已删除**。判别依据是实测：
+    把会记账且 `exit 128` 的假 `git.cmd` 放在 PATH 最前，rc.3 仍完整扫出 101.9 MB /
+    `leaks found: 3`，而假 git 的调用计数为 **0**（rc.2 及更早则会记到调用）。
+  - 假绿的**判别口径仍然有效**：真扫描必有 `INF scanned ~NNNN bytes`（百万级）且退出码 0；
+    见到 `scanned ~0 bytes` + `incomplete scan` 一律当**失败**，不许当绿。这条主要用于
+    识别路径写错、权限不足之类的新问题，不再是 git 垫片的专属症状。
+  - `--log-opts`、`--staged`、`--unstaged`、`--pre-receive`、`--pre-receive-error-message`
+    在 rc.3 **已删除**，再传会 `unknown flag`。要让 git 自己决定扫什么就管道进来：
+    `git log -p -B | betterleaks stdin --git-diff`（pre-commit hook 就是这么做的）。
+  - **合并提交默认不再 diff**（rc.2 及更早的 `git log -p` 默认跳过合并提交，rc.3 同样跳过）。
+    彻底口径从旧的 `--log-opts="--all -m"` 换成 `--include=merges`；
+    可选资源还有 `--include=objects,unreachable-objects,commit-messages,notes,tag-messages,reflogs`。
+  - 提交过滤器：`--revision=A..B`、`--since`、`--until`、`--author`、`--committer`、`--max-commits`。
+    远端扫描默认**不再拉 PR/MR ref**（rc.2 会镜像全部 ref，等于扫别人的未合并 PR），
+    要旧行为用 `--clone-all-refs`，单个 PR 用 `--clone-ref=refs/pull/123/head`。
+  - 大 blob 默认上限 `--git-max-blob-mib=64`：超过的包对象会打
+    `skipped Git content over a limit` 警告并跳过（本仓库的
+    `dot_local/share/fcitx5/rime/build/wanxiang.table.bin` 历史上就超限），
+    这**不是**扫描失败，但要知道历史里那一块没被覆盖。
+  - 少重复旧版的速度预期：rc.3 比 rc.2 快约 2×（go-git 化 + 合并提交不 diff），
+    本仓库 `betterleaks git .` 约 1.7s / 101.9 MB。
   扫工作树用 `betterleaks filesystem <path>`：注意它**不读 `.gitignore`**，会连构建产物一起遍历
   （全局配置已排除 `.git/`、`.uvcache/`、`.gradle/`、`.kotlin/`，以及内嵌默认的 `node_modules/`、
   lockfile、图片字体等；但**未**排除 `build/`、`dist/`、`target/` 等通用产物名）；
