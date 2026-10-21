@@ -160,7 +160,9 @@ es.exe -get-result-count 'ext:pdf'               # 只数条数
   查提交历史 `betterleaks git <path>`——只扫跟踪内容，天然避开被忽略的产物，**日常首选**；
   WSL / Windows 两侧同一套用法，无需额外配置。
   **`2.0.0-rc.3` 起 git 扫描改走 go-git，不再 fork `git` 二进制**（rc.2 及更早会 shell out）。
-  由此产生的变化：
+  `2.0.0-rc.4` 把 v6 换成 **go-git v5** 并自建 object/pack 读取器，仍是纯进程内扫描：
+  不执行 `git`、hook、diff/textconv helper、filter、SSH、credential helper，
+  所以扫不受信任的仓库不会被它自己配置的东西执行代码。由此产生的变化：
   - Windows 侧**不再需要 git 垫片**。旧版 betterleaks 会给子进程注入
     `GIT_CONFIG_GLOBAL=NUL` / `GIT_CONFIG_SYSTEM=NUL` / `GIT_CONFIG_NOSYSTEM=1`，
     而 Git for Windows ≥2.56.0 拒绝全大写设备名 `NUL` ⇒ `git log` exit 128、
@@ -187,6 +189,23 @@ es.exe -get-result-count 'ext:pdf'               # 只数条数
     这**不是**扫描失败，但要知道历史里那一块没被覆盖。
   - 少重复旧版的速度预期：rc.3 比 rc.2 快约 2×（go-git 化 + 合并提交不 diff），
     本仓库 `betterleaks git .` 约 1.7s / 101.9 MB。
+  - **rc.4 收窄了「假绿」的边界**：go-git v5 移植后引入了一类**结构性不支持**，
+    表现为「日志里只有 WRN、结果残缺」，容易被当成绿。已实测（本机 Git 2.x + rc.4）：
+    - **reftable 仓库**（`git config extensions.refstorage reftable`）⇒
+      `ERR failed to scan Git repository error="unknown extension: refstorage"`
+      + `scanned ~0 bytes` + `incomplete scan`，**退出码 1**。这种残缺是**安全**的
+      （会判失败），可以放心用退出码判断。
+    - **SHA-1 / SHA-256 仓库同一二进制都支持**（实测 `--object-format=sha256` 正常，
+      rc.3 也正常），无需 build tag。但 **HTTP(S) 克隆目前只支持 SHA-1 仓库**，
+      要扫 SHA-256 仓库得先本地 clone 再 `betterleaks git <path>`。
+    - `--shared` / `--reference` 克隆出的仓库、以及直接扫 submodule checkout，
+      需要 `--allow-external-objects`；否则因对象库在仓库目录之外而被拒。
+    - 硬上限：配置文件 16 MiB、单 ref 1 MiB、ref 目录嵌套 128 层、
+      alternates 最多 4096 个对象目录、无 mmap 时 pack/index 最多同时开 64 个文件、
+      单仓库最多 800 万个 object id 参与可达性分类。超限是**错误**（不是静默跳过），
+      大仓库改用 `--include=objects` 替代 `--include=unreachable-objects`。
+    - rename 检测在相似度打平时配对可能不同（继承自 go-git），可能导致**两次运行
+      命中的行不同**。需要可比对的结果时用 `-o x.json` 存 JSON 再 diff，别肉眼比对终端。
   扫工作树用 `betterleaks filesystem <path>`：注意它**不读 `.gitignore`**，会连构建产物一起遍历
   （全局配置已排除 `.git/`、`.uvcache/`、`.gradle/`、`.kotlin/`，以及内嵌默认的 `node_modules/`、
   lockfile、图片字体等；但**未**排除 `build/`、`dist/`、`target/` 等通用产物名）；

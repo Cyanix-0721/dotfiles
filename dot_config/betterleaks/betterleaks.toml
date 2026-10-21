@@ -15,11 +15,15 @@
 #   betterleaks -c C:\Users\<user>\.config\betterleaks\betterleaks.toml ...
 
 # 版本下限：必须写在所有表头之前
-# 当前 betterleaks 为预发布版，故此处与安装版本保持一致（mise 里为 2.0.0-rc.3）；
-# 若升级到正式版 v2.0.0，可同步上调。
-# 注意：这是**下限**不是等值约束，rc.1 的配置在 rc.3 下仍可加载（已实测），
-# 但反过来（配置写 rc.3、二进制还是 rc.1）会直接拒绝启动。
-# Version floor; MUST appear before any table header.
+# 刻意**不**跟随 mise 里的安装版本（当前 2.0.0-rc.4），而是写本配置真正需要的下限：
+# 本文件只用 minVersion / prefilter / [extend]，rc.3 与 rc.4 均已实测可加载
+# （规则数同为 466、扫描结果逐条一致），故下限停在 rc.3。
+# 为什么重要：minVersion 是**单向门** —— 配置写多高，低于它的二进制就一律拒绝启动。
+# 若跟着安装版本抬到 rc.4，WSL 双克隆那边先 apply 后 install 就会让 betterleaks 全面
+# 不可用（`FTL config requires v2.0.0-rc.4 or newer; running 2.0.0-rc.3`）。
+# 只有真正用上新版本才有的字段时才上调，且要在提交信息里点明顺序要求。
+# Version floor; MUST appear before any table header. Deliberately NOT tracking the
+# installed version -- raising it turns every lagging clone into a hard startup failure.
 minVersion = "v2.0.0-rc.3"
 
 # 预过滤：在任何正则匹配**之前**按路径快速跳过，只能访问 attributes（如 path）。
@@ -60,7 +64,7 @@ matchesAny(attributes["path"], [
 ])
 '''
 
-# 继承内嵌默认规则集（rc.3 为 466 条，rc.1 为 465 条 —— 条数随版本变动，
+# 继承内嵌默认规则集（rc.1/rc.3 为 465/466 条，rc.4 仍为 466 条 —— 条数随版本变动，
 # 以 `betterleaks config show | grep -c '^\[\[rules\]\]'` 的实测为准）。
 # 自定义配置不会自动继承默认规则，
 # 必须显式 extend，否则只剩本文件里写的规则。
@@ -68,7 +72,7 @@ matchesAny(attributes["path"], [
 # 因 prefilter 是并集语义，检测行为 = 默认规则集 - .git/构建缓存 噪音。
 # [extend] is mandatory: a custom config inherits NOTHING by default.
 # The embedded default rule count changes between versions (465 in rc.1, 466 in
-# rc.3) -- always re-measure instead of trusting these numbers.
+# rc.3 and rc.4) -- always re-measure instead of trusting these numbers.
 [extend]
 useDefault = true
 
