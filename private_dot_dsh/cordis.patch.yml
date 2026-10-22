@@ -1,0 +1,56 @@
+# /cordis.patch.yml — home 级 patch 层（chezmoi 托管）
+# 层序：bundle → profile/cordis.patch.yml → 本文件 → --patch
+# 本层只放 insert（新增条目）。写 config 覆盖会让 UI 配置面板拒绝保存
+# （见 dsh-config-editor: overridden by a home patch or command-line overlay）。
+# 改动后需重启 DSH 生效。
+
+- insert:
+    # context7 — 版本化库文档
+    - id: mcp-context7
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: context7
+        transport: stdio
+        command: /home/slayer/.local/share/fnm/aliases/default/bin/node
+        args:
+          - /home/slayer/.local/share/fnm/aliases/default/lib/node_modules/npm/bin/npx-cli.js
+          - '-y'
+          - '@upstash/context7-mcp'
+
+    # Firecrawl — 网页抓取/爬取/搜索
+    - id: mcp-firecrawl
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: firecrawl
+        transport: stdio
+        command: /home/slayer/.local/share/fnm/aliases/default/bin/node
+        args:
+          - /home/slayer/.local/share/fnm/aliases/default/lib/node_modules/npm/bin/npx-cli.js
+          - '-y'
+          - 'firecrawl-mcp'
+        env:
+          FIRECRAWL_API_KEY: !!js process.env.FIRECRAWL_API_KEY
+
+    # Playwright — 浏览器自动化
+    - id: mcp-playwright
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: playwright
+        transport: stdio
+        command: /home/slayer/.local/share/fnm/aliases/default/bin/node
+        args:
+          - /home/slayer/.local/share/fnm/aliases/default/lib/node_modules/npm/bin/npx-cli.js
+          - '@playwright/mcp@latest'
+          - '--executable-path'
+          - '/usr/bin/chromium'
+          - '--headless'
+
+    # MarkItDown — 本地文件转 markdown
+    - id: mcp-markitdown
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: markitdown
+        transport: stdio
+        command: /home/slayer/.local/bin/uvx
+        args:
+          - 'markitdown-mcp'
