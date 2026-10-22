@@ -4,8 +4,42 @@
 # （见 dsh-config-editor: overridden by a home patch or command-line overlay）。
 # 改动后需重启 DSH 生效。
 
+# ── MCP servers ──────────────────────────────────────────────────────────────
+# 四个 MCP 均经 dsh-mcp-client 挂载，工具以 mcp__<serverName>__<tool> 暴露。
+# All four MCP servers mount through dsh-mcp-client; tools surface as
+# mcp__<serverName>__<tool>.
+#
+# 实现要点 / Implementation notes:
+# 1. command 用 fnm aliases/default 下的 node 显式执行 npx-cli.js，而非裸 `npx`
+#    或 npx 符号链接：npx 的 shebang 是 `#!/usr/bin/env node`，要靠 PATH 找 node，
+#    而 fnm 的 PATH 条目是带会话临时 ID 的 multishell 目录，DSH 重启后即失效。
+#    直接以绝对路径的稳定 node 运行，整条链不依赖 PATH。
+#    Run npx-cli.js with fnm's aliases/default node rather than bare `npx`: npx's
+#    shebang is `#!/usr/bin/env node`, which resolves node through PATH, and fnm's
+#    PATH entry is a per-session multishell directory that breaks on restart.
+#    Absolute stable node keeps the whole chain off PATH.
+#    markitdown 例外：它是 Python 包，command 直接用 uvx 绝对路径。uvx 是自包含
+#    二进制，不靠 PATH 找 node，因此比 node/npx 那条链更简单、更不易失效。
+#    markitdown is the exception: a Python package whose command is the absolute
+#    uvx binary. uvx is self-contained and never resolves node through PATH, so
+#    that chain is simpler and less fragile than the node/npx one.
+# 2. args 不锁版本 → 有新版自动取最新；命中缓存则秒起（markitdown 实测
+#    warm 启动约 1.0–1.1s，锁与不锁无差异）。
+#    Unpinned args fetch the latest release, reusing the cache when current.
+# 3. env 必须显式声明：MCP 子进程环境会清洗掉匹配
+#    /KEY|PASSWORD|SECRET|TOKEN/i 的变量，只有显式赋值才传得进去。
+#    env must be stated explicitly: the child environment scrubs ambient names
+#    matching /KEY|PASSWORD|SECRET|TOKEN/i, so only explicit values survive.
+#    注意 HOME 不匹配该模式，故 markitdown 无需 env（uvx 靠 HOME 找缓存目录）。
+#    HOME does not match that pattern, so markitdown needs no env block.
+# 4. 连接在 DSH 启动时建立；失败不阻断启动（failOnStartupError 默认 false），
+#    断线会按 500ms→30s 退避自动重连。
+#    Connections open at startup; a failure does not abort the harness and an
+#    outage reconnects with 500ms→30s backoff.
+
 - insert:
-    # context7 — 版本化库文档
+    # context7 — 查库版本文档（2 个工具，开销可忽略）
+    # context7 — library version docs (2 tools, negligible cost)
     - id: mcp-context7
       name: '@deepseek-ai/dsh-mcp-client'
       config:
@@ -17,7 +51,15 @@
           - '-y'
           - '@upstash/context7-mcp'
 
-    # Firecrawl — 网页抓取/爬取/搜索
+    # Firecrawl — 网页抓取/爬取/搜索/结构化提取（27 个工具）
+    # 与 DSH 原生 dsh-web-search-deepseek（web_search / web_fetch）分工：
+    #   快速查事实、要来源列表 → 原生 web_search（轻量、结构化）
+    #   抓单页正文 → web_fetch（静态页）或 firecrawl_scrape（要 JS 渲染）
+    #   整站爬取 / 结构化提取 / 论文与 GitHub 检索 → Firecrawl 专用工具
+    # Firecrawl is the heavyweight half of web retrieval. Division of labour with
+    # the native dsh-web-search-deepseek: quick facts and source lists go to
+    # web_search; a single page goes to web_fetch (static) or firecrawl_scrape
+    # (needs JS); site-level crawls and structured extraction stay here.
     - id: mcp-firecrawl
       name: '@deepseek-ai/dsh-mcp-client'
       config:
@@ -31,7 +73,14 @@
         env:
           FIRECRAWL_API_KEY: !!js process.env.FIRECRAWL_API_KEY
 
-    # Playwright — 浏览器自动化
+    # Playwright — 浏览器自动化（80 个工具）
+    # 与 webapp-testing 技能能力重叠：技能按需加载、零常驻开销，适合可复现的
+    # 测试脚本；MCP 免写代码、便于交互式探索。成本经前缀缓存后极低
+    # （实测约 9k token/请求，Flash 空闲命中价 100 轮 ≈ 0.018 元），故并存。
+    # Playwright — browser automation (80 tools). Overlaps the webapp-testing
+    # skill: the skill loads on demand for reproducible scripts, while the MCP
+    # needs no code for interactive exploration. With prefix caching the cost is
+    # negligible (~9k tokens/request), so both stay available.
     - id: mcp-playwright
       name: '@deepseek-ai/dsh-mcp-client'
       config:
@@ -45,7 +94,19 @@
           - '/usr/bin/chromium'
           - '--headless'
 
-    # MarkItDown — 本地文件转 markdown
+    # MarkItDown — 本地文件 → markdown（PDF/DOCX/XLSX/PPTX/HTML/EPUB/ZIP/msg…）
+    # 只有 1 个工具 convert_to_markdown，参数只有 uri；本地文件必须传
+    # file:///绝对路径（裸路径被拒：Unsupported URI scheme）。纯本地转换走
+    # pdfminer/pdfplumber，离线、无需密钥。
+    # 不做 OCR —— 扫描件 PDF 会静默返回空串（isError:false），不是报错；
+    # 扫描件请走 pdf 技能 + tesseract。
+    # 定位是本地可信 agent 的本地工具：官方明说不支持认证、以本进程权限执行 I/O，
+    # 故保持 stdio，绝不要加 --http 暴露到 LAN。
+    # MarkItDown — local files to markdown (PDF/DOCX/XLSX/PPTX/HTML/EPUB/ZIP/msg...).
+    # Exactly one tool, convert_to_markdown(uri); local files must be passed as
+    # file:///absolute/path. Local conversion is offline and needs no credentials.
+    # It does NOT OCR: a scanned PDF silently yields an empty string, not an error.
+    # Intended for local trusted agents; never add --http and expose it on the LAN.
     - id: mcp-markitdown
       name: '@deepseek-ai/dsh-mcp-client'
       config:
@@ -54,3 +115,4 @@
         command: /home/slayer/.local/bin/uvx
         args:
           - 'markitdown-mcp'
+
