@@ -15,6 +15,8 @@
   （`dispatching-parallel-agents`）；强串行 → 内联 `executing-plans`。`spawn_teammate`
   （Agent Teams）仅在用户显式要求 teammates 时用。
 - 本文件不重复列 Superpowers 自带的 skill；以插件注入为准。本文件只补环境约束与本地 skills 清单。
+- **技能名以插件目录 frontmatter 为准**（`name:` 字段），当前 15 个均**无前缀**；
+  历史文档里的 `superpower-*` 是旧版命名，照旧名调用会失败。
 - **任务面板纪律**：任何多步任务，开工第一件事用 `todo_write`（由 `dsh-base` 默认挂载的
   `@deepseek-ai/dsh-tool-todo` 提供）把**全量**步骤写成清单，**每完成一步立刻标 `completed`，
   不得留到收尾一次性结账**。依据 = 上述 `executing-plans` 步骤 2 逐字要求「针对每项任务：
@@ -28,7 +30,11 @@
 - **`$DSH_AGENTS_HOME/skills`**（rank 500）— Windows 侧共享技能库，由 chezmoi/ccswitch
   在 Windows 上维护，经 `DSH_AGENTS_HOME` 指向 `/mnt/c/Users/<user>/.agents`。24 个
   （`handoff` 带 `disable-model-invocation: true`，模型不可见）。
-- **`@wenaixi/dsh-superpower`** — 插件注入的 15 个 `superpower-*`。
+- **`@wenaixi/dsh-superpower`** — 插件注入的 15 个，**名称无 `superpower-` 前缀**
+  （`brainstorming` / `using-superpowers` / `writing-plans` / `executing-plans` / `test-driven-development` /
+  `systematic-debugging` / `verification-before-completion` / `requesting-code-review` / `receiving-code-review` /
+  `finishing-a-development-branch` / `subagent-driven-development` / `dispatching-parallel-agents` /
+  `using-git-worktrees` / `writing-skills` / `diagnosing-superpowers`）。叫错名 = 调不到。
 - **`@deepseek-ai/dsh-experimental-badge-skill-bundle`** — 注入 1 个 `dsh-badge`。
 
 `~/.dsh/skills`（rank 400）当前空闲，留给 WSL 本地技能；同名时 rank 小者胜，
@@ -243,6 +249,11 @@ es.exe -get-result-count 'ext:pdf'               # 只数条数
 
 ## 8. 生效优先级（强 → 弱）
 1. **用户当回合指令** — 可覆盖 2/3/4 的行为细节；不得违反 §6/§7 的认证链路与用户偏好硬约束。
-2. **项目根目录 `AGENTS.md`**（若存在）— 最具体，项目内优先于全局。
+2. **项目根目录 `AGENTS.md`**（若存在）— 最具体，项目内优先于全局的**事实类**约定
+   （技术栈 / 环境 / 工具链 / 构建命令 / 目录结构）。
 3. **本文件（全局）** — 通用环境约束与 skills 清单。
-4. **Superpowers 插件注入的协议引导** — 流程基线，与上三层一般不冲突。
+4. **Superpowers 插件注入的协议引导** — 流程基线。
+
+**§0 的「任何用户任务先按 Superpowers 协议匹配 skill」是下限，不受 2/3 覆盖**：
+项目级 `AGENTS.md` 可以把项目事实写得比全局更具体、更严格，但不能规定「本项目不用 skill」。
+只有**用户当回合本人**说「跳过 skill」才算覆盖（用户 > 项目 > 全局）。
