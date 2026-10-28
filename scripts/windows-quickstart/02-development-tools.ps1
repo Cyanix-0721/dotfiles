@@ -418,6 +418,22 @@ $aiTools = @{
             "WSL 中使用时：设置 → 配置目录覆盖 → 指向 WSL 配置目录 / For WSL: Settings → config directory override → point to the WSL config dir"
         )
     }
+    "rtk"       = @{
+        Desc     = "rtk (CLI 代理，压缩常见命令输出以减少 LLM token 消耗 / CLI proxy that cuts token usage on common dev commands)"
+        Global   = $false
+        PostNote = @(
+            "用法：在命令前加 rtk，例如 rtk git status、rtk ls、rtk cargo build / Usage: prefix commands with rtk, e.g. rtk git status"
+            "可通过 rtk gain 查看节省的 token 统计 / Check token savings with: rtk gain"
+        )
+    }
+    "magpie-ai" = @{
+        Desc     = "magpie-ai (AI 编程助手的模型/供应商/网关管理器 / Unified model, provider and gateway manager for AI coding agents)"
+        Global   = $false
+        PostNote = @(
+            "数据目录为 scoop 持久化目录（<scoop root>\persist\magpie-ai\data）/ Data lives in the Scoop persist dir (<scoop root>\persist\magpie-ai\data)"
+            '若曾用旧版本，需手动把 %USERPROFILE%\.config\magpie 的数据迁移到上述目录 / Older versions stored data in %USERPROFILE%\.config\magpie, migrate it manually if needed'
+        )
+    }
 }
 
 Install-ScoopPackages $aiTools
