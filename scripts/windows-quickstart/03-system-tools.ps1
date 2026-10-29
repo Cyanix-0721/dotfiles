@@ -83,6 +83,7 @@ $winTools = @{
     "everything-cli"  = @{ Desc = "Everything CLI (命令行文件搜索 / Command-line file search)"; Global = $false }
     "fancontrol"      = @{ Desc = "FanControl (风扇控制工具 / Fan control utility)"; Global = $false }
     "hwinfo"          = @{ Desc = "HWiNFO (系统信息与诊断工具 / System information and diagnostics)"; Global = $false }
+    "y-cruncher"      = @{ Desc = "Y-Cruncher (高性能计算工具 / High-performance computing tool)"; Global = $false }
     "flow-launcher"   = @{ Desc = "Flow Launcher (文件搜索和启动器 / File search and launcher)"; Global = $false }
     "krokiet"         = @{ Desc = "Krokiet (图片查重工具 / picture duplicate finder)"; Global = $false }
     "ventoy"          = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $false }
