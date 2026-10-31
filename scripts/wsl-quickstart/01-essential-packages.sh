@@ -220,6 +220,40 @@ else
 	fi
 fi
 
+# magpie：用官方安装脚本装终端版（Go 单文件二进制，落到 ~/.local/bin）
+# magpie 是本机的模型/供应商/网关管理器：写各 agent 自己的配置（codex 的
+# ~/.codex/config.toml 等），网关跑在 127.0.0.1:3425。WSL 里只需要 CLI/TUI/web。
+# MAGPIE_CLI=1 强制终端构建：安装脚本在检测到 WebKitGTK 4.1 时会自动换成 GUI 版并
+# 写 .desktop 菜单项，而 WSL 没有桌面环境，那份构建用不上。
+# 需要代理时用 MAGPIE_PROXY=...，或在 sh 之后追加 --proxy <url>（安装脚本原生支持）。
+# magpie: install the terminal build via the official installer (a single Go binary in ~/.local/bin)
+# magpie manages the model/provider/gateway wiring for local agents: it writes each agent's own
+# config (~/.codex/config.toml and friends) and runs a gateway on 127.0.0.1:3425. Inside WSL only
+# the CLI/TUI/web surfaces matter.
+# MAGPIE_CLI=1 pins the terminal build: with WebKitGTK 4.1 present the installer otherwise switches
+# to the GUI build and writes a .desktop entry, which is useless without a desktop session.
+# Behind a proxy, set MAGPIE_PROXY=... or append --proxy <url> after `sh` (both are native).
+step "安装 magpie CLI（官方脚本）/ Installing magpie CLI (official installer)"
+MAGPIE_BIN="$HOME/.local/bin/magpie"
+if command -v magpie >/dev/null 2>&1 || [ -x "$MAGPIE_BIN" ]; then
+	ok "magpie 已安装，跳过 / magpie already installed, skipping"
+else
+	# 安装脚本按 uname 选 magpie-cli-linux-<arch>，SHA-256 取自 usemagpie.ai/api/latest
+	# 管道放在子 shell 里开 pipefail：没有它，curl 失败时 sh 读到空 stdin 仍退出 0，
+	# 会把「下载失败」误报成安装完成。子 shell 隔离，不影响脚本其余部分。
+	# The installer picks magpie-cli-linux-<arch> from uname and verifies it against
+	# the SHA-256 published by usemagpie.ai/api/latest.
+	# The pipe runs in a subshell with pipefail: without it a failed curl still exits 0
+	# (sh reads empty stdin), reporting success for a download that never happened.
+	if (set -o pipefail && curl -fsSL https://usemagpie.ai/install.sh | MAGPIE_CLI=1 sh); then
+		ok "magpie 安装完成（$MAGPIE_BIN）/ magpie installed ($MAGPIE_BIN)"
+		note "  终端 UI：magpie tui；浏览器 UI：magpie web（WSL 无桌面时用这个）/ terminal UI: 'magpie tui'; browser UI: 'magpie web'"
+	else
+		warn "magpie 安装失败，请稍后手动重试 / magpie install failed, retry manually later"
+		note "  curl -fsSL https://usemagpie.ai/install.sh | MAGPIE_CLI=1 sh"
+	fi
+fi
+
 # DSH：DeepSeek Harness 及插件市场（可选，默认否；AUTO_YES 时安装）
 # 依赖上面的 Node LTS 与 pnpm；插件装在 ~/.dsh/profiles/<profile>/ 下
 # DSH: DeepSeek Harness plus the plugin market (optional, default no; AUTO_YES installs it)
@@ -277,5 +311,6 @@ note "  uv      → uv self update"
 note "  fnm     → fnm self install"
 note "  mise    → mise self-update"
 note "  codex   → codex update（走 pnpm：pnpm add -g @openai/codex）/ codex update (via pnpm)"
+note "  magpie  → magpie update（自更新，代理用 --proxy）/ magpie update (--proxy behind a firewall)"
 
 ok "常用软件安装完成 / Essential packages installed"
