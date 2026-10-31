@@ -131,6 +131,16 @@ fi
 # pnpm：官方 standalone 脚本安装（pnpm 自身无需 Node；运行 JS 项目/DSH 仍需上面的 Node）
 # pnpm: official standalone installer (pnpm itself needs no Node; running JS/DSH still needs Node above)
 step "安装 pnpm（官方脚本）/ Installing pnpm (official installer)"
+# standalone 默认装到 ~/.local/share/pnpm（PNPM_HOME），CLI 位于其 bin/ 子目录。
+# 这里**无条件**导出：pnpm 已存在时走下面的跳过分支，但后续 `pnpm add -g` 仍要求
+# PNPM_HOME/bin 在 PATH 中，否则直接报 "The configured global bin directory ... is not
+# in PATH" 并以退出码 1 结束（set -e 会中断整个脚本）。
+# Default dir is ~/.local/share/pnpm (PNPM_HOME) with CLIs in its bin/ subdir.
+# Exported unconditionally: the already-installed branch below skips installation, yet a
+# later `pnpm add -g` still requires PNPM_HOME/bin on PATH or it aborts with
+# "The configured global bin directory ... is not in PATH" and exit code 1 (set -e stops us).
+export PNPM_HOME="${PNPM_HOME:-$HOME/.local/share/pnpm}"
+export PATH="$PNPM_HOME/bin:$PATH"
 if command -v pnpm >/dev/null 2>&1; then
 	ok "pnpm 已安装，跳过 / pnpm already installed, skipping"
 else
@@ -138,13 +148,12 @@ else
 	# The glibc build needs libatomic.so.1 (normally present on full distros; install if missing)
 	sudo apt-get install -y --no-install-recommends libatomic1 >/dev/null 2>&1 || true
 	curl -fsSL https://get.pnpm.io/install.sh | sh -
-	# standalone 默认装到 ~/.local/share/pnpm（PNPM_HOME），CLI 位于其 bin/ 子目录；
-	# 本次会话立即可用，fish 侧由 chezmoi 管理的 dot_config/fish/conf.d/01-env.fish 提供
-	# Default dir is ~/.local/share/pnpm (PNPM_HOME) with CLIs in its bin/ subdir;
-	# exported for this session, the fish PATH comes from the chezmoi-managed
+	# 安装器把 CLI 写进 $PNPM_HOME/bin，PATH 已在上面无条件导出；
+	# 持久化的 fish PATH 由 chezmoi 管理的 dot_config/fish/conf.d/01-env.fish 提供
+	# The installer drops the CLIs into $PNPM_HOME/bin (PATH already exported above);
+	# the persistent fish PATH comes from the chezmoi-managed
 	# dot_config/fish/conf.d/01-env.fish
-	export PATH="$HOME/.local/share/pnpm/bin:$PATH"
-	ok "pnpm 安装完成（~/.local/share/pnpm/bin）/ pnpm installed (~/.local/share/pnpm/bin)"
+	ok "pnpm 安装完成（$PNPM_HOME/bin）/ pnpm installed ($PNPM_HOME/bin)"
 fi
 
 # mise：使用官方安装脚本（mise.run，自带 self-update）
@@ -176,14 +185,39 @@ else
 	fi
 fi
 
-# codex：使用官方独立安装器（原生 Rust 二进制，无需 Node）
-# codex: install via the official standalone installer (native Rust binary, no Node needed)
-step "安装 codex（官方独立安装器）/ Installing codex (official standalone installer)"
-if command -v codex >/dev/null 2>&1; then
-	ok "codex 已安装，跳过 / codex already installed, skipping"
+# codex：用 pnpm 全局安装（@openai/codex 的 npm/pnpm 包，需要 Node 运行时）
+# codex update 会跟随安装方式：pnpm 装的 codex 跑 `pnpm add -g @openai/codex` 自更新，
+# 而 standalone 版会重跑 install.sh。统一走 pnpm 后，更新路径与上面的 pnpm 段一致。
+# codex: installed globally via pnpm (the @openai/codex npm/pnpm package needs a Node runtime)
+# codex update follows the install method: a pnpm-managed codex self-updates with
+# `pnpm add -g @openai/codex`, whereas the standalone build re-runs install.sh. Routing
+# everything through pnpm keeps the update path aligned with the pnpm step above.
+step "安装 codex（pnpm 全局）/ Installing codex (pnpm global)"
+if ! command -v node >/dev/null 2>&1; then
+	# pnpm 清单是 `#!/bin/sh` + `exec node ...`，没有 node 会直接 exec 失败
+	# The pnpm shim is `#!/bin/sh` + `exec node ...`, so a missing node makes it fail on exec
+	warn "未找到 node，跳过 codex 安装（pnpm 版 codex 依赖 Node 运行时）/ node not found, skipping codex (the pnpm build needs a Node runtime)"
+	note "  请先在上一步安装 Node.js，或手动执行 fnm install --latest / install Node.js in the step above first, or run 'fnm install --latest'"
+elif ! command -v pnpm >/dev/null 2>&1; then
+	warn "未找到 pnpm，跳过 codex 安装 / pnpm not found, skipping codex install"
+	note "  请确认 $PNPM_HOME/bin 在 PATH 中 / make sure $PNPM_HOME/bin is on PATH"
 else
-	curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh
-	ok "codex 安装完成（~/.local/bin/codex，数据在 ~/.codex）/ codex installed (~/.local/bin/codex, data in ~/.codex)"
+	# 用 `pnpm list` 而非 `command -v codex` 判断是否已装：PATH 里可能还残留 npm 或
+	# standalone 版 codex，那会让这里误判「已安装」而放过 pnpm 安装，结果 codex update
+	# 仍然指向错误的更新器。
+	# Detect with `pnpm list`, not `command -v codex`: PATH may still hold an npm or
+	# standalone codex, which would look "already installed" and skip the pnpm install,
+	# leaving codex update pointed at the wrong updater.
+	if pnpm list -g --depth=0 @openai/codex 2>/dev/null | grep -q '@openai/codex'; then
+		ok "codex 已由 pnpm 安装，跳过 / codex already installed via pnpm, skipping"
+	else
+		if pnpm add -g @openai/codex; then
+			ok "codex 安装完成（$PNPM_HOME/bin/codex，数据在 ~/.codex）/ codex installed ($PNPM_HOME/bin/codex, data in ~/.codex)"
+		else
+			warn "codex 安装失败，请稍后手动重试 / codex install failed, retry manually later"
+			note "  pnpm add -g @openai/codex"
+		fi
+	fi
 fi
 
 # DSH：DeepSeek Harness 及插件市场（可选，默认否；AUTO_YES 时安装）
@@ -242,6 +276,6 @@ note "  chezmoi  → chezmoi upgrade"
 note "  uv      → uv self update"
 note "  fnm     → fnm self install"
 note "  mise    → mise self-update"
-note "  codex   → codex update（或重跑 install.sh）/ codex update (or re-run install.sh)"
+note "  codex   → codex update（走 pnpm：pnpm add -g @openai/codex）/ codex update (via pnpm)"
 
 ok "常用软件安装完成 / Essential packages installed"
