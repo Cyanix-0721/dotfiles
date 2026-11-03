@@ -17,8 +17,8 @@
     "overrides": {},
     "deny_paths": [
       "~/.dsh/.credentials.yaml",
-      "~/.dsh/jet-hub",
-      "~/.dsh/openai-gateway"
+      "~/.config/magpie",
+      "/mnt/c/Users/Administrator/scoop/persist/magpie-ai"
     ],
     "allow_paths": []
   },
