@@ -411,13 +411,6 @@ $aiTools = @{
             "首次使用 lms 前需先启动一次 LM Studio 图形界面（依赖其守护进程）/ Launch the LM Studio app once before using lms (it needs the daemon)"
         )
     }
-    "cc-switch" = @{
-        Desc     = "cc-switch (Claude Code / Codex / Gemini CLI 配置切换器 / Config switcher for AI coding CLIs)"
-        Global   = $false
-        PostNote = @(
-            "WSL 中使用时：设置 → 配置目录覆盖 → 指向 WSL 配置目录 / For WSL: Settings → config directory override → point to the WSL config dir"
-        )
-    }
     "rtk"       = @{
         Desc     = "rtk (CLI 代理，压缩常见命令输出以减少 LLM token 消耗 / CLI proxy that cuts token usage on common dev commands)"
         Global   = $false
