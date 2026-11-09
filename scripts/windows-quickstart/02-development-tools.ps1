@@ -401,7 +401,7 @@ else {
 Write-Header "AI 开发工具 / AI Development Tools"
 
 $aiTools = @{
-    "lmstudio"  = @{
+    "lmstudio"         = @{
         Desc     = "lmstudio (本地大模型运行器 / Local LLM runner)"
         Global   = $false
         PostNote = @(
@@ -411,7 +411,7 @@ $aiTools = @{
             "首次使用 lms 前需先启动一次 LM Studio 图形界面（依赖其守护进程）/ Launch the LM Studio app once before using lms (it needs the daemon)"
         )
     }
-    "rtk"       = @{
+    "rtk"              = @{
         Desc     = "rtk (CLI 代理，压缩常见命令输出以减少 LLM token 消耗 / CLI proxy that cuts token usage on common dev commands)"
         Global   = $false
         PostNote = @(
@@ -419,8 +419,8 @@ $aiTools = @{
             "可通过 rtk gain 查看节省的 token 统计 / Check token savings with: rtk gain"
         )
     }
-    "magpie-ai" = @{
-        Desc     = "magpie-ai (AI 编程助手的模型/供应商/网关管理器 / Unified model, provider and gateway manager for AI coding agents)"
+    "magpie-ai-latest" = @{
+        Desc     = "magpie (AI 编程助手的模型/供应商/网关管理器 / Unified model, provider and gateway manager for AI coding agents)"
         Global   = $false
         PostNote = @(
             "数据目录为 scoop 持久化目录（<scoop root>\persist\magpie-ai\data）/ Data lives in the Scoop persist dir (<scoop root>\persist\magpie-ai\data)"
