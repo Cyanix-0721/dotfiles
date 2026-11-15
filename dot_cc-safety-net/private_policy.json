@@ -18,7 +18,8 @@
     "deny_paths": [
       "~/.dsh/.credentials.yaml",
       "~/.config/magpie",
-      "/mnt/c/Users/Administrator/scoop/persist/magpie-ai-latest"
+      "/mnt/c/Users/Administrator/scoop/persist/magpie-ai-latest",
+      "C:/Users/Administrator/scoop/persist/magpie-ai-latest"
     ],
     "allow_paths": []
   },

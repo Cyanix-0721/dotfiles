@@ -3,7 +3,6 @@
   "compress": {
     "protectedLatestTools": [
       "todo_write",
-      "skill",
       "skill/*",
       "acp_status",
       "team_task_list",
@@ -14,9 +13,18 @@
     "protectedTools": [
       "ask_user_question"
     ],
-    "preserveRecentTools": [
-      "read",
-      "read_image"
-    ]
+    "neverPreserveRecentTools": [
+      "decompress",
+      "search_context",
+      "bash"
+    ],
+    "preserveRecentMessages": 6,
+    "preserveRecentTokens": 8000,
+    "ccr": {
+      "enabled": true
+    },
+    "search": {
+      "planAware": true
+    }
   }
 }
