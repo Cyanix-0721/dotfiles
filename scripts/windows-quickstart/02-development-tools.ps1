@@ -341,6 +341,7 @@ Write-Header "数据库工具 / Database Tools"
 
 $dbTools = @{
     "dbeaver" = @{ Desc = "DBeaver (数据库管理工具 / Database management tool)"; Global = $false }
+    "dbx"     = @{ Desc = "DBX (轻量跨平台数据库客户端 / Lightweight cross-platform database client)"; Global = $false }
 }
 
 Install-ScoopPackages $dbTools
