@@ -82,3 +82,16 @@ if (Get-Command fnm -ErrorAction SilentlyContinue) {
     fnm env --use-on-cd --shell powershell | Out-String | Invoke-Expression
 }
 #endregion
+
+#region dsh (npx) —— 仿 fish 的 abbr：基础 / w=web / wn=web --no-open；默认 / a=alpha / n=next 三通道
+# 通道说明：不指定 tag 走 npm 的 latest 标签（当前 0.2.2-rc.1）；@next 才是眼下最高（0.2.2-rc.3）；@alpha 为 alpha 通道。
+function dsh     { npx '@deepseek-ai/dsh' @args }
+function dshw    { npx '@deepseek-ai/dsh' web @args }
+function dshwn   { npx '@deepseek-ai/dsh' web --no-open @args }
+function dsha    { npx '@deepseek-ai/dsh@alpha' @args }
+function dshaw   { npx '@deepseek-ai/dsh@alpha' web @args }
+function dshawn  { npx '@deepseek-ai/dsh@alpha' web --no-open @args }
+function dshn    { npx '@deepseek-ai/dsh@next' @args }
+function dshnw   { npx '@deepseek-ai/dsh@next' web @args }
+function dshnwn  { npx '@deepseek-ai/dsh@next' web --no-open @args }
+#endregion

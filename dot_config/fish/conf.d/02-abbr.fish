@@ -94,6 +94,9 @@ abbr -a dshwn 'npx @deepseek-ai/dsh web --no-open'
 abbr -a dsha 'npx @deepseek-ai/dsh@alpha'
 abbr -a dshaw 'npx @deepseek-ai/dsh@alpha web'
 abbr -a dshawn 'npx @deepseek-ai/dsh@alpha web --no-open'
+abbr -a dshn 'npx @deepseek-ai/dsh@next'
+abbr -a dshnw 'npx @deepseek-ai/dsh@next web'
+abbr -a dshnwn 'npx @deepseek-ai/dsh@next web --no-open'
 
 # -----------------------------------------------------------------------------
 # Fish shell management
