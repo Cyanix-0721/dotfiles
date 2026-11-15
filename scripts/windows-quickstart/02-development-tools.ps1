@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env pwsh
+#!/usr/bin/env pwsh
 
 <#
 .SYNOPSIS
@@ -160,6 +160,56 @@ $nodePackageManagers = @{
     }
 }
 Install-ScoopPackages $nodePackageManagers
+
+# 2.1 DSH (DeepSeek Harness) CLI —— 经 pnpm 全局安装
+# DSH (DeepSeek Harness) CLI —— installed globally via pnpm
+# 版本说明：默认 @latest 稳定标签；如要绝对最新（含预发布），把 $dshPackage 改成 @next。
+# Version note: defaults to the stable @latest tag; switch $dshPackage to @next for the newest (prerelease) build.
+if (Get-Command pnpm -ErrorAction SilentlyContinue) {
+    Write-Step "DSH (DeepSeek Harness) CLI"
+    $dshPackage = '@deepseek-ai/dsh@latest'
+    $installDsh = Confirm-Install "全局安装 DSH (@deepseek-ai/dsh@latest)？(Y/n) / Install DSH globally? (Y/n)"
+    if ($installDsh -notmatch '^[Nn]$') {
+        Write-Step "安装 DSH / Installing $dshPackage"
+        pnpm add -g $dshPackage
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "DSH 安装完成 / DSH installed ($dshPackage)"
+        }
+        else {
+            Write-Err "DSH 安装失败 / DSH installation failed"
+        }
+    }
+    else {
+        Write-Note "跳过 DSH 安装 / Skipping DSH installation"
+    }
+}
+else {
+    Write-Warn "pnpm 不可用，跳过 DSH 安装 / pnpm unavailable, skipping DSH installation"
+}
+
+# 2.2 Codex (OpenAI Codex CLI) —— 经 pnpm 全局安装
+# Codex (OpenAI Codex CLI) —— installed globally via pnpm
+if (Get-Command pnpm -ErrorAction SilentlyContinue) {
+    Write-Step "Codex CLI (OpenAI Codex)"
+    $codexPackage = '@openai/codex@latest'
+    $installCodex = Confirm-Install "全局安装 Codex CLI (@openai/codex@latest)？(Y/n) / Install Codex CLI globally? (Y/n)"
+    if ($installCodex -notmatch '^[Nn]$') {
+        Write-Step "安装 Codex / Installing $codexPackage"
+        pnpm add -g $codexPackage
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "Codex 安装完成 / Codex installed ($codexPackage)"
+        }
+        else {
+            Write-Err "Codex 安装失败 / Codex installation failed"
+        }
+    }
+    else {
+        Write-Note "跳过 Codex 安装 / Skipping Codex installation"
+    }
+}
+else {
+    Write-Warn "pnpm 不可用，跳过 Codex 安装 / pnpm unavailable, skipping Codex installation"
+}
 
 # 3. Python 包管理器 (可选一个或都安装，默认 uv / Optional, can install one or both, default uv)
 Write-Step "Python 包管理器 / Python Package Manager (Optional)"
