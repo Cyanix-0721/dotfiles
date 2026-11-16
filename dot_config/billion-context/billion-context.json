@@ -26,5 +26,8 @@
     "search": {
       "planAware": true
     }
+  },
+  "dsh": {
+    "contextTab": false
   }
 }
