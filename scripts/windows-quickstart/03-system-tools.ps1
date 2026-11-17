@@ -145,6 +145,19 @@ $networkTools = @{
 
 Install-ScoopPackages $networkTools
 
+# OpenSSH Preview（比 Windows 内置版本更新 / Newer than the built-in OpenSSH）
+Write-Header "OpenSSH Preview"
+
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    Write-Warn "winget 未安装，跳过 OpenSSH Preview 安装 / winget not installed, skipping OpenSSH Preview installation"
+}
+else {
+    $wingApps = @{
+        "Microsoft.OpenSSH.Preview" = @{ Desc = "OpenSSH Preview (Microsoft 官方 OpenSSH 预览版 / Microsoft OpenSSH preview)"; InstallArgs = @("--exact", "--silent") }
+    }
+    Install-WingetApps $wingApps -Force
+}
+
 Write-Header "系统工具安装完成 / System tools installation completed"
 $globalRoot = if ($env:SCOOP_GLOBAL) { $env:SCOOP_GLOBAL } else { "C:\ProgramData\scoop" }
 $globalAppsDir = Join-Path $globalRoot "apps"

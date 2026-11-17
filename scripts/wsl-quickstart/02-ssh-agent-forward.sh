@@ -42,7 +42,13 @@ write_win_ps1() {
 	mkdir -p "$(dirname "$target")"
 	cat >"$target" <<'PS1'
 Remove-Item Env:SSH_AUTH_SOCK -ErrorAction SilentlyContinue
-& 'C:\Windows\System32\OpenSSH\ssh.exe' @args
+# winget 版 OpenSSH Preview 装在 Program Files，系统内置版在 System32；两者都缺时退回 PATH 解析
+$ssh = @(
+    "$env:ProgramFiles\OpenSSH\ssh.exe"
+    "$env:SystemRoot\System32\OpenSSH\ssh.exe"
+) | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $ssh) { $ssh = "ssh.exe" }
+& $ssh @args
 exit $LASTEXITCODE
 PS1
 }

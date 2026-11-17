@@ -78,7 +78,7 @@ chezmoi execute-template --init \
 - **部署脚本** `scripts/wsl-quickstart/02-ssh-agent-forward.sh`(默认启用,Run All 亦含)生成两个包装脚本,均幂等(已存在且内容一致则跳过;`FORCE=1` 或内容不一致且用户确认时覆盖):
   - WSL 侧 `~/bin/win-ssh`:`sh` 包装 → 调 Windows PowerShell 执行下方脚本;
   - Windows 侧 `%USERPROFILE%\.local\bin\win-ssh.ps1`:清掉 `SSH_AUTH_SOCK`,exec Windows OpenSSH `ssh.exe`。
-- **git 接线**由 chezmoi 完成,脚本**不**设置 `GIT_SSH_COMMAND`、不注入 `.bashrc`:`dot_gitconfig.tmpl` 的非 Windows 分支检测 `WSL_DISTRO_NAME` 环境变量,存在即写 `core.sshCommand = ~/bin/win-ssh`,保证任意 shell(含非交互)下 git 均走该通道。Windows 分支则写 `C:/Windows/System32/OpenSSH/ssh.exe`。
+- **git 接线**由 chezmoi 完成,脚本**不**设置 `GIT_SSH_COMMAND`、不注入 `.bashrc`:`dot_gitconfig.tmpl` 的非 Windows 分支检测 `WSL_DISTRO_NAME` 环境变量,存在即写 `core.sshCommand = ~/bin/win-ssh`,保证任意 shell(含非交互)下 git 均走该通道。Windows 分支则按存在性挑 `ssh.exe`:优先 winget 版 `C:/Program Files/OpenSSH/ssh.exe`(OpenSSH Preview,路径含空格须用单引号包裹,双引号会被 git 剥离),其次系统内置 `C:/Windows/System32/OpenSSH/ssh.exe`,都缺则退回 PATH 解析的 `ssh.exe`;`02-ssh-agent-forward.sh` 生成的 `win-ssh.ps1` 使用同一优先级。
 - **验证注意**:脚本可选自检用 `ssh -T git@github.com`,但 GitHub 认证成功仍以退出码 1 结束,须匹配输出中的 `successfully authenticated`,并带 3 次重试以容忍代理节点抖动。
 
 ## 改动工作流
