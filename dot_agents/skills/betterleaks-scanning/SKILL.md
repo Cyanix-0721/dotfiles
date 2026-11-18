@@ -1,6 +1,6 @@
 ---
 name: betterleaks-scanning
-description: "密钥扫描与凭据隐私——betterleaks（含 rc.2/3/4 版本行为、git 与文件系统扫描、假绿判别）、gitleaks、会话日志不脱敏风险、读写密钥的红线。要扫密钥、查提交历史泄露、或处理/读取凭据时加载。"
+description: "密钥扫描与凭据隐私——betterleaks（含 rc.2/3/4/8/9 版本行为、git 与文件系统扫描、假绿判别）、gitleaks、会话日志不脱敏风险、读写密钥的红线。要扫密钥、查提交历史泄露、或处理/读取凭据时加载。"
 ---
 
 # 密钥与隐私（工具输出会原样落盘）
@@ -30,6 +30,12 @@ description: "密钥扫描与凭据隐私——betterleaks（含 rc.2/3/4 版本
   - `--shared` / `--reference` 克隆出的仓库、以及直接扫 submodule checkout，需要 `--allow-external-objects`；否则因对象库在仓库目录之外而被拒。
   - 硬上限：配置文件 16 MiB、单 ref 1 MiB、ref 目录嵌套 128 层、alternates 最多 4096 个对象目录、无 mmap 时 pack/index 最多同时开 64 个文件、单仓库最多 800 万个 object id 参与可达性分类。超限是错误（不是静默跳过），大仓库改用 `--include=objects` 替代 `--include=unreachable-objects`。
   - rename 检测在相似度打平时配对可能不同（继承自 go-git），可能导致两次运行命中的行不同。需要可比对的结果时用 `-o x.json` 存 JSON 再 diff，别肉眼比对终端。
+
+**rc.9 实测（Windows x64 官方二进制）**：配置与命令行用法同 rc.3/rc.4，本仓库 `betterleaks.toml` 原样能加载（`config check` → `OK: 475 rules (247 with validation, 228 without validation)`）。
+- 规则数 **475**（rc.8 为 476）：#482 删掉 5 条 client-side publishable key 规则（`posthog-project-api-key`、`lob-pub-api-key`、`flutterwave-public-key`、`devcycle-client-sdk-key`、`devcycle-mobile-sdk-key`），形态并入 `rules/generic/filter.go` 的 `testAndPublicAPIFilters`，防止 `generic-api-key` 把它们捡回来。**Breaking**：`--disable-rule` / `--isolate-rule` 再用这 5 个 ID 会 `rule not found`；配置里的 `disabledRules` 只告警不报错。
+- #493 移除顶层 `analysis.reason`（JSON 报告 breaking change）——解析 JSON 报告别再找这个字段；#497 补 padded URL-safe 与 unpadded standard base64 解码，命中会变多（不是假阳）。
+- 子命令：`version`、`config check`（验配置并跑内嵌 rule 测试）、`config path`、`config hash`、`config show`（默认 toml）/ `config show toml` / `config show ids`。裸 `config show` 仍可用，`config show ids | wc -l` 数规则最省事。
+- `git . --redact` 本仓库实测 104.29 MB / 1.12s / `leaks found: 11`；`wanxiang.table.bin`（约 85 MB）仍按 `--git-max-blob-mib=64` 打 `skipped Git content over a limit` 跳过。`--redact` / `--include` / `--clone-ref` / `--clone-all-refs` / `--allow-external-objects` 等 flag 与 rc.3/rc.4 一致。
 
 扫工作树用 `betterleaks filesystem <path>`：注意它**不读 `.gitignore`**，会连构建产物一起遍历（全局配置已排除 `.git/`、`.uvcache/`、`.gradle/`、`.kotlin/`，以及内嵌默认的 `node_modules/`、lockfile、图片字体等；但未排除 `build/`、`dist/`、`target/` 等通用产物名）；在大仓库上先确认路径范围，别直接扫仓库根。
 
