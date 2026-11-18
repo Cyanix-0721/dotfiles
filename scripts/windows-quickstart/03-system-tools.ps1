@@ -156,6 +156,55 @@ else {
         "Microsoft.OpenSSH.Preview" = @{ Desc = "OpenSSH Preview (Microsoft 官方 OpenSSH 预览版 / Microsoft OpenSSH preview)"; InstallArgs = @("--exact", "--silent") }
     }
     Install-WingetApps $wingApps -Force
+
+    # winget 已安装后再次执行走 MSI 修复(repair)路径：组件标记键
+    # HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\ssh-agent.exe
+    # 已存在时 ServiceInstall 动作会被跳过，ssh-agent 服务不会重建（7045 事件也不会出现）
+    # Re-running after install triggers MSI repair, which skips ServiceInstall when the component
+    # flag key above already exists — the ssh-agent service is then missing and must be created manually
+    $sshAgentExe = "$env:ProgramFiles\OpenSSH\ssh-agent.exe"
+    $sshAgentSvc = Get-Service ssh-agent -ErrorAction SilentlyContinue
+
+    if (-not $sshAgentSvc) {
+        Write-Warn "未检测到 ssh-agent 服务 / ssh-agent service not found"
+        Write-Note "MSI 修复不会重建服务（组件标记键已存在）/ MSI repair does not recreate the service"
+        Write-Note "手动创建 / Create manually (管理员 / elevated):"
+        Write-Note "  New-Service -Name ssh-agent -BinaryPathName '$sshAgentExe' ``"
+        Write-Note "    -DisplayName 'OpenSSH Authentication Agent' -StartupType Automatic"
+        Write-Note "  Start-Service ssh-agent"
+
+        $createSvc = Confirm-Install "是否现在创建 ssh-agent 服务？(Y/n) / Create the ssh-agent service now? (Y/n)"
+        if ($createSvc -notmatch '^[Nn]$') {
+            if (-not (Test-Path $sshAgentExe)) {
+                Write-Err "未找到 $sshAgentExe / not found"
+            }
+            elseif (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+                Write-Warn "需要管理员权限，请以管理员身份运行本脚本 / Administrator privileges required"
+            }
+            else {
+                try {
+                    New-Service -Name ssh-agent -BinaryPathName "`"$sshAgentExe`"" `
+                        -DisplayName "OpenSSH Authentication Agent" -StartupType Automatic | Out-Null
+                    Start-Service ssh-agent
+                    Write-Ok "ssh-agent 服务已创建并启动 / ssh-agent service created and started"
+                }
+                catch {
+                    Write-Err "ssh-agent 服务创建失败 / failed to create ssh-agent service: $($_.Exception.Message)"
+                }
+            }
+        }
+    }
+    elseif ($sshAgentSvc.Status -ne "Running") {
+        Write-Step "启动 ssh-agent 服务 / Starting ssh-agent service"
+        Start-Service ssh-agent
+        Write-Ok "ssh-agent 服务已启动 / ssh-agent service started"
+    }
+    else {
+        Write-Ok "ssh-agent 服务运行中 / ssh-agent service is running"
+    }
+
+    Write-Note "KeePassXC 需在 Settings → SSH Agent 勾选 Enable SSH agent integration 并选择 Use OpenSSH"
+    Write-Note "KeePassXC: enable SSH agent integration and choose Use OpenSSH"
 }
 
 Write-Header "系统工具安装完成 / System tools installation completed"
