@@ -114,11 +114,10 @@ else {
 Write-Header "效率工具 / Productivity Tools"
 
 $productivityApps = @{
-    "obsidian"       = @{ Desc = "Obsidian (笔记软件 / Note-taking app)"; Global = $false }
-    "draw.io"        = @{ Desc = "Draw.io (流程图绘制 / Diagram drawing)"; Global = $false }
-    "stranslate"     = @{ Desc = "Stranslate (翻译工具 / Translation tool)"; Global = $false }
-    "umi-ocr"        = @{ Desc = "Umi OCR (OCR 工具 / OCR tool)"; Global = $false }
-    "zeal"           = @{ Desc = "Zeal (离线 API 文档浏览器 / Offline API documentation browser)"; Global = $false }
+    "obsidian"   = @{ Desc = "Obsidian (笔记软件 / Note-taking app)"; Global = $false }
+    "draw.io"    = @{ Desc = "Draw.io (流程图绘制 / Diagram drawing)"; Global = $false }
+    "umi-ocr"    = @{ Desc = "Umi OCR (OCR 工具 / OCR tool)"; Global = $false }
+    "zeal"       = @{ Desc = "Zeal (离线 API 文档浏览器 / Offline API documentation browser)"; Global = $false }
 }
 
 Install-ScoopPackages $productivityApps
@@ -145,7 +144,7 @@ Install-ScoopPackages $emailClients
 Write-Header "通讯软件 / Communication Apps"
 
 $commApps = @{
-    "vesktop" = @{ Desc = "Vesktop (Discord 客户端 / Discord client)"; Global = $false }
+    "vesktop"  = @{ Desc = "Vesktop (Discord 客户端 / Discord client)"; Global = $false }
     "telegram" = @{ Desc = "Telegram (Telegram 客户端 / Telegram client)"; Global = $false }
 }
 
@@ -177,7 +176,7 @@ Write-Header "下载工具 / Download Tools"
 
 $downloadApps = @{
     "qbittorrent-enhanced" = @{ Desc = "qBittorrent Enhanced (BT 下载 / BT download)"; Global = $false }
-    "rayburst"         = @{ Desc = "Rayburst (全能下载管理器 / Full-featured download manager)"; Global = $false }
+    "rayburst"             = @{ Desc = "Rayburst (全能下载管理器 / Full-featured download manager)"; Global = $false }
 }
 
 Install-ScoopPackages $downloadApps
@@ -186,7 +185,7 @@ Install-ScoopPackages $downloadApps
 Write-Header "多媒体工具 / Multimedia Tools"
 
 $multimediaTools = @{
-    "snipaste"    = @{ Desc = "Snipaste (截图工具 / Screenshot tool)"; Global = $false }
+    "snowshot"    = @{ Desc = "snowshot (截图工具 / Screenshot tool)"; Global = $false }
     "screentogif" = @{ Desc = "ScreenToGif (屏幕录制 GIF 工具 / Screen recording GIF tool)"; Global = $false }
     "imagemagick" = @{ Desc = "ImageMagick (图像处理工具 / Image processing tool)"; Global = $false }
     "ffmpeg"      = @{ Desc = "FFmpeg (多媒体处理工具 / Multimedia processing tool)"; Global = $false }
