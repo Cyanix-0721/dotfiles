@@ -21,7 +21,8 @@
     "preserveRecentMessages": 6,
     "preserveRecentTokens": 8000,
     "ccr": {
-      "enabled": true
+      "enabled": true,
+      "minToolTokens": 8000
     },
     "search": {
       "planAware": true
