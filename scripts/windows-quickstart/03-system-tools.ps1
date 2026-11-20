@@ -95,6 +95,7 @@ $winTools = @{
     "rtss"            = @{ Desc = "RivaTuner Statistics Server (OSD & FPS 限制 / OSD & FPS limiter)"; Global = $true }
     "ddu"             = @{ Desc = "Display Driver Uninstaller (显卡驱动清理工具 / GPU driver cleaner)"; Global = $false }
     "quicklook"       = @{ Desc = "QuickLook (空格键快速预览文件 / File preview with spacebar)"; Global = $false }
+    "geekuninstaller" = @{ Desc = "Geek Uninstaller (强力卸载工具 / Thorough uninstaller)"; Global = $false }
     "nircmd"          = @{ Desc = "NirCmd (命令行小工具集合 / Command-line utility collection)"; Global = $false }
 }
 
