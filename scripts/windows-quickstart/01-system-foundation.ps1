@@ -63,6 +63,33 @@ else {
     }
 }
 
+# 确保 PowerShell 7 已安装（可选，推荐；脚本本身兼容 PowerShell 5.1）
+# Ensure PowerShell 7 is installed (optional, recommended; scripts stay 5.1-compatible)
+Write-Step "检查 PowerShell 7 / Checking PowerShell 7"
+if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+    Write-Ok "PowerShell 7 已安装 / PowerShell 7 is already installed"
+}
+else {
+    $installPwsh = Confirm-Install "未检测到 PowerShell 7，是否用 winget 安装？(Y/n) / PowerShell 7 not found, install via winget? (Y/n)"
+    if ($installPwsh -notmatch '^[Nn]$') {
+        if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+            Write-Warn "winget 未安装，跳过 PowerShell 7 安装 / winget not installed, skipping PowerShell 7 installation"
+        }
+        else {
+            try {
+                winget install --id Microsoft.PowerShell --exact --silent --accept-package-agreements --accept-source-agreements
+                Write-Ok "PowerShell 7 安装完成，请重新打开终端以使用 pwsh / PowerShell 7 installed; reopen terminal to use pwsh"
+            }
+            catch {
+                Write-Warn "PowerShell 7 安装失败（非致命）/ Installing PowerShell 7 failed (non-fatal): $($_.Exception.Message)"
+            }
+        }
+    }
+    else {
+        Write-Note "跳过 PowerShell 7 安装 / Skipping PowerShell 7 installation"
+    }
+}
+
 # 检查并安装 Scoop
 Write-Step "检查 Scoop 安装状态 / Checking Scoop installation"
 if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
@@ -135,7 +162,7 @@ foreach ($bucketName in $buckets) {
     }
 }
 
-# 安装 gsudo（类似 Linux 的 sudo）
+# 安装 gsudo（类似 Linux 的 sudo；必装）
 Write-Step "安装 gsudo / Installing gsudo"
 if (-not (Get-Command gsudo -ErrorAction SilentlyContinue)) {
     scoop install gsudo
@@ -143,6 +170,33 @@ if (-not (Get-Command gsudo -ErrorAction SilentlyContinue)) {
 }
 else {
     Write-Ok "gsudo 已安装 / gsudo is already installed"
+}
+
+# PowerShell 组件（pwsh 装好后一次性可选安装；默认否）
+# PowerShell components (one-time optional install after pwsh; default no)
+Write-Header "PowerShell 组件 / PowerShell Components"
+$installPsComponents = Confirm-Install "是否安装常用 PowerShell 组件（PSScriptAnalyzer / PSReadLine / PSWindowsUpdate / ImportExcel / NTFSSecurity）？(y/N) / Install PowerShell components? (y/N)"
+if ($installPsComponents -match '^[Yy]$') {
+    # PS 模块（缺则装；TLS1.2 供 PowerShell 5.1）
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    $psModules = @("PSScriptAnalyzer", "PSReadLine", "PSWindowsUpdate", "ImportExcel", "NTFSSecurity")
+    foreach ($moduleName in $psModules) {
+        if (Get-Module -ListAvailable -Name $moduleName) {
+            Write-Ok "$moduleName 已安装 / $moduleName already installed"
+        }
+        else {
+            try {
+                Install-Module -Name $moduleName -Scope CurrentUser -Force -ErrorAction Stop
+                Write-Ok "$moduleName 安装完成 / $moduleName installation completed"
+            }
+            catch {
+                Write-Warn "$moduleName 安装失败（非致命）/ Installing $moduleName failed: $($_.Exception.Message)"
+            }
+        }
+    }
+}
+else {
+    Write-Note "跳过 PowerShell 组件安装 / Skipping PowerShell components installation"
 }
 
 # 安装 Visual C++ 运行库
