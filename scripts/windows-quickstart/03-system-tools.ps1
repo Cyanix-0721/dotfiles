@@ -84,7 +84,6 @@ $winTools = @{
     "fancontrol"      = @{ Desc = "FanControl (风扇控制工具 / Fan control utility)"; Global = $false }
     "hwinfo"          = @{ Desc = "HWiNFO (系统信息与诊断工具 / System information and diagnostics)"; Global = $false }
     "y-cruncher"      = @{ Desc = "Y-Cruncher (高性能计算工具 / High-performance computing tool)"; Global = $false }
-    "flow-launcher"   = @{ Desc = "Flow Launcher (文件搜索和启动器 / File search and launcher)"; Global = $false }
     "krokiet"         = @{ Desc = "Krokiet (图片查重工具 / picture duplicate finder)"; Global = $false }
     "ventoy"          = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $false }
     "rufus"           = @{ Desc = "Rufus (USB 启动盘制作工具 / USB bootable creator)"; Global = $false }
@@ -99,6 +98,33 @@ $winTools = @{
 }
 
 Install-ScoopPackages $winTools
+
+# Win顺 / WinShun（文件搜索和启动器，替代 Flow Launcher / File search launcher, replaces Flow Launcher）
+Write-Header "Win顺 / WinShun (文件搜索和启动器 / File search and launcher)"
+
+if (Test-ScoopInstalled "winshun") {
+    Write-Ok "winshun 已安装 / winshun is already installed"
+}
+else {
+    $installWinShun = Confirm-Install "是否安装 Win顺 WinShun（替代 Flow Launcher）？(y/N) / Install WinShun (replaces Flow Launcher)? (y/N)"
+    if ($installWinShun -match '^[Yy]$') {
+        $bucketList = scoop bucket list
+        if ($bucketList -match 'winshun') {
+            Write-Ok "Bucket 'winshun' 已添加 / Bucket 'winshun' already added"
+        }
+        else {
+            Write-Step "添加 bucket: winshun / Adding bucket: winshun"
+            scoop bucket add winshun https://github.com/LingCore/WinShun
+            Write-Ok "Bucket 'winshun' 添加成功 / Bucket 'winshun' added successfully"
+        }
+
+        scoop install winshun
+        Reset-ScoopCache
+        Write-Ok "winshun 安装完成 / winshun installation completed"
+        Write-Note "索引服务不随 Scoop 安装：默认仅索引手动添加的文件夹 / Index service is not installed by Scoop: only folders you pick are indexed"
+        Write-Note "整盘索引：设置 → 搜索范围 → 磁盘 → 索引方式（需管理员权限）/ Whole-disk index: Settings → Search scope → Disks → Index method (admin required)"
+    }
+}
 
 # OpenHashTab (文件哈希右键扩展)
 Write-Header "OpenHashTab (文件哈希右键扩展) / OpenHashTab (File Hash Context Menu)"
