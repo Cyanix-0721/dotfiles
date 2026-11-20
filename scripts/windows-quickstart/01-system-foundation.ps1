@@ -84,10 +84,21 @@ else {
 Write-Step "更新 Scoop / Updating Scoop"
 scoop update
 
+# 清理 Scoop 旧版本（可选，默认否；仅回车=不清）
+Write-Step "清理 Scoop 旧版本 / Clean up old Scoop versions"
+$cleanupOld = Confirm-Install "是否自动清除 Scoop 旧版本？(y/N) / Automatically remove old Scoop versions? (y/N)"
+if ($cleanupOld -match '^[Yy]$') {
+    scoop cleanup --all
+    Write-Ok "Scoop 旧版本清理完成 / Old Scoop versions cleaned up"
+}
+else {
+    Write-Note "跳过旧版本清理 / Skipping old version cleanup"
+}
+
 # 安装 Git（Scoop 依赖）
 Write-Step "安装 Git / Installing Git"
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    scoop install git --global
+    scoop install git
     Write-Ok "Git 安装完成 / Git installation completed"
 }
 else {

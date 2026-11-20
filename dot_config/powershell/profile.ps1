@@ -41,6 +41,30 @@ if (Get-Command fastfetch -ErrorAction SilentlyContinue) {
 Set-Alias -Name c -Value Clear-Host
 #endregion
 
+#region scoop 清理
+#   scc    只清下载缓存              -> scoop cache rm --all
+#   scco   清缓存 + 旧版本            -> scoop cleanup --all
+#   sccog  清缓存 + 旧版本（含全局）   -> scoop cleanup --all --global
+# 注意：cache rm 只删下载缓存（可重新下载）；cleanup 会删除旧版本，删后无法回滚到该版本。
+function Clear-ScoopCache {
+    Write-Host '==> 清理 scoop 下载缓存 (scoop cache rm --all)' -ForegroundColor Cyan
+    scoop cache rm --all
+}
+function Clear-ScoopCacheOld {
+    Clear-ScoopCache
+    Write-Host '==> 清理旧版本 (scoop cleanup --all)' -ForegroundColor Cyan
+    scoop cleanup --all
+}
+function Clear-ScoopCacheOldGlobal {
+    Clear-ScoopCache
+    Write-Host '==> 清理旧版本 (scoop cleanup --all --global)' -ForegroundColor Cyan
+    scoop cleanup --all --global
+}
+Set-Alias -Name scc   -Value Clear-ScoopCache
+Set-Alias -Name scco  -Value Clear-ScoopCacheOld
+Set-Alias -Name sccog -Value Clear-ScoopCacheOldGlobal
+#endregion
+
 #region zoxide init
 if (Get-Command zoxide -ErrorAction SilentlyContinue) {
     Invoke-Expression (& { (zoxide init powershell | Out-String) })

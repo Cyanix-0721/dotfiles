@@ -63,8 +63,7 @@ Install-ScoopPackages $shellTools
 Write-Header "SVN 客户端 / SVN Clients"
 
 $svnTools = @{
-    "sliksvn"     = @{ Desc = "SlikSVN (命令行 / Command-line)"; Global = $true }
-    "tortoisesvn" = @{ Desc = "TortoiseSVN (图形界面 / GUI)"; Global = $false }
+    "sliksvn" = @{ Desc = "SlikSVN (命令行 / Command-line)"; Global = $false }
 }
 
 Install-ScoopPackages $svnTools

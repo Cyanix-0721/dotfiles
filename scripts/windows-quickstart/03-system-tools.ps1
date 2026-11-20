@@ -34,13 +34,13 @@ Write-Header "Sysinternals 工具集 / Sysinternals Suite"
 
 $sysinternalsTools = @{
     "sysmon"           = @{ Desc = "Sysmon (系统监视器 / System Monitor)"; Global = $true }
-    "handle"           = @{ Desc = "Handle (句柄查看工具 / View open handles)"; Global = $true }
-    "autoruns"         = @{ Desc = "Autoruns (启动项管理工具 / Startup manager)"; Global = $true }
+    "handle"           = @{ Desc = "Handle (句柄查看工具 / View open handles)"; Global = $false }
+    "autoruns"         = @{ Desc = "Autoruns (启动项管理工具 / Startup manager)"; Global = $false }
     "autologon"        = @{ Desc = "AutoLogon (自动登录工具 / Auto login utility)"; Global = $true }
-    "process-explorer" = @{ Desc = "Process Explorer (高级任务管理器 / Advanced Task Manager)"; Global = $true }
-    "procmon"          = @{ Desc = "Process Monitor (文件/注册表监视 / File & Registry monitor)"; Global = $true }
-    "tcpview"          = @{ Desc = "TCPView (网络连接查看 / TCP/UDP connection viewer)"; Global = $true }
-    "sigcheck"         = @{ Desc = "Sigcheck (文件签名检查 / File signature checker)"; Global = $true }
+    "process-explorer" = @{ Desc = "Process Explorer (高级任务管理器 / Advanced Task Manager)"; Global = $false }
+    "procmon"          = @{ Desc = "Process Monitor (文件/注册表监视 / File & Registry monitor)"; Global = $false }
+    "tcpview"          = @{ Desc = "TCPView (网络连接查看 / TCP/UDP connection viewer)"; Global = $false }
+    "sigcheck"         = @{ Desc = "Sigcheck (文件签名检查 / File signature checker)"; Global = $false }
 }
 
 Install-ScoopPackages $sysinternalsTools
@@ -68,9 +68,8 @@ Install-ScoopPackages $fileManagers
 Write-Header "压缩工具 / Compression Tools"
 
 $compressionTools = @{
-    "7zip"    = @{ Desc = "7zip (压缩/解压工具 / Archive utility)"; Global = $false }
-    "peazip"  = @{ Desc = "PeaZip (压缩/解压工具 / Archive utility)"; Global = $false }
-    "innounp" = @{ Desc = "innounp (Inno Setup 解包工具 / Inno Setup unpacker)"; Global = $true }
+    "7zip"   = @{ Desc = "7zip (压缩/解压工具 / Archive utility)"; Global = $false }
+    "peazip" = @{ Desc = "PeaZip (压缩/解压工具 / Archive utility)"; Global = $false }
 }
 
 Install-ScoopPackages $compressionTools
@@ -155,7 +154,6 @@ $termTools = @{
     "fd"                  = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false }
     "bat"                 = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false }
     "eza"                 = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false }
-    "dark"                = @{ Desc = "Dark (WiX 反编译器 / WiX Toolset decompiler)"; Global = $true }
 }
 
 Install-ScoopPackages $termTools
