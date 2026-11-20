@@ -17,7 +17,15 @@
 	pager = delta
 {{- if eq .chezmoi.os "windows" }}
 	autocrlf = true
+	{{- /* winget 版 OpenSSH Preview 装在 Program Files，系统内置版在 System32；都没有则退回 PATH 解析。
+	       路径含空格，须用单引号：git 配置文件里的双引号会被剥离，导致命令按空格切分 */}}
+	{{- if stat "C:/Program Files/OpenSSH/ssh.exe" }}
+	sshCommand = 'C:/Program Files/OpenSSH/ssh.exe'
+	{{- else if stat "C:/Windows/System32/OpenSSH/ssh.exe" }}
 	sshCommand = C:/Windows/System32/OpenSSH/ssh.exe
+	{{- else }}
+	sshCommand = ssh.exe
+	{{- end }}
 {{- else }}
 	autocrlf = input
 	{{- if env "WSL_DISTRO_NAME" }}
