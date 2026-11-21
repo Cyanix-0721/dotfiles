@@ -10,13 +10,15 @@
 #>
 
 param(
-    [switch]$AutoYes
+    [switch]$AutoYes,
+    [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
 
 # 加载公共函数
 . "$PSScriptRoot/00-common.ps1"
+Set-DryRun -DryRun:$DryRun | Out-Null
 
 # 初始化自动确认模式
 Initialize-AutoYes -AutoYes:$AutoYes
@@ -32,72 +34,27 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
 # Sysinternals 工具集
 Write-Header "Sysinternals 工具集 / Sysinternals Suite"
 
-$sysinternalsTools = [ordered]@{
-    "sysmon"           = @{ Desc = "Sysmon (系统监视器 / System Monitor)"; Global = $false }
-    "handle"           = @{ Desc = "Handle (句柄查看工具 / View open handles)"; Global = $false }
-    "autoruns"         = @{ Desc = "Autoruns (启动项管理工具 / Startup manager)"; Global = $false }
-    "autologon"        = @{ Desc = "AutoLogon (自动登录工具 / Auto login utility)"; Global = $true }
-    "process-explorer" = @{ Desc = "Process Explorer (高级任务管理器 / Advanced Task Manager)"; Global = $false }
-    "procmon"          = @{ Desc = "Process Monitor (文件/注册表监视 / File & Registry monitor)"; Global = $false }
-    "tcpview"          = @{ Desc = "TCPView (网络连接查看 / TCP/UDP connection viewer)"; Global = $false }
-    "sigcheck"         = @{ Desc = "Sigcheck (文件签名检查 / File signature checker)"; Global = $false }
-}
-
-Install-ScoopPackages $sysinternalsTools
+Install-ScoopPackages (Get-PackageSection 'sys.sysinternals').Packages
 
 # 系统信息和监控工具
 Write-Header "系统信息和监控工具 / System Info and Monitoring Tools"
 
-$monitorTools = [ordered]@{
-    "fastfetch"      = @{ Desc = "fastfetch (系统信息显示 / System information display)"; Global = $false }
-    "trafficmonitor" = @{ Desc = "TrafficMonitor (网速监控悬浮窗 / Network traffic monitor)"; Global = $false }
-}
-
-Install-ScoopPackages $monitorTools
+Install-ScoopPackages (Get-PackageSection 'sys.monitor').Packages
 
 # 文件管理器
 Write-Header "文件管理器 / File Managers"
 
-$fileManagers = [ordered]@{
-    "yazi" = @{ Desc = "Yazi (终端文件管理器 / Terminal file manager)"; Global = $false; PostNote = @("提示：Yazi 会自动安装以下依赖：imagemagick, poppler, resvg / Note: Yazi auto-installs deps: imagemagick, poppler, resvg") }
-}
-
-Install-ScoopPackages $fileManagers
+Install-ScoopPackages (Get-PackageSection 'sys.fileMgr').Packages
 
 # 压缩工具
 Write-Header "压缩工具 / Compression Tools"
 
-$compressionTools = [ordered]@{
-    "7zip"   = @{ Desc = "7zip (压缩/解压工具 / Archive utility)"; Global = $false }
-    "peazip" = @{ Desc = "PeaZip (压缩/解压工具 / Archive utility)"; Global = $false }
-}
-
-Install-ScoopPackages $compressionTools
+Install-ScoopPackages (Get-PackageSection 'sys.compression').Packages
 
 # Windows 增强工具
 Write-Header "Windows 增强工具 / Windows Enhancement Tools"
 
-$winTools = [ordered]@{
-    "everything-beta" = @{ Desc = "Everything (快速文件搜索 / Fast file search)"; Global = $false }
-    "everything-cli"  = @{ Desc = "Everything CLI (命令行文件搜索 / Command-line file search)"; Global = $false }
-    "fancontrol"      = @{ Desc = "FanControl (风扇控制工具 / Fan control utility)"; Global = $false }
-    "hwinfo"          = @{ Desc = "HWiNFO (系统信息与诊断工具 / System information and diagnostics)"; Global = $false }
-    "y-cruncher"      = @{ Desc = "Y-Cruncher (高性能计算工具 / High-performance computing tool)"; Global = $false }
-    "krokiet"         = @{ Desc = "Krokiet (图片查重工具 / picture duplicate finder)"; Global = $false }
-    "ventoy"          = @{ Desc = "Ventoy (多合一启动盘制作工具 / Multi-boot USB creator)"; Global = $false }
-    "rufus"           = @{ Desc = "Rufus (USB 启动盘制作工具 / USB bootable creator)"; Global = $false }
-    "wiztree"         = @{ Desc = "WizTree (磁盘空间分析工具 / Disk space analyzer)"; Global = $false }
-    "spacesniffer"    = @{ Desc = "SpaceSniffer (磁盘空间可视化工具 / Disk space visualizer)"; Global = $false }
-    "memreduct"       = @{ Desc = "Mem Reduct (内存优化工具 / Memory optimizer)"; Global = $false }
-    "msiafterburner"  = @{ Desc = "MSI Afterburner (GPU 超频与监控 / GPU overclocking and monitoring)"; Global = $false }
-    "rtss"            = @{ Desc = "RivaTuner Statistics Server (OSD & FPS 限制 / OSD & FPS limiter)"; Global = $false }
-    "ddu"             = @{ Desc = "Display Driver Uninstaller (显卡驱动清理工具 / GPU driver cleaner)"; Global = $false }
-    "quicklook"       = @{ Desc = "QuickLook (空格键快速预览文件 / File preview with spacebar)"; Global = $false }
-    "geekuninstaller" = @{ Desc = "Geek Uninstaller (强力卸载工具 / Thorough uninstaller)"; Global = $false }
-    "nircmd"          = @{ Desc = "NirCmd (命令行小工具集合 / Command-line utility collection)"; Global = $false }
-}
-
-Install-ScoopPackages $winTools
+Install-ScoopPackages (Get-PackageSection 'sys.winTools').Packages
 
 # Win顺 / WinShun（文件搜索和启动器，替代 Flow Launcher / File search launcher, replaces Flow Launcher）
 Write-Header "Win顺 / WinShun (文件搜索和启动器 / File search and launcher)"
@@ -133,42 +90,18 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过 OpenHashTab 安装 / winget not installed, skipping OpenHashTab installation"
 }
 else {
-    $wingApps = [ordered]@{
-        "namazso.OpenHashTab" = @{ Desc = "OpenHashTab (文件哈希右键扩展 / File Hash Context Menu)"; InstallArgs = @("--exact", "--silent") }
-    }
-    Install-WingetApps $wingApps -Force
+    Install-WingetApps (Get-PackageSection 'sys.openHashTab').Packages -Force
 }
 
 # 终端与命令行工具
 Write-Header "终端与命令行工具 / Terminal & CLI Tools"
 
-$termTools = [ordered]@{
-    "wezterm-nightly"     = @{ Desc = "WezTerm (GPU 加速终端 / GPU-accelerated terminal)"; Global = $false }
-    "windows-terminal"    = @{ Desc = "Windows Terminal (微软官方终端 / Microsoft official terminal)"; Global = $false }
-    "less"                = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false }
-    "microsoft-coreutils" = @{ Desc = "GNU Coreutils (ls/cp/mv 等 Linux 核心命令 / GNU core utilities)"; Global = $false }
-    "starship"            = @{ Desc = "Starship (跨平台命令行提示符 / Cross-platform shell prompt)"; Global = $false }
-    "zoxide"              = @{ Desc = "zoxide (智能目录跳转 / Smarter cd command)"; Global = $false }
-    "fzf"                 = @{ Desc = "fzf (模糊查找器 / Fuzzy finder)"; Global = $false }
-    "ripgrep"             = @{ Desc = "ripgrep (快速搜索工具 / Fast search tool)"; Global = $false }
-    "fd"                  = @{ Desc = "fd (快速文件查找 / Fast file finder)"; Global = $false }
-    "bat"                 = @{ Desc = "bat (cat 增强版 / cat with syntax highlighting)"; Global = $false }
-    "eza"                 = @{ Desc = "eza (ls 增强版 / Modern ls replacement)"; Global = $false }
-}
-
-Install-ScoopPackages $termTools
+Install-ScoopPackages (Get-PackageSection 'sys.term').Packages
 
 # 网络工具
 Write-Header "网络工具 / Network Tools"
 
-$networkTools = [ordered]@{
-    "nmap"      = @{ Desc = "nmap (网络扫描工具，含 ncat / Network scanner, includes ncat)"; Global = $false }
-    "scrcpy"    = @{ Desc = "scrcpy (Android 投屏工具 / Android screen mirroring)"; Global = $false }
-    "mkcert"    = @{ Desc = "mkcert (本地 HTTPS 证书 / Local HTTPS certificates)"; Global = $false }
-    "wireshark" = @{ Desc = "Wireshark (网络协议分析器 / Network protocol analyzer)"; Global = $false }
-}
-
-Install-ScoopPackages $networkTools
+Install-ScoopPackages (Get-PackageSection 'sys.network').Packages
 
 # OpenSSH Preview（比 Windows 内置版本更新 / Newer than the built-in OpenSSH）
 Write-Header "OpenSSH Preview"
@@ -177,10 +110,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过 OpenSSH Preview 安装 / winget not installed, skipping OpenSSH Preview installation"
 }
 else {
-    $wingApps = [ordered]@{
-        "Microsoft.OpenSSH.Preview" = @{ Desc = "OpenSSH Preview (Microsoft 官方 OpenSSH 预览版 / Microsoft OpenSSH preview)"; InstallArgs = @("--exact", "--silent") }
-    }
-    Install-WingetApps $wingApps -Force
+    Install-WingetApps (Get-PackageSection 'sys.openSsh').Packages -Force
 
     # winget 已安装后再次执行走 MSI 修复(repair)路径：组件标记键
     # HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\ssh-agent.exe
@@ -242,3 +172,6 @@ if (Test-Path $globalAppsDir) {
 else {
     Write-Note "未检测到全局应用目录 / No global apps directory found"
 }
+
+Write-FailureSummary
+if ((Get-FailureCount) -gt 0) { exit 1 }

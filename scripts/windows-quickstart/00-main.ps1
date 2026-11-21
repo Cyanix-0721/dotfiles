@@ -9,21 +9,33 @@
     Uses Scoop package manager for application installation
 #>
 
+param(
+    [switch]$DryRun
+)
+
 $ErrorActionPreference = "Stop"
 $Script:ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # 加载公共函数
-. "$Script:ScriptDir/00-common.ps1"
+. "$Script:ScriptDir/00-common.ps1"`nif (Set-DryRun -DryRun:$DryRun) { $env:QUICKSTART_DRY_RUN = '1' }`nStart-Log
+
+# ===== 菜单单一真源 / Single source of truth =====
+# 菜单显示与选项分派都读取本表，新增/调整项只改这里
+$Script:MenuItems = @(
+    [pscustomobject]@{ Key = '1'; Color = 'Green'; Title = '全部运行 / Run All (Complete Setup)'; Action = 'RunAll' }
+    [pscustomobject]@{ Key = '2'; Color = 'Yellow'; Title = '系统基础环境配置 / System Foundation Setup'; Script = '01-system-foundation.ps1' }
+    [pscustomobject]@{ Key = '3'; Color = 'Yellow'; Title = '开发工具安装 / Development Tools Installation'; Script = '02-development-tools.ps1' }
+    [pscustomobject]@{ Key = '4'; Color = 'Yellow'; Title = '系统工具安装 / System Tools Installation'; Script = '03-system-tools.ps1' }
+    [pscustomobject]@{ Key = '5'; Color = 'Yellow'; Title = '必备软件包安装 / Essential Applications Installation'; Script = '04-essential-packages.ps1' }
+    [pscustomobject]@{ Key = '0'; Color = 'Red'; Title = '退出 / Exit'; Action = 'Exit' }
+)
 
 function Show-Menu {
     Clear-Host
     Write-Header "Windows 快速配置菜单 / Windows Quick Setup Menu"
-    Write-Host " [1] 全部运行 / Run All (Complete Setup)" -ForegroundColor Green
-    Write-Host " [2] 系统基础环境配置 / System Foundation Setup" -ForegroundColor Yellow
-    Write-Host " [3] 开发工具安装 / Development Tools Installation" -ForegroundColor Yellow
-    Write-Host " [4] 系统工具安装 / System Tools Installation" -ForegroundColor Yellow
-    Write-Host " [5] 必备软件包安装 / Essential Applications Installation" -ForegroundColor Yellow
-    Write-Host " [0] 退出 / Exit" -ForegroundColor Red
+    foreach ($item in $Script:MenuItems) {
+        Write-Host (" [{0}] {1}" -f $item.Key, $item.Title) -ForegroundColor $item.Color
+    }
     Write-Host ""
 }
 
@@ -33,15 +45,19 @@ function Invoke-Script {
         [string]$ScriptNumber
     )
 
-    $scriptName = ""
-    $autoYes = $false
+    $item = $Script:MenuItems | Where-Object { $_.Key -eq $ScriptNumber } | Select-Object -First 1
+    if (-not $item) {
+        Write-Warn "无效选项 / Invalid option"
+        return $false
+    }
 
-    switch ($ScriptNumber) {
-        "0" {
+    switch ($item.Action) {
+        'Exit' {
             Write-Ok "再见! / Goodbye!"
             exit 0
         }
-        "1" {
+        'RunAll' {
+            $autoYes = $false
             $autoYesChoice = Read-Host "是否全选 Y（自动确认所有安装）？(Y/n) / Select all Y (auto-confirm all installations)? (Y/n)"
             if ($autoYesChoice -notmatch '^[Nn]') {
                 $autoYes = $true
@@ -68,31 +84,23 @@ function Invoke-Script {
             Write-Ok "所有配置完成! / All configurations completed!"
             return $true
         }
-        "2" { $scriptName = "01-system-foundation.ps1" }
-        "3" { $scriptName = "02-development-tools.ps1" }
-        "4" { $scriptName = "03-system-tools.ps1" }
-        "5" { $scriptName = "04-essential-packages.ps1" }
-        default {
-            Write-Warn "无效选项 / Invalid option"
-            return $false
-        }
     }
 
-    if ($scriptName) {
-        $scriptPath = Join-Path $Script:ScriptDir $scriptName
+    if ($item.Script) {
+        $scriptPath = Join-Path $Script:ScriptDir $item.Script
         if (Test-Path $scriptPath) {
-            Write-Step "执行 $scriptName / Executing $scriptName"
+            Write-Step "执行 $($item.Script) / Executing $($item.Script)"
             try {
                 & $scriptPath
                 return $true
             }
             catch {
-                Write-Err "脚本 $scriptName 执行失败 / Script $scriptName execution failed: $($_.Exception.Message)"
+                Write-Err "脚本 $($item.Script) 执行失败 / Script $($item.Script) execution failed: $($_.Exception.Message)"
                 return $false
             }
         }
         else {
-            Write-Err "错误: 脚本 $scriptName 不存在 / Error: Script $scriptName does not exist"
+            Write-Err "错误: 脚本 $($item.Script) 不存在 / Error: Script $($item.Script) does not exist"
             return $false
         }
     }
@@ -101,9 +109,10 @@ function Invoke-Script {
 }
 
 # 主循环
+$maxKey = ($Script:MenuItems | ForEach-Object { [int]$_.Key } | Measure-Object -Maximum).Maximum
 while ($true) {
     Show-Menu
-    $choice = Read-Host "请选择操作 / Please select an option [0-5]"
+    $choice = Read-Host "请选择操作 / Please select an option [0-$maxKey]"
 
     $success = Invoke-Script -ScriptNumber $choice
 

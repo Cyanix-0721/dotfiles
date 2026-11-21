@@ -43,45 +43,19 @@ fi
 
 # 与 arch-quickstart 相同、且 Debian stable 中存在的常用包（Debian 命名）
 # Common packages from the Arch quickstart that exist in Debian stable
+# 包清单见 manifests/apt-packages.list / See manifests/apt-packages.list
 step "安装常用命令行工具 / Installing command line tools"
 if ! sudo apt-get update -qq; then
 	err "apt 更新失败，请检查网络或软件源 / apt update failed; check network or package sources"
 	exit 1
 fi
-if ! sudo apt-get install -y --no-install-recommends \
-	7zip \
-	bat \
-	btop \
-	bubblewrap \
-	build-essential \
-	chromium \
-	git-delta \
-	eza \
-	fastfetch \
-	fd-find \
-	ffmpeg \
-	fish \
-	fzf \
-	gh \
-	git \
-	imagemagick \
-	jq \
-	lazygit \
-	less \
-	neovim \
-	nmap \
-	openssh-client \
-	poppler-utils \
-	ripgrep \
-	shellcheck \
-	shfmt \
-	starship \
-	subversion \
-	unzip \
-	zoxide \
-	xdg-utils \
-	podman \
-	podman-compose; then
+APT_LIST="$SCRIPT_DIR/manifests/apt-packages.list"
+if ! apt_packages_raw="$(read_pkg_list "$APT_LIST")"; then
+	err "读取包清单失败 / Failed to read package list: $APT_LIST"
+	exit 1
+fi
+mapfile -t apt_packages <<<"$apt_packages_raw"
+if ! qs_run_cmd sudo apt-get install -y --no-install-recommends "${apt_packages[@]}"; then
 	err "apt 安装失败，请检查网络或软件源 / apt install failed; check network or package sources"
 	exit 1
 fi
@@ -332,3 +306,5 @@ note "  codex   → codex update（走 pnpm：pnpm add -g @openai/codex）/ code
 note "  magpie  → magpie update（自更新，代理用 --proxy）/ magpie update (--proxy behind a firewall)"
 
 ok "常用软件安装完成 / Essential packages installed"
+
+write_failure_summary

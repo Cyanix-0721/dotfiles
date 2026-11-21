@@ -10,13 +10,15 @@
 #>
 
 param(
-    [switch]$AutoYes
+    [switch]$AutoYes,
+    [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
 
 # 加载公共函数
 . "$PSScriptRoot/00-common.ps1"
+Set-DryRun -DryRun:$DryRun | Out-Null
 
 # 初始化自动确认模式
 Initialize-AutoYes -AutoYes:$AutoYes
@@ -208,23 +210,8 @@ if ($installVCRedist -notmatch '^[Nn]$') {
         Write-Warn "winget 未安装，跳过 Visual C++ 运行库安装 / winget not installed, skipping Visual C++ installation"
     }
     else {
-        $wingApps = [ordered]@{
-            "Microsoft.VCRedist.2005.x64"  = @{ Desc = "VC++ 2005 x64"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2005.x86"  = @{ Desc = "VC++ 2005 x86"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2008.x64"  = @{ Desc = "VC++ 2008 x64"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2008.x86"  = @{ Desc = "VC++ 2008 x86"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2010.x64"  = @{ Desc = "VC++ 2010 x64"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2010.x86"  = @{ Desc = "VC++ 2010 x86"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2012.x64"  = @{ Desc = "VC++ 2012 x64"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2012.x86"  = @{ Desc = "VC++ 2012 x86"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2013.x64"  = @{ Desc = "VC++ 2013 x64"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2013.x86"  = @{ Desc = "VC++ 2013 x86"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2015+.x64" = @{ Desc = "VC++ 2015-2022 x64"; InstallArgs = @("--exact", "--silent") }
-            "Microsoft.VCRedist.2015+.x86" = @{ Desc = "VC++ 2015-2022 x86"; InstallArgs = @("--exact", "--silent") }
-        }
-
         Write-Step "正在安装 Visual C++ 运行库... / Installing Visual C++ Redistributables..."
-        Install-WingetApps $wingApps -Force
+        Install-WingetApps (Get-PackageSection 'foundation.vcredist').Packages -Force
 
         Write-Ok "Visual C++ 运行库安装完成 / Visual C++ Redistributables installation completed"
     }
@@ -237,10 +224,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过 WebView2 安装 / winget not installed, skipping WebView2 installation"
 }
 else {
-    $wingApps = [ordered]@{
-        "Microsoft.EdgeWebView2Runtime" = @{ Desc = "WebView2 Runtime"; InstallArgs = @("--exact", "--silent") }
-    }
-    Install-WingetApps $wingApps -Force
+    Install-WingetApps (Get-PackageSection 'foundation.webview2').Packages -Force
 }
 
 # 安装 Chezmoi 配置管理工具
@@ -265,3 +249,6 @@ else {
 Write-Header "系统基础环境配置完成 / System foundation setup completed"
 Write-Note "当前已安装的应用列表 / Currently installed applications:"
 scoop list
+
+Write-FailureSummary
+if ((Get-FailureCount) -gt 0) { exit 1 }

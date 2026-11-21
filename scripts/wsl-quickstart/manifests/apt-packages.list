@@ -1,0 +1,36 @@
+# WSL 常用命令行工具（Debian stable 源）包清单
+# Common CLI packages installed via apt inside WSL (Debian stable names)
+# 每行一个包；# 之后为注释；空行忽略。包名须匹配 ^[a-z0-9][a-z0-9.+-]*$
+7zip
+bat
+btop
+bubblewrap
+build-essential
+chromium
+git-delta
+eza
+fastfetch
+fd-find
+ffmpeg
+fish
+fzf
+gh
+git
+imagemagick
+jq
+lazygit
+less
+neovim
+nmap
+openssh-client
+poppler-utils
+ripgrep
+shellcheck
+shfmt
+starship
+subversion
+unzip
+zoxide
+xdg-utils
+podman
+podman-compose

@@ -10,13 +10,15 @@
 #>
 
 param(
-    [switch]$AutoYes
+    [switch]$AutoYes,
+    [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
 
 # 加载公共函数
 . "$PSScriptRoot/00-common.ps1"
+Set-DryRun -DryRun:$DryRun | Out-Null
 
 # 初始化自动确认模式
 Initialize-AutoYes -AutoYes:$AutoYes
@@ -113,105 +115,52 @@ else {
 # 效率工具
 Write-Header "效率工具 / Productivity Tools"
 
-$productivityApps = [ordered]@{
-    "obsidian"   = @{ Desc = "Obsidian (笔记软件 / Note-taking app)"; Global = $false }
-    "draw.io"    = @{ Desc = "Draw.io (流程图绘制 / Diagram drawing)"; Global = $false }
-    "umi-ocr"    = @{ Desc = "Umi OCR (OCR 工具 / OCR tool)"; Global = $false }
-    "zeal"       = @{ Desc = "Zeal (离线 API 文档浏览器 / Offline API documentation browser)"; Global = $false }
-}
-
-Install-ScoopPackages $productivityApps
+Install-ScoopPackages (Get-PackageSection 'ess.productivity').Packages
 
 # 密码管理器
 Write-Header "密码管理器 / Password Managers"
 
-$passwordManagers = [ordered]@{
-    "keepassxc" = @{ Desc = "KeePassXC"; Global = $false }
-}
-
-Install-ScoopPackages $passwordManagers
+Install-ScoopPackages (Get-PackageSection 'ess.password').Packages
 
 # 邮件客户端
 Write-Header "邮件客户端 / Email Clients"
 
-$emailClients = [ordered]@{
-    "thunderbird" = @{ Desc = "Thunderbird"; Global = $false }
-}
-
-Install-ScoopPackages $emailClients
+Install-ScoopPackages (Get-PackageSection 'ess.email').Packages
 
 # 通讯软件
 Write-Header "通讯软件 / Communication Apps"
 
-$commApps = [ordered]@{
-    "vesktop"  = @{ Desc = "Vesktop (Discord 客户端 / Discord client)"; Global = $false }
-    "telegram" = @{ Desc = "Telegram (Telegram 客户端 / Telegram client)"; Global = $false }
-}
-
-Install-ScoopPackages $commApps
+Install-ScoopPackages (Get-PackageSection 'ess.comm').Packages
 
 # 文件同步
 Write-Header "文件同步 / File Synchronization"
 
-$syncApps = [ordered]@{
-    "syncthing"     = @{ Desc = "Syncthing (P2P 文件同步 / P2P file sync)"; Global = $false }
-    "syncthingtray" = @{ Desc = "Syncthing Tray (系统托盘工具 / System tray utility)"; Global = $false }
-    "localsend"     = @{ Desc = "LocalSend (局域网文件传输 / LAN file transfer)"; Global = $false }
-    "winscp"        = @{ Desc = "WinSCP (SFTP/FTP 文件传输 / SFTP/FTP file transfer)"; Global = $false }
-}
-
-Install-ScoopPackages $syncApps
+Install-ScoopPackages (Get-PackageSection 'ess.sync').Packages
 
 # 远程控制
 Write-Header "远程控制 / Remote Control"
 
-$remoteApps = [ordered]@{
-    "rustdesk" = @{ Desc = "RustDesk (远程桌面工具 / Remote desktop)"; Global = $false }
-}
-
-Install-ScoopPackages $remoteApps
+Install-ScoopPackages (Get-PackageSection 'ess.remote').Packages
 
 # 下载工具
 Write-Header "下载工具 / Download Tools"
 
-$downloadApps = [ordered]@{
-    "qbittorrent-enhanced" = @{ Desc = "qBittorrent Enhanced (BT 下载 / BT download)"; Global = $false }
-    "rayburst"             = @{ Desc = "Rayburst (全能下载管理器 / Full-featured download manager)"; Global = $false }
-}
-
-Install-ScoopPackages $downloadApps
+Install-ScoopPackages (Get-PackageSection 'ess.download').Packages
 
 # 多媒体
 Write-Header "多媒体工具 / Multimedia Tools"
 
-$multimediaTools = [ordered]@{
-    "snowshot"    = @{ Desc = "snowshot (截图工具 / Screenshot tool)"; Global = $false }
-    "screentogif" = @{ Desc = "ScreenToGif (屏幕录制 GIF 工具 / Screen recording GIF tool)"; Global = $false }
-    "imagemagick" = @{ Desc = "ImageMagick (图像处理工具 / Image processing tool)"; Global = $false }
-    "ffmpeg"      = @{ Desc = "FFmpeg (多媒体处理工具 / Multimedia processing tool)"; Global = $false }
-}
-
-Install-ScoopPackages $multimediaTools
+Install-ScoopPackages (Get-PackageSection 'ess.multimedia').Packages
 
 # 阅读器
 Write-Header "阅读器 / Readers"
 
-$readerApps = [ordered]@{
-    "kavita"     = @{ Desc = "Kavita (漫画/电子书服务器 / Comic/E-book server)"; Global = $false }
-    "sumatrapdf" = @{ Desc = "SumatraPDF (PDF 阅读器 / PDF reader)"; Global = $false }
-}
-
-Install-ScoopPackages $readerApps
+Install-ScoopPackages (Get-PackageSection 'ess.readers').Packages
 
 # 字体
 Write-Header "字体 / Fonts"
 
-$fonts = [ordered]@{
-    "JetBrainsMono-NF-Mono" = @{ Desc = "JetBrains Mono Nerd Font"; Global = $false }
-    "SarasaGothic-SC"       = @{ Desc = "Sarasa Gothic (更纱黑体)"; Global = $false }
-}
-
-Install-ScoopPackages $fonts
+Install-ScoopPackages (Get-PackageSection 'ess.fonts').Packages
 
 # 游戏平台
 Write-Header "游戏平台 / Game Platforms"
@@ -220,14 +169,12 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过游戏平台安装 / winget not installed, skipping game platforms installation"
 }
 else {
-    $wingApps = [ordered]@{
-        "Valve.Steam"                 = @{ Desc = "Steam (游戏平台 / Steam)"; InstallArgs = @("--exact", "--silent") }
-        "EpicGames.EpicGamesLauncher" = @{ Desc = "Epic Games Launcher"; InstallArgs = @("--exact", "--silent") }
-        "GOG.Galaxy"                  = @{ Desc = "GOG Galaxy"; InstallArgs = @("--exact", "--silent") }
-    }
-    Install-WingetApps $wingApps -Force
+    Install-WingetApps (Get-PackageSection 'ess.games').Packages -Force
 }
 
 Write-Header "必备软件包安装完成 / Essential applications installation completed"
 Write-Note "当前已安装的所有应用 / All currently installed applications:"
 scoop list
+
+Write-FailureSummary
+if ((Get-FailureCount) -gt 0) { exit 1 }

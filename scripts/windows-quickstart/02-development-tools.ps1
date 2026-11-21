@@ -10,13 +10,15 @@
 #>
 
 param(
-    [switch]$AutoYes
+    [switch]$AutoYes,
+    [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
 
 # 加载公共函数
 . "$PSScriptRoot/00-common.ps1"
+Set-DryRun -DryRun:$DryRun | Out-Null
 
 # 初始化自动确认模式
 Initialize-AutoYes -AutoYes:$AutoYes
@@ -32,41 +34,22 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
 # 编辑器和 IDE
 Write-Header "编辑器 / Editors and IDEs"
 
-$editors = [ordered]@{
-    "vscode" = @{ Desc = "Visual Studio Code"; Global = $false }
-}
-
-Install-ScoopPackages $editors
+Install-ScoopPackages (Get-PackageSection 'dev.editors').Packages
 
 # Git 工具
 Write-Header "Git 工具 / Git Tools"
 
-$gitTools = [ordered]@{
-    "lazygit" = @{ Desc = "lazygit"; Global = $false }
-    "delta"   = @{ Desc = "delta"; Global = $false }
-    "gh"      = @{ Desc = "gh (GitHub CLI)"; Global = $false }
-}
-
-Install-ScoopPackages $gitTools
+Install-ScoopPackages (Get-PackageSection 'dev.gitTools').Packages
 
 # Shell 脚本工具
 Write-Header "Shell 脚本工具 / Shell Script Tools"
 
-$shellTools = [ordered]@{
-    "shellcheck" = @{ Desc = "shellcheck (bash 静态检查 / bash static analysis)"; Global = $false }
-    "shfmt"      = @{ Desc = "shfmt (bash 格式化 / bash formatter)"; Global = $false }
-}
-
-Install-ScoopPackages $shellTools
+Install-ScoopPackages (Get-PackageSection 'dev.shellTools').Packages
 
 # SVN 客户端
 Write-Header "SVN 客户端 / SVN Clients"
 
-$svnTools = [ordered]@{
-    "sliksvn" = @{ Desc = "SlikSVN (命令行 / Command-line)"; Global = $false }
-}
-
-Install-ScoopPackages $svnTools
+Install-ScoopPackages (Get-PackageSection 'dev.svnTools').Packages
 
 
 # 环境管理
@@ -74,12 +57,7 @@ Write-Header "环境管理 / Environment Management"
 
 # 1. 版本管理器 (必装 / Required)
 Write-Step "版本管理器 / Version Manager (Required)"
-$versionManager = [ordered]@{
-    "mise" = @{ Desc = "mise (多语言版本管理器 / Multi-language version manager)"; Global = $false }
-    "fnm"  = @{ Desc = "fnm (Node.js 版本管理器 / Node.js version manager)"; Global = $false }
-}
-
-Install-ScoopPackages $versionManager
+Install-ScoopPackages (Get-PackageSection 'dev.versionManager').Packages
 
 # 1.2 按全局 mise 配置安装全部声明工具
 # Install all tools declared in the global mise config.
@@ -170,17 +148,7 @@ else {
 # 2. Node 包管理器（pnpm，独立二进制；运行 JS 项目仍需 Node）
 # Node package manager (pnpm, standalone binary; running JS projects still needs Node)
 Write-Step "Node 包管理器 / Node Package Manager (pnpm)"
-$nodePackageManagers = [ordered]@{
-    "pnpm" = @{
-        Desc     = "pnpm (Node 包管理器 / Node package manager)"
-        Global   = $false
-        PostNote = @(
-            "pnpm 为独立二进制，运行自身无需 Node / pnpm is a standalone binary, no Node needed to run itself"
-            "运行 JS 项目仍需 Node：请先执行 fnm install --lts / Running JS projects still needs Node: run 'fnm install --lts' first"
-        )
-    }
-}
-Install-ScoopPackages $nodePackageManagers
+Install-ScoopPackages (Get-PackageSection 'dev.nodePkg').Packages
 
 # 2.1 DSH（DeepSeek Harness）CLI 与 TUI（pnpm 全局安装，需 Node 运行）
 # DSH (DeepSeek Harness) CLI & TUI (installed globally via pnpm; needs Node to run)
@@ -213,27 +181,7 @@ else {
 Write-Step "Python 包管理器 / Python Package Manager (Optional)"
 Write-Note "可以选择安装 uv、miniconda3 或两者都装 / Can install uv, miniconda3, or both"
 
-$pythonPackageManagers = [ordered]@{
-    "uv"         = @{
-        Desc   = "uv (现代 Python 包管理器，推荐个人开发 / Modern Python package manager, recommended)"
-        Global = $false
-    }
-    "miniconda3" = @{
-        Desc        = "miniconda3 (适用于公司项目或科学计算 / For company projects or scientific computing)"
-        Global      = $false
-        Default     = $false
-        PostNote    = @(
-            "配置 Miniconda 不自动激活... / Configuring Miniconda to not auto-activate..."
-            "运行以下命令禁用自动激活 / Run to disable auto-activation: conda config --set auto_activate false"
-            "需要使用时显式激活 / Activate explicitly: conda activate <env_name>"
-        )
-        AlreadyNote = @(
-            "请运行以下命令禁用自动激活 / Run to disable auto-activation: conda config --set auto_activate false"
-        )
-    }
-}
-
-Install-ScoopPackages $pythonPackageManagers
+Install-ScoopPackages (Get-PackageSection 'dev.pythonPkg').Packages
 
 # uv 工具 (copyparty, ruff / uv tools)
 if (Get-Command uv -ErrorAction SilentlyContinue) {
@@ -327,32 +275,17 @@ else {
 # API 开发工具
 Write-Header "API 开发工具 / API Development Tools"
 
-$apiTools = [ordered]@{
-    "postman"    = @{ Desc = "Postman"; Global = $false }
-    "hoppscotch" = @{ Desc = "Hoppscotch"; Global = $false }
-}
-
-Install-ScoopPackages $apiTools
+Install-ScoopPackages (Get-PackageSection 'dev.api').Packages
 
 # 数据库工具
 Write-Header "数据库工具 / Database Tools"
 
-$dbTools = [ordered]@{
-    "dbeaver" = @{ Desc = "DBeaver (数据库管理工具 / Database management tool)"; Global = $false }
-    "dbx"     = @{ Desc = "DBX (轻量跨平台数据库客户端 / Lightweight cross-platform database client)"; Global = $false }
-}
-
-Install-ScoopPackages $dbTools
+Install-ScoopPackages (Get-PackageSection 'dev.db').Packages
 
 # 其他开发工具
 Write-Header "其他开发工具 / Other Development Tools"
 
-$devTools = [ordered]@{
-    "jq"     = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
-    "pandoc" = @{ Desc = "Pandoc (文档转换器 / Document converter)"; Global = $true }
-}
-
-Install-ScoopPackages $devTools
+Install-ScoopPackages (Get-PackageSection 'dev.misc').Packages
 
 # Android 工具 / Android tools
 Write-Header "Android 工具 / Android Tools"
@@ -449,40 +382,7 @@ else {
 # AI 开发工具
 Write-Header "AI 开发工具 / AI Development Tools"
 
-$aiTools = [ordered]@{
-    "lmstudio"         = @{
-        Desc     = "lmstudio (本地大模型运行器 / Local LLM runner)"
-        Global   = $false
-        PostNote = @(
-            "注意 CLI 名为 lms，不是 lmstudio / Note the CLI is 'lms', not 'lmstudio'"
-            "启动服务 / Start the server: lms server start（状态 lms server status，停止 lms server stop）"
-            "下载模型 / Pull a model: lms get qwen3-8b（已下载 lms ls，已加载 lms ps）"
-            "首次使用 lms 前需先启动一次 LM Studio 图形界面（依赖其守护进程）/ Launch the LM Studio app once before using lms (it needs the daemon)"
-        )
-    }
-    "rtk"              = @{
-        Desc     = "rtk (CLI 代理，压缩常见命令输出以减少 LLM token 消耗 / CLI proxy that cuts token usage on common dev commands)"
-        Global   = $false
-        PostNote = @(
-            "用法：在命令前加 rtk，例如 rtk git status、rtk ls、rtk cargo build / Usage: prefix commands with rtk, e.g. rtk git status"
-            "可通过 rtk gain 查看节省的 token 统计 / Check token savings with: rtk gain"
-        )
-    }
-    "magpie-ai-latest" = @{
-        Desc     = "magpie (AI 编程助手的模型/供应商/网关管理器 / Unified model, provider and gateway manager for AI coding agents)"
-        Global   = $false
-        PostNote = @(
-            "数据目录为 scoop 持久化目录（<scoop root>\persist\magpie-ai\data）/ Data lives in the Scoop persist dir (<scoop root>\persist\magpie-ai\data)"
-            '若曾用旧版本，需手动把 %USERPROFILE%\.config\magpie 的数据迁移到上述目录 / Older versions stored data in %USERPROFILE%\.config\magpie, migrate it manually if needed'
-        )
-    }
-    "codex"            = @{
-        Desc   = "OpenAI Codex CLI (AI 编程助手 / AI coding agent)"
-        Global = $false
-    }
-}
-
-Install-ScoopPackages $aiTools
+Install-ScoopPackages (Get-PackageSection 'dev.ai').Packages
 
 # WSL2 + Debian
 Write-Header "WSL2 / Debian 安装 / WSL2 / Debian setup"
@@ -606,3 +506,6 @@ else {
 Write-Header "开发工具安装完成 / Development tools installation completed"
 Write-Note "当前已安装的开发工具 / Currently installed development tools:"
 scoop list
+
+Write-FailureSummary
+if ((Get-FailureCount) -gt 0) { exit 1 }

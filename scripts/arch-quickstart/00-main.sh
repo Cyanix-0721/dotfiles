@@ -7,27 +7,52 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 加载公共函数
 . "$SCRIPT_DIR/00-common.sh"
 
-# 显示主菜单
+# 支持 QUICKSTART_DRY_RUN=1 进入 dry-run（只打印不执行）
+if [ "${QUICKSTART_DRY_RUN:-0}" = "1" ]; then export DRY_RUN=1; fi
+
+# ===== 菜单单一真源 / Single source of truth =====
+# 格式: 选项键|标题|脚本名（空=特殊动作：0 退出、1 全部运行）
+MENU_ITEMS=(
+	"1|全部运行 / Run All|"
+	"2|系统基础环境 / System Foundation|01-system-foundation.sh"
+	"3|中文本地化 / Chinese Localization|02-chinese-localization.sh"
+	"4|必备软件包 / Essential Packages|03-essential-packages.sh"
+	"0|退出 / Exit|"
+)
+
+# 显示主菜单（读取 MENU_ITEMS，与分派共用一份数据）
 show_menu() {
 	clear
 	header "Arch Linux 快速配置 / Quick Setup"
-	echo " [1] 全部运行 / Run All"
-	echo " [2] 系统基础环境 / System Foundation"
-	echo " [3] 中文本地化 / Chinese Localization"
-	echo " [4] 必备软件包 / Essential Packages"
-	echo " [0] 退出 / Exit"
+	local item key title _script
+	for item in "${MENU_ITEMS[@]}"; do
+		IFS='|' read -r key title _script <<<"$item"
+		echo " [$key] $title"
+	done
 	echo
 }
 
 # 运行指定脚本
 run_script() {
-	local script_num=$1
-	local script_name=""
+	local script_num=${1:-}
+	local item key title script_name="" found=0
+
+	for item in "${MENU_ITEMS[@]}"; do
+		IFS='|' read -r key title script_name <<<"$item"
+		[ "$key" = "$script_num" ] || continue
+		found=1
+		break
+	done
+
+	if [ "$found" -eq 0 ]; then
+		err "无效选项 / Invalid option"
+		return 1
+	fi
 
 	case $script_num in
 	0)
 		note "再见 / Goodbye"
-		exit
+		exit 0
 		;;
 	1)
 		step "开始完整配置 / Starting complete setup"
@@ -35,21 +60,6 @@ run_script() {
 			export AUTO_YES=1
 			note "自动确认模式已启用 / Auto-yes mode enabled"
 		fi
-		;;
-	2) script_name="01-system-foundation.sh" ;;
-	3) script_name="02-chinese-localization.sh" ;;
-	4) script_name="03-essential-packages.sh" ;;
-	*)
-		err "无效选项 / Invalid option"
-		return 1
-		;;
-	esac
-
-	if [ "$script_num" -eq 0 ]; then
-		# 选项 0 是退出，在 case 语句中已经处理
-		return 0
-	elif [ "$script_num" -eq 1 ]; then
-		# 运行所有脚本（按数字顺序，排除主脚本）
 		for script in "$SCRIPT_DIR"/0[1-3]-*.sh; do
 			if [ -f "$script" ] && [ -x "$script" ]; then
 				step "执行 $(basename "$script") / Executing $(basename "$script")"
@@ -58,7 +68,10 @@ run_script() {
 			fi
 		done
 		ok "所有配置完成 / All configurations completed"
-	elif [ -n "$script_name" ]; then
+		;;
+	esac
+
+	if [ -n "$script_name" ]; then
 		local script_path="$SCRIPT_DIR/$script_name"
 		if [ -f "$script_path" ] && [ -x "$script_path" ]; then
 			step "执行 $script_name / Executing $script_name"
@@ -75,14 +88,14 @@ run_script() {
 # 主循环
 while true; do
 	show_menu
-	read -p "请选择操作 / Please select an option [0-4]: " choice
+	read -r -p "请选择操作 / Please select an option [0-4]: " choice || break
 
 	if run_script "$choice"; then
 		# 所有成功的选项都需要等待用户按键
 		echo
-		read -p "回车返回主菜单 / Press Enter to return to main menu…"
+		read -r -p "回车返回主菜单 / Press Enter to return to main menu…" || break
 	else
 		err "执行失败，请检查错误信息 / Execution failed, please check errors"
-		read -p "回车返回主菜单 / Press Enter to return to main menu…"
+		read -r -p "回车返回主菜单 / Press Enter to return to main menu…" || break
 	fi
 done
