@@ -13,7 +13,7 @@ jobs:
     name: Chezmoi template validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install chezmoi
         run: |
           curl -fsSL https://get.chezmoi.io | sh
@@ -35,8 +35,8 @@ jobs:
     name: Python lint (ruff)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
       - name: Install ruff
         run: uv tool install ruff
       - name: Run ruff
@@ -47,7 +47,7 @@ jobs:
     name: Shell lint (shellcheck)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install shellcheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
       - name: Run shellcheck
@@ -60,7 +60,7 @@ jobs:
     name: PowerShell lint (PSScriptAnalyzer)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - shell: pwsh
         run: |
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
@@ -72,7 +72,7 @@ jobs:
     name: PowerShell unit tests (Pester)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - shell: pwsh
         run: |
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
@@ -86,6 +86,6 @@ jobs:
     name: Bash unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run bash tests
         run: bash scripts/tests/test-quickstart-common.sh
