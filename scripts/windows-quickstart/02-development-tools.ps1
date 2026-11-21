@@ -1,4 +1,4 @@
-#!/usr/bin/env pwsh
+﻿#!/usr/bin/env pwsh
 
 <#
 .SYNOPSIS
@@ -19,7 +19,7 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot/00-common.ps1"
 
 # 初始化自动确认模式
-Initialize-AutoYes
+Initialize-AutoYes -AutoYes:$AutoYes
 
 Write-Header "开发工具安装 / Development Tools Installation"
 
@@ -32,7 +32,7 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
 # 编辑器和 IDE
 Write-Header "编辑器 / Editors and IDEs"
 
-$editors = @{
+$editors = [ordered]@{
     "vscode" = @{ Desc = "Visual Studio Code"; Global = $false }
 }
 
@@ -41,7 +41,7 @@ Install-ScoopPackages $editors
 # Git 工具
 Write-Header "Git 工具 / Git Tools"
 
-$gitTools = @{
+$gitTools = [ordered]@{
     "lazygit" = @{ Desc = "lazygit"; Global = $false }
     "delta"   = @{ Desc = "delta"; Global = $false }
     "gh"      = @{ Desc = "gh (GitHub CLI)"; Global = $false }
@@ -52,7 +52,7 @@ Install-ScoopPackages $gitTools
 # Shell 脚本工具
 Write-Header "Shell 脚本工具 / Shell Script Tools"
 
-$shellTools = @{
+$shellTools = [ordered]@{
     "shellcheck" = @{ Desc = "shellcheck (bash 静态检查 / bash static analysis)"; Global = $false }
     "shfmt"      = @{ Desc = "shfmt (bash 格式化 / bash formatter)"; Global = $false }
 }
@@ -62,7 +62,7 @@ Install-ScoopPackages $shellTools
 # SVN 客户端
 Write-Header "SVN 客户端 / SVN Clients"
 
-$svnTools = @{
+$svnTools = [ordered]@{
     "sliksvn" = @{ Desc = "SlikSVN (命令行 / Command-line)"; Global = $false }
 }
 
@@ -74,7 +74,7 @@ Write-Header "环境管理 / Environment Management"
 
 # 1. 版本管理器 (必装 / Required)
 Write-Step "版本管理器 / Version Manager (Required)"
-$versionManager = @{
+$versionManager = [ordered]@{
     "mise" = @{ Desc = "mise (多语言版本管理器 / Multi-language version manager)"; Global = $false }
     "fnm"  = @{ Desc = "fnm (Node.js 版本管理器 / Node.js version manager)"; Global = $false }
 }
@@ -170,7 +170,7 @@ else {
 # 2. Node 包管理器（pnpm，独立二进制；运行 JS 项目仍需 Node）
 # Node package manager (pnpm, standalone binary; running JS projects still needs Node)
 Write-Step "Node 包管理器 / Node Package Manager (pnpm)"
-$nodePackageManagers = @{
+$nodePackageManagers = [ordered]@{
     "pnpm" = @{
         Desc     = "pnpm (Node 包管理器 / Node package manager)"
         Global   = $false
@@ -182,11 +182,38 @@ $nodePackageManagers = @{
 }
 Install-ScoopPackages $nodePackageManagers
 
+# 2.1 DSH（DeepSeek Harness）CLI 与 TUI（pnpm 全局安装，需 Node 运行）
+# DSH (DeepSeek Harness) CLI & TUI (installed globally via pnpm; needs Node to run)
+if (Get-Command pnpm -ErrorAction SilentlyContinue) {
+    Write-Step "DSH CLI 与 TUI / DSH CLI & TUI (pnpm global)"
+    $installDsh = Confirm-Install "是否通过 pnpm 全局安装 DSH（@deepseek-ai/dsh）与 TUI（@deepseek-harness-tui/dsh-tui）？(Y/n) / Install DSH CLI & TUI globally via pnpm? (Y/n)"
+    if ($installDsh -notmatch '^[Nn]') {
+        try {
+            pnpm add -g '@deepseek-ai/dsh' '@deepseek-harness-tui/dsh-tui'
+            if ($LASTEXITCODE -eq 0) {
+                Write-Ok "DSH CLI 与 TUI 安装完成 / DSH CLI & TUI installed"
+            }
+            else {
+                Write-Warn "DSH 安装失败（退出码 $LASTEXITCODE，非致命）/ Installing DSH failed (exit $LASTEXITCODE)"
+            }
+        }
+        catch {
+            Write-Warn "DSH 安装失败（非致命）/ Installing DSH failed: $($_.Exception.Message)"
+        }
+    }
+    else {
+        Write-Note "跳过 DSH 安装 / Skipping DSH installation"
+    }
+}
+else {
+    Write-Warn "pnpm 不可用，跳过 DSH 安装 / pnpm unavailable, skipping DSH installation"
+}
+
 # 3. Python 包管理器 (可选一个或都安装，默认 uv / Optional, can install one or both, default uv)
 Write-Step "Python 包管理器 / Python Package Manager (Optional)"
 Write-Note "可以选择安装 uv、miniconda3 或两者都装 / Can install uv, miniconda3, or both"
 
-$pythonPackageManagers = @{
+$pythonPackageManagers = [ordered]@{
     "uv"         = @{
         Desc   = "uv (现代 Python 包管理器，推荐个人开发 / Modern Python package manager, recommended)"
         Global = $false
@@ -239,8 +266,8 @@ else {
         if ($installDotNet -notmatch '^[Yy]$') { continue }
 
         Write-Step "选择 .NET $version.0 安装类型 / Choosing .NET $version.0 install type"
-        Write-Host "1. 仅 SDK (包含运行时) / SDK only (includes runtime) (默认 / default)" -ForegroundColor Yellow
-        Write-Host "2. 仅运行时 / Runtime only" -ForegroundColor Yellow
+        Write-Note "1. 仅 SDK (包含运行时) / SDK only (includes runtime) (默认 / default)"
+        Write-Note "2. 仅运行时 / Runtime only"
 
         if ($AutoYes) {
             $choice = "1"
@@ -300,7 +327,7 @@ else {
 # API 开发工具
 Write-Header "API 开发工具 / API Development Tools"
 
-$apiTools = @{
+$apiTools = [ordered]@{
     "postman"    = @{ Desc = "Postman"; Global = $false }
     "hoppscotch" = @{ Desc = "Hoppscotch"; Global = $false }
 }
@@ -310,7 +337,7 @@ Install-ScoopPackages $apiTools
 # 数据库工具
 Write-Header "数据库工具 / Database Tools"
 
-$dbTools = @{
+$dbTools = [ordered]@{
     "dbeaver" = @{ Desc = "DBeaver (数据库管理工具 / Database management tool)"; Global = $false }
     "dbx"     = @{ Desc = "DBX (轻量跨平台数据库客户端 / Lightweight cross-platform database client)"; Global = $false }
 }
@@ -320,7 +347,7 @@ Install-ScoopPackages $dbTools
 # 其他开发工具
 Write-Header "其他开发工具 / Other Development Tools"
 
-$devTools = @{
+$devTools = [ordered]@{
     "jq"     = @{ Desc = "jq (JSON 处理器 / JSON processor)"; Global = $false }
     "pandoc" = @{ Desc = "Pandoc (文档转换器 / Document converter)"; Global = $true }
 }
@@ -339,7 +366,7 @@ Write-Header "Android 工具 / Android Tools"
 $androidSdk = Join-Path $env:LOCALAPPDATA "Android\Sdk"
 
 if ($Script:AutoYes) {
-    $androidTools = @{
+    $androidTools = [ordered]@{
         "android-studio" = @{ Desc = "Android Studio"; Global = $false }
         "android-clt"    = @{
             Desc     = "Android Command Line Tools（仅作 SDK 引导，本步骤末尾卸载）"
@@ -406,7 +433,7 @@ else {
     if (Test-Path (Join-Path $androidSdk "platform-tools\adb.exe")) {
         Write-Warn "检测到已有 Android SDK 自带的 adb（$($androidSdk)\platform-tools）；再装 scoop 的 adb 会有两份不同版本 → 'adb server version mismatch'，建议只留一份 / an SDK-provided adb already exists; a second version triggers 'adb server version mismatch' — keep only one"
     }
-    $androidTools = @{
+    $androidTools = [ordered]@{
         "adb" = @{
             Desc     = "adb / fastboot (platform-tools)"
             Global   = $false
@@ -422,7 +449,7 @@ else {
 # AI 开发工具
 Write-Header "AI 开发工具 / AI Development Tools"
 
-$aiTools = @{
+$aiTools = [ordered]@{
     "lmstudio"         = @{
         Desc     = "lmstudio (本地大模型运行器 / Local LLM runner)"
         Global   = $false

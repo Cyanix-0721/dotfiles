@@ -19,7 +19,7 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot/00-common.ps1"
 
 # 初始化自动确认模式
-Initialize-AutoYes
+Initialize-AutoYes -AutoYes:$AutoYes
 
 Write-Header "系统工具安装 / System Tools Installation"
 
@@ -32,7 +32,7 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
 # Sysinternals 工具集
 Write-Header "Sysinternals 工具集 / Sysinternals Suite"
 
-$sysinternalsTools = @{
+$sysinternalsTools = [ordered]@{
     "sysmon"           = @{ Desc = "Sysmon (系统监视器 / System Monitor)"; Global = $false }
     "handle"           = @{ Desc = "Handle (句柄查看工具 / View open handles)"; Global = $false }
     "autoruns"         = @{ Desc = "Autoruns (启动项管理工具 / Startup manager)"; Global = $false }
@@ -48,7 +48,7 @@ Install-ScoopPackages $sysinternalsTools
 # 系统信息和监控工具
 Write-Header "系统信息和监控工具 / System Info and Monitoring Tools"
 
-$monitorTools = @{
+$monitorTools = [ordered]@{
     "fastfetch"      = @{ Desc = "fastfetch (系统信息显示 / System information display)"; Global = $false }
     "trafficmonitor" = @{ Desc = "TrafficMonitor (网速监控悬浮窗 / Network traffic monitor)"; Global = $false }
 }
@@ -58,7 +58,7 @@ Install-ScoopPackages $monitorTools
 # 文件管理器
 Write-Header "文件管理器 / File Managers"
 
-$fileManagers = @{
+$fileManagers = [ordered]@{
     "yazi" = @{ Desc = "Yazi (终端文件管理器 / Terminal file manager)"; Global = $false; PostNote = @("提示：Yazi 会自动安装以下依赖：imagemagick, poppler, resvg / Note: Yazi auto-installs deps: imagemagick, poppler, resvg") }
 }
 
@@ -67,7 +67,7 @@ Install-ScoopPackages $fileManagers
 # 压缩工具
 Write-Header "压缩工具 / Compression Tools"
 
-$compressionTools = @{
+$compressionTools = [ordered]@{
     "7zip"   = @{ Desc = "7zip (压缩/解压工具 / Archive utility)"; Global = $false }
     "peazip" = @{ Desc = "PeaZip (压缩/解压工具 / Archive utility)"; Global = $false }
 }
@@ -77,7 +77,7 @@ Install-ScoopPackages $compressionTools
 # Windows 增强工具
 Write-Header "Windows 增强工具 / Windows Enhancement Tools"
 
-$winTools = @{
+$winTools = [ordered]@{
     "everything-beta" = @{ Desc = "Everything (快速文件搜索 / Fast file search)"; Global = $false }
     "everything-cli"  = @{ Desc = "Everything CLI (命令行文件搜索 / Command-line file search)"; Global = $false }
     "fancontrol"      = @{ Desc = "FanControl (风扇控制工具 / Fan control utility)"; Global = $false }
@@ -126,37 +126,6 @@ else {
     }
 }
 
-# ContextMenuMgrPlus（右键菜单管理，替代 ContextMenuManager / Context menu manager）
-Write-Header "ContextMenuMgrPlus (右键菜单管理 / Context Menu Manager)"
-
-if (Test-ScoopInstalled "contextmenumgrplus") {
-    Write-Ok "contextmenumgrplus 已安装 / contextmenumgrplus is already installed"
-}
-else {
-    $installCmm = Confirm-Install "是否安装 ContextMenuMgrPlus（右键菜单管理）？(y/N) / Install ContextMenuMgrPlus (context menu manager)? (y/N)"
-    if ($installCmm -match '^[Yy]$') {
-        $bucketList = scoop bucket list
-        if ($bucketList -match 'PLFJY') {
-            Write-Ok "Bucket 'PLFJY' 已添加 / Bucket 'PLFJY' already added"
-        }
-        else {
-            Write-Step "添加 bucket: PLFJY / Adding bucket: PLFJY"
-            scoop bucket add PLFJY https://github.com/PLFJY/scoop-bucket.git
-            Write-Ok "Bucket 'PLFJY' 添加成功 / Bucket 'PLFJY' added successfully"
-        }
-
-        if (Test-ScoopInstalled "contextmenumgrplus-beta") {
-            Write-Warn "检测到 contextmenumgrplus-beta，请先 scoop uninstall contextmenumgrplus-beta / Beta package conflicts with the stable one"
-        }
-        else {
-            scoop install PLFJY/ContextMenuMgrPlus
-            Reset-ScoopCache
-            Write-Ok "contextmenumgrplus 安装完成 / contextmenumgrplus installation completed"
-            Write-Note "部分需要提权的右键菜单操作会提示安装/修复其 Windows 服务 / Elevated menu operations may prompt to install or repair its service"
-        }
-    }
-}
-
 # OpenHashTab (文件哈希右键扩展)
 Write-Header "OpenHashTab (文件哈希右键扩展) / OpenHashTab (File Hash Context Menu)"
 
@@ -164,7 +133,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过 OpenHashTab 安装 / winget not installed, skipping OpenHashTab installation"
 }
 else {
-    $wingApps = @{ 
+    $wingApps = [ordered]@{
         "namazso.OpenHashTab" = @{ Desc = "OpenHashTab (文件哈希右键扩展 / File Hash Context Menu)"; InstallArgs = @("--exact", "--silent") }
     }
     Install-WingetApps $wingApps -Force
@@ -173,7 +142,7 @@ else {
 # 终端与命令行工具
 Write-Header "终端与命令行工具 / Terminal & CLI Tools"
 
-$termTools = @{
+$termTools = [ordered]@{
     "wezterm-nightly"     = @{ Desc = "WezTerm (GPU 加速终端 / GPU-accelerated terminal)"; Global = $false }
     "windows-terminal"    = @{ Desc = "Windows Terminal (微软官方终端 / Microsoft official terminal)"; Global = $false }
     "less"                = @{ Desc = "less (终端分页器 / Terminal pager)"; Global = $false }
@@ -192,7 +161,7 @@ Install-ScoopPackages $termTools
 # 网络工具
 Write-Header "网络工具 / Network Tools"
 
-$networkTools = @{
+$networkTools = [ordered]@{
     "nmap"      = @{ Desc = "nmap (网络扫描工具，含 ncat / Network scanner, includes ncat)"; Global = $false }
     "scrcpy"    = @{ Desc = "scrcpy (Android 投屏工具 / Android screen mirroring)"; Global = $false }
     "mkcert"    = @{ Desc = "mkcert (本地 HTTPS 证书 / Local HTTPS certificates)"; Global = $false }
@@ -208,7 +177,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过 OpenSSH Preview 安装 / winget not installed, skipping OpenSSH Preview installation"
 }
 else {
-    $wingApps = @{
+    $wingApps = [ordered]@{
         "Microsoft.OpenSSH.Preview" = @{ Desc = "OpenSSH Preview (Microsoft 官方 OpenSSH 预览版 / Microsoft OpenSSH preview)"; InstallArgs = @("--exact", "--silent") }
     }
     Install-WingetApps $wingApps -Force

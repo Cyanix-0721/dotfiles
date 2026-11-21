@@ -5,7 +5,7 @@
 # Default-enabled: forward WSL git SSH to the Windows OpenSSH agent (KeePassXC)
 # git calls win-ssh via core.sshCommand in ~/.gitconfig (managed by chezmoi)
 
-set -e # 遇到错误立即退出
+set -euo pipefail # 遇到错误立即退出；-u 未定义变量即报错；管道任一环节失败即视为失败
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -31,9 +31,18 @@ WIN_HOME="$(get_win_user_home)" || {
 note "Windows 用户目录 / Windows user profile: $WIN_HOME"
 
 WIN_SSH_PS1_PATH="$WIN_HOME/.local/bin/win-ssh.ps1"
-WIN_SSH_PS1_PATH_WIN=$(printf '%s' "$WIN_SSH_PS1_PATH" | sed \
-	-e 's#^/mnt/\([A-Za-z]\)#\U\1:#' \
-	-e 's#/#\\#g')
+if command -v wslpath >/dev/null 2>&1; then
+	WIN_SSH_PS1_PATH_WIN=$(wslpath -w "$WIN_SSH_PS1_PATH" 2>/dev/null) || WIN_SSH_PS1_PATH_WIN=$WIN_SSH_PS1_PATH
+elif [[ "$WIN_SSH_PS1_PATH" =~ ^/mnt/([A-Za-z])(/.*)$ ]]; then
+	WIN_SSH_PS1_PATH_WIN="${BASH_REMATCH[1]^^}:${BASH_REMATCH[2]//\//\\}"
+else
+	WIN_SSH_PS1_PATH_WIN="$WIN_SSH_PS1_PATH"
+fi
+
+# 解析 WSL 侧可用的 powershell.exe（优先 interop PATH，回退系统默认位置）
+# Resolve the WSL-side powershell.exe (prefer interop PATH, fall back to default location)
+POWERSHELL_EXE="$(command -v powershell.exe 2>/dev/null || true)"
+[ -n "$POWERSHELL_EXE" ] || POWERSHELL_EXE="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 WSL_SSH_PATH="$HOME/bin/win-ssh"
 
 # 2) 生成 Windows 侧 win-ssh.ps1（写入 $1 指定路径）
@@ -59,28 +68,42 @@ write_wsl_wrapper() {
 	mkdir -p "$(dirname "$target")"
 	cat >"$target" <<EOF
 #!/usr/bin/env sh
-exec /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$WIN_SSH_PS1_PATH_WIN" "\$@"
+exec $POWERSHELL_EXE -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$WIN_SSH_PS1_PATH_WIN" "\$@"
 EOF
 	chmod +x "$target"
 }
 
+# 用 case 分派写入函数，避免动态函数名调用（write_target "$fn"）的脆弱写法
+# Dispatch the writer via case instead of a dynamic function name
+write_target() {
+	case "${1:-}" in
+	win_ps1) write_win_ps1 "${2:-}" ;;
+	wsl_wrapper) write_wsl_wrapper "${2:-}" ;;
+	*) err "未知写入目标 / unknown write target: ${1:-}"; return 1 ;;
+	esac
+}
+
 # 写入：目标不存在则生成；存在且内容一致则跳过；不一致（或 FORCE=1）且用户同意时覆盖
 ensure_file() {
-	local f="$1" fn="$2" tmp
+	local f="${1:-}" fn="${2:-}" tmp
 	if [ "$FORCE" = "1" ]; then
 		step "写入 / Writing $f"
-		write_"$fn" "$f"
+		write_target "$fn" "$f"
 		ok "已生成 / Generated: $f"
 		return 0
 	fi
 	if [ ! -f "$f" ]; then
 		step "写入 / Writing $f"
-		write_"$fn" "$f"
+		write_target "$fn" "$f"
 		ok "已生成 / Generated: $f"
 		return 0
 	fi
-	tmp="$(mktemp)"
-	write_"$fn" "$tmp"
+	tmp="$(mktemp)" || return 1
+	if ! write_target "$fn" "$tmp"; then
+		rm -f "$tmp"
+		err "写入临时文件失败 / failed to write temp file"
+		return 1
+	fi
 	if diff -q "$tmp" "$f" >/dev/null 2>&1; then
 		rm -f "$tmp"
 		ok "已存在且内容一致，跳过 / Up to date: $f"
@@ -89,7 +112,7 @@ ensure_file() {
 	rm -f "$tmp"
 	if confirm_install 1 "检测到 $f 内容不一致，覆盖？/ Content differs, overwrite?"; then
 		step "覆盖 / Overwriting $f"
-		write_"$fn" "$f"
+		write_target "$fn" "$f"
 		ok "已更新 / Updated: $f"
 	else
 		warn "保留现有文件 / Keeping existing: $f"
@@ -107,7 +130,7 @@ ensure_file "$WSL_SSH_PATH" wsl_wrapper
 # 5) 自检（可选）
 note "部署完成 / Deployment complete"
 note "验证命令 / Verify with: git ls-remote <remote> HEAD"
-if confirm_install 0 "现在验证 GitHub 连通性（需 Windows agent 已注入密钥）？/ Verify GitHub connectivity now (requires a key injected into the Windows agent)?"; then
+if [ "${AUTO_YES:-0}" != "1" ] && confirm_install 0 "现在验证 GitHub 连通性（需 Windows agent 已注入密钥）？/ Verify GitHub connectivity now (requires a key injected into the Windows agent)?"; then
 	# 注意：ssh -T git@github.com 认证成功时 GitHub 仍以退出码 1 结束（git 用户无 shell），
 	# 所以不能按退出码判断，必须检测输出中的 "successfully authenticated"。
 	# 另加 3 次重试，容忍代理节点的偶发抖动（偶发连接失败 rc=255）。
@@ -129,7 +152,7 @@ if confirm_install 0 "现在验证 GitHub 连通性（需 Windows agent 已注�
 	else
 		err "GitHub SSH 转发验证失败（请确认 KeePassXC 已解锁并注入密钥）"
 		err "GitHub SSH forwarding failed (unlock KeePassXC and make sure the key is injected)"
-		exit 1
+		note "  转发已配置，但连通性验证未通过；请稍后手动验证 / forwarding configured but connectivity check failed; verify manually later"
 	fi
 fi
 

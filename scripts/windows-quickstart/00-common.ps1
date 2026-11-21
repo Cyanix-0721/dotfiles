@@ -45,13 +45,15 @@ function Write-Note {
 
 # ===== 安装确认 / Install confirmation =====
 function Initialize-AutoYes {
-    # 读取脚本级 $AutoYes；未启用时询问是否全选 Y
-    if ($Script:AutoYes) {
+    param([switch]$AutoYes)
+    # -AutoYes 显式传入（Run All）或脚本级 $Script:AutoYes 已启用时，直接进入自动确认
+    if ($AutoYes -or $Script:AutoYes) {
+        $Script:AutoYes = $true
         Write-Note "自动确认模式已启用 / Auto-yes mode enabled"
     }
     else {
-        $autoYesChoice = Read-Host "是否全选 Y（自动确认所有安装）？(y/N) / Select all Y (auto-confirm all installations)? (y/N)"
-        if ($autoYesChoice -match '^[Yy]$') { $Script:AutoYes = $true }
+        $autoYesChoice = Read-Host "是否全选 Y（自动确认所有安装）？(Y/n) / Select all Y (auto-confirm all installations)? (Y/n)"
+        if ($autoYesChoice -notmatch '^[Nn]') { $Script:AutoYes = $true }
     }
 }
 
@@ -59,6 +61,18 @@ function Confirm-Install {
     param([string]$Prompt)
     if ($Script:AutoYes) { return "Y" }
     return Read-Host $Prompt
+}
+
+function Read-Choice {
+    # 选择型提示（非 Y/N）：自动确认模式下返回默认值，避免被强塞 "Y"
+    param(
+        [string]$Prompt,
+        [string]$Default = ""
+    )
+    if ($Script:AutoYes) { return $Default }
+    $choice = Read-Host $Prompt
+    if ([string]::IsNullOrWhiteSpace($choice)) { return $Default }
+    return $choice
 }
 
 # ===== Scoop 已安装检测（缓存结果，避免重复调用 scoop list）=====
@@ -72,7 +86,11 @@ function Get-ScoopInstalled {
 }
 
 function Reset-ScoopCache {
-    $Script:ScoopInstalledCache = $null
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param()
+    if ($PSCmdlet.ShouldProcess('Scoop 已安装缓存', 'Reset')) {
+        $Script:ScoopInstalledCache = $null
+    }
 }
 
 function Test-ScoopInstalled {
@@ -110,19 +128,22 @@ function Install-ScoopPackage {
 
     if ($AsGlobal) {
         scoop install $Name --global
-        Write-Ok "$Name 安装完成（全局） / $Name installation completed (global)"
+        if ($LASTEXITCODE -eq 0) { Write-Ok "$Name 安装完成（全局） / $Name installation completed (global)" }
+        else { Write-Err "$Name 安装失败（全局，退出码 $LASTEXITCODE）/ $Name installation failed (global, exit $LASTEXITCODE)" }
     }
     else {
         scoop install $Name
-        Write-Ok "$Name 安装完成 / $Name installation completed"
+        if ($LASTEXITCODE -eq 0) { Write-Ok "$Name 安装完成 / $Name installation completed" }
+        else { Write-Err "$Name 安装失败（退出码 $LASTEXITCODE）/ $Name installation failed (exit $LASTEXITCODE)" }
     }
     Reset-ScoopCache
     if ($PostNote) { foreach ($line in $PostNote) { Write-Note $line } }
 }
 
 function Install-ScoopPackages {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'Batch install helper; plural noun is intentional')]
     param(
-        [Parameter(Mandatory = $true)][hashtable]$Packages
+        [Parameter(Mandatory = $true)][System.Collections.IDictionary]$Packages
     )
     foreach ($entry in $Packages.GetEnumerator()) {
         $info = $entry.Value
@@ -193,8 +214,9 @@ function Install-WingetApp {
 }
 
 function Install-WingetApps {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'Batch install helper; plural noun is intentional')]
     param(
-        [Parameter(Mandatory = $true)][hashtable]$Apps,
+        [Parameter(Mandatory = $true)][System.Collections.IDictionary]$Apps,
         [switch]$Force
     )
     foreach ($entry in $Apps.GetEnumerator()) {

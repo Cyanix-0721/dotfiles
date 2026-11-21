@@ -19,7 +19,7 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot/00-common.ps1"
 
 # 初始化自动确认模式
-Initialize-AutoYes
+Initialize-AutoYes -AutoYes:$AutoYes
 
 Write-Header "必备软件包安装 / Essential Applications Installation"
 
@@ -54,12 +54,12 @@ else {
     $install = Confirm-Install "是否安装浏览器？(Y/n) / Install browsers? (Y/n)"
     if ($install -notmatch '^[Nn]$') {
         Write-Note "请选择要安装的浏览器（默认 1）/ Select browsers to install (default 1):"
-        Write-Host "  [1] zen-browser + helium（默认 / default）"
+        Write-Note "  [1] zen-browser + helium（默认 / default）"
         for ($i = 0; $i -lt $browserOptions.Count; $i++) {
             $state = if ($installedBrowsers -contains $browserOptions[$i].Name) { "（已安装 / installed）" } else { "" }
-            Write-Host "  [$($i + 2)] $($browserOptions[$i].Desc) $state"
+            Write-Note "  [$($i + 2)] $($browserOptions[$i].Desc) $state"
         }
-        Write-Host "  [$($browserOptions.Count + 2)] 全部安装 / Install all"
+        Write-Note "  [$($browserOptions.Count + 2)] 全部安装 / Install all"
 
         $choice = Read-Host "请输入编号（默认 1）/ Enter a number (default 1)"
         if ($choice -match '^\d+$') { $selection = [int]$choice } else { $selection = 1 }
@@ -113,7 +113,7 @@ else {
 # 效率工具
 Write-Header "效率工具 / Productivity Tools"
 
-$productivityApps = @{
+$productivityApps = [ordered]@{
     "obsidian"   = @{ Desc = "Obsidian (笔记软件 / Note-taking app)"; Global = $false }
     "draw.io"    = @{ Desc = "Draw.io (流程图绘制 / Diagram drawing)"; Global = $false }
     "umi-ocr"    = @{ Desc = "Umi OCR (OCR 工具 / OCR tool)"; Global = $false }
@@ -125,7 +125,7 @@ Install-ScoopPackages $productivityApps
 # 密码管理器
 Write-Header "密码管理器 / Password Managers"
 
-$passwordManagers = @{
+$passwordManagers = [ordered]@{
     "keepassxc" = @{ Desc = "KeePassXC"; Global = $false }
 }
 
@@ -134,7 +134,7 @@ Install-ScoopPackages $passwordManagers
 # 邮件客户端
 Write-Header "邮件客户端 / Email Clients"
 
-$emailClients = @{
+$emailClients = [ordered]@{
     "thunderbird" = @{ Desc = "Thunderbird"; Global = $false }
 }
 
@@ -143,7 +143,7 @@ Install-ScoopPackages $emailClients
 # 通讯软件
 Write-Header "通讯软件 / Communication Apps"
 
-$commApps = @{
+$commApps = [ordered]@{
     "vesktop"  = @{ Desc = "Vesktop (Discord 客户端 / Discord client)"; Global = $false }
     "telegram" = @{ Desc = "Telegram (Telegram 客户端 / Telegram client)"; Global = $false }
 }
@@ -153,7 +153,7 @@ Install-ScoopPackages $commApps
 # 文件同步
 Write-Header "文件同步 / File Synchronization"
 
-$syncApps = @{
+$syncApps = [ordered]@{
     "syncthing"     = @{ Desc = "Syncthing (P2P 文件同步 / P2P file sync)"; Global = $false }
     "syncthingtray" = @{ Desc = "Syncthing Tray (系统托盘工具 / System tray utility)"; Global = $false }
     "localsend"     = @{ Desc = "LocalSend (局域网文件传输 / LAN file transfer)"; Global = $false }
@@ -165,7 +165,7 @@ Install-ScoopPackages $syncApps
 # 远程控制
 Write-Header "远程控制 / Remote Control"
 
-$remoteApps = @{
+$remoteApps = [ordered]@{
     "rustdesk" = @{ Desc = "RustDesk (远程桌面工具 / Remote desktop)"; Global = $false }
 }
 
@@ -174,7 +174,7 @@ Install-ScoopPackages $remoteApps
 # 下载工具
 Write-Header "下载工具 / Download Tools"
 
-$downloadApps = @{
+$downloadApps = [ordered]@{
     "qbittorrent-enhanced" = @{ Desc = "qBittorrent Enhanced (BT 下载 / BT download)"; Global = $false }
     "rayburst"             = @{ Desc = "Rayburst (全能下载管理器 / Full-featured download manager)"; Global = $false }
 }
@@ -184,7 +184,7 @@ Install-ScoopPackages $downloadApps
 # 多媒体
 Write-Header "多媒体工具 / Multimedia Tools"
 
-$multimediaTools = @{
+$multimediaTools = [ordered]@{
     "snowshot"    = @{ Desc = "snowshot (截图工具 / Screenshot tool)"; Global = $false }
     "screentogif" = @{ Desc = "ScreenToGif (屏幕录制 GIF 工具 / Screen recording GIF tool)"; Global = $false }
     "imagemagick" = @{ Desc = "ImageMagick (图像处理工具 / Image processing tool)"; Global = $false }
@@ -196,7 +196,7 @@ Install-ScoopPackages $multimediaTools
 # 阅读器
 Write-Header "阅读器 / Readers"
 
-$readerApps = @{
+$readerApps = [ordered]@{
     "kavita"     = @{ Desc = "Kavita (漫画/电子书服务器 / Comic/E-book server)"; Global = $false }
     "sumatrapdf" = @{ Desc = "SumatraPDF (PDF 阅读器 / PDF reader)"; Global = $false }
 }
@@ -206,7 +206,7 @@ Install-ScoopPackages $readerApps
 # 字体
 Write-Header "字体 / Fonts"
 
-$fonts = @{
+$fonts = [ordered]@{
     "JetBrainsMono-NF-Mono" = @{ Desc = "JetBrains Mono Nerd Font"; Global = $false }
     "SarasaGothic-SC"       = @{ Desc = "Sarasa Gothic (更纱黑体)"; Global = $false }
 }
@@ -220,7 +220,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过游戏平台安装 / winget not installed, skipping game platforms installation"
 }
 else {
-    $wingApps = @{ 
+    $wingApps = [ordered]@{
         "Valve.Steam"                 = @{ Desc = "Steam (游戏平台 / Steam)"; InstallArgs = @("--exact", "--silent") }
         "EpicGames.EpicGamesLauncher" = @{ Desc = "Epic Games Launcher"; InstallArgs = @("--exact", "--silent") }
         "GOG.Galaxy"                  = @{ Desc = "GOG Galaxy"; InstallArgs = @("--exact", "--silent") }

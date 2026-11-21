@@ -32,24 +32,24 @@ function Invoke-Script {
         [Parameter(Mandatory = $true)]
         [string]$ScriptNumber
     )
-    
+
     $scriptName = ""
     $autoYes = $false
-    
+
     switch ($ScriptNumber) {
-        "0" { 
+        "0" {
             Write-Ok "再见! / Goodbye!"
             exit 0
         }
         "1" {
             $autoYesChoice = Read-Host "是否全选 Y（自动确认所有安装）？(Y/n) / Select all Y (auto-confirm all installations)? (Y/n)"
-            if ($autoYesChoice -notmatch '^[Nn]$') {
+            if ($autoYesChoice -notmatch '^[Nn]') {
                 $autoYes = $true
                 Write-Note "自动确认模式已启用 / Auto-yes mode enabled"
             }
-            
+
             Write-Step "开始完整配置 / Starting complete setup"
-            $scripts = Get-ChildItem -Path "$Script:ScriptDir/0[1-5]-*.ps1" -Exclude "*00-main.ps1" | Sort-Object Name
+            $scripts = Get-ChildItem -Path "$Script:ScriptDir/0[1-5]-*.ps1" | Sort-Object Name
             foreach ($script in $scripts) {
                 Write-Step "执行 $($script.Name) / Executing $($script.Name)"
                 try {
@@ -77,7 +77,7 @@ function Invoke-Script {
             return $false
         }
     }
-    
+
     if ($scriptName) {
         $scriptPath = Join-Path $Script:ScriptDir $scriptName
         if (Test-Path $scriptPath) {
@@ -96,7 +96,7 @@ function Invoke-Script {
             return $false
         }
     }
-    
+
     return $true
 }
 
@@ -104,9 +104,9 @@ function Invoke-Script {
 while ($true) {
     Show-Menu
     $choice = Read-Host "请选择操作 / Please select an option [0-5]"
-    
+
     $success = Invoke-Script -ScriptNumber $choice
-    
+
     if ($choice -ne "0") {
         Write-Host ""
         if ($success) {

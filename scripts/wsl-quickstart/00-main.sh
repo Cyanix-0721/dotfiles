@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e # 遇到错误立即退出
+set -euo pipefail # 遇到错误立即退出；-u 未定义变量即报错；管道任一环节失败即视为失败
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -12,7 +12,7 @@ require_wsl "WSL 快速配置仅支持在 WSL 中运行 / WSL quick setup only r
 
 # 显示主菜单
 show_menu() {
-	clear
+	clear 2>/dev/null || true
 	header "WSL 快速配置 / WSL Quick Setup"
 	echo " [1] 全部运行 / Run All"
 	echo " [2] 常用软件安装 / Essential Packages"
@@ -23,7 +23,7 @@ show_menu() {
 
 # 运行指定脚本
 run_script() {
-	local script_num=$1
+	local script_num=${1:-}
 	local script_name=""
 
 	case $script_num in
@@ -33,10 +33,18 @@ run_script() {
 		;;
 	1)
 		step "开始完整配置 / Starting complete setup"
-		if confirm_install 0 "是否全选 Y（自动确认所有安装）？/ Select all Y (auto-confirm all installations)?"; then
+		if confirm_install 1 "是否全选 Y（自动确认所有安装）？/ Select all Y (auto-confirm all installations)?"; then
 			export AUTO_YES=1
 			note "自动确认模式已启用 / Auto-yes mode enabled"
 		fi
+		for script in "$SCRIPT_DIR"/0[1-2]-*.sh; do
+			if [ -f "$script" ] && [ -x "$script" ]; then
+				step "执行 $(basename "$script") / Executing $(basename "$script")"
+				"$script" || return 1
+				echo
+			fi
+		done
+		ok "所有配置完成 / All configurations completed"
 		;;
 	2) script_name="01-essential-packages.sh" ;;
 	3) script_name="02-ssh-agent-forward.sh" ;;
@@ -46,24 +54,11 @@ run_script() {
 		;;
 	esac
 
-	if [ "$script_num" -eq 0 ]; then
-		# 选项 0 是退出，在 case 语句中已经处理
-		return 0
-	elif [ "$script_num" -eq 1 ]; then
-		# 运行所有脚本（按数字顺序，排除主脚本）
-		for script in "$SCRIPT_DIR"/0[1-2]-*.sh; do
-			if [ -f "$script" ] && [ -x "$script" ]; then
-				step "执行 $(basename "$script") / Executing $(basename "$script")"
-				"$script"
-				echo
-			fi
-		done
-		ok "所有配置完成 / All configurations completed"
-	elif [ -n "$script_name" ]; then
+	if [ -n "$script_name" ]; then
 		local script_path="$SCRIPT_DIR/$script_name"
 		if [ -f "$script_path" ] && [ -x "$script_path" ]; then
 			step "执行 $script_name / Executing $script_name"
-			"$script_path"
+			"$script_path" || return 1
 		else
 			err "脚本 $script_name 不存在或不可执行 / Script $script_name does not exist or is not executable"
 			return 1
@@ -76,14 +71,14 @@ run_script() {
 # 主循环
 while true; do
 	show_menu
-	read -p "请选择操作 / Please select an option [0-3]: " choice
+	read -r -p "请选择操作 / Please select an option [0-3]: " choice || break
 
 	if run_script "$choice"; then
 		# 所有成功的选项都需要等待用户按键
 		echo
-		read -p "回车返回主菜单 / Press Enter to return to main menu…"
+		read -r -p "回车返回主菜单 / Press Enter to return to main menu…" || break
 	else
 		err "执行失败，请检查错误信息 / Execution failed, please check errors"
-		read -p "回车返回主菜单 / Press Enter to return to main menu…"
+		read -r -p "回车返回主菜单 / Press Enter to return to main menu…" || break
 	fi
 done

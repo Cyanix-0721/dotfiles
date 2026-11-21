@@ -26,18 +26,18 @@ else
 	CYAN=""
 fi
 
-header() { printf "\n%s%s==> %s%s\n" "$BOLD" "$BLUE" "$1" "$RESET"; }
-step() { printf "%s→ %s…%s\n" "$CYAN" "$1" "$RESET"; }
-ok() { printf "%s✓ %s%s\n" "$GREEN" "$1" "$RESET"; }
-warn() { printf "%s⚠ %s%s\n" "$YELLOW" "$1" "$RESET"; }
-err() { printf "%s✗ %s%s\n" "$RED" "$1" "$RESET"; }
-note() { printf "%s∙ %s%s\n" "$DIM" "$1" "$RESET"; }
+header() { printf "\n%s%s==> %s%s\n" "$BOLD" "$BLUE" "${1:-}" "$RESET"; }
+step() { printf "%s→ %s…%s\n" "$CYAN" "${1:-}" "$RESET"; }
+ok() { printf "%s✓ %s%s\n" "$GREEN" "${1:-}" "$RESET"; }
+warn() { printf "%s⚠ %s%s\n" "$YELLOW" "${1:-}" "$RESET"; }
+err() { printf "%s✗ %s%s\n" "$RED" "${1:-}" "$RESET"; }
+note() { printf "%s∙ %s%s\n" "$DIM" "${1:-}" "$RESET"; }
 
 # ===== WSL 检测 / WSL detection =====
 
 # 检测当前是否运行在 WSL 中；返回 0=是，1=否
 is_wsl() {
-	if [ -n "$WSL_DISTRO_NAME" ]; then
+	if [ -n "${WSL_DISTRO_NAME:-}" ]; then
 		return 0
 	fi
 	if grep -qi microsoft /proc/version 2>/dev/null; then
@@ -60,11 +60,16 @@ require_wsl() {
 get_win_user_home() {
 	local win_profile win_home
 	win_profile=$(powershell.exe -NoProfile -NonInteractive -Command \
-		"[Environment]::GetFolderPath('UserProfile')" 2>/dev/null | tr -d '\r\n')
+		"[Environment]::GetFolderPath('UserProfile')" 2>/dev/null | tr -d '\r\n') || return 1
 	[ -z "$win_profile" ] && return 1
-	win_home=$(printf '%s' "$win_profile" | sed \
-		-e 's/^\([A-Za-z]\):/\/mnt\/\L\1/' \
-		-e 's/\\/\//g')
+	if command -v wslpath >/dev/null 2>&1; then
+		win_home=$(wslpath -u "$win_profile" 2>/dev/null) || return 1
+	else
+		win_home="${win_profile//\\//}"
+		if [[ "$win_home" =~ ^([A-Za-z]): ]]; then
+			win_home="/mnt/${BASH_REMATCH[1],,}${win_home:2}"
+		fi
+	fi
 	printf '%s' "$win_home"
 }
 

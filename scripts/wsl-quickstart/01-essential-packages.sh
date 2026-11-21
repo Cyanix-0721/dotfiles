@@ -5,7 +5,7 @@
 # 排除：GUI 桌面工具（WSL 无需）
 #       ruff/yazi（Debian trixie 无对应包）
 
-set -e # 遇到错误立即退出
+set -euo pipefail # 遇到错误立即退出；-u 未定义变量即报错；管道任一环节失败即视为失败
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -19,11 +19,36 @@ header "常用软件安装 / Essential Packages"
 # 启用自动确认（菜单 Run All 时传入 AUTO_YES=1）
 init_auto_yes
 
+# 发行版校验：包名按 Debian/Ubuntu 写死，非 Debian 系直接退出
+# Distro check: package names target Debian/Ubuntu; exit on other distros
+if [ -r /etc/os-release ]; then
+	# shellcheck disable=SC1091
+	. /etc/os-release
+	case "${ID:-}" in
+	debian | ubuntu) : ;;
+	*)
+		case " ${ID_LIKE:-} " in
+		*debian* | *ubuntu*) : ;;
+		*)
+			err "仅支持 Debian/Ubuntu 系（检测到 ID=${ID:-unknown}）/ Only Debian/Ubuntu-based distros are supported (detected ID=${ID:-unknown})"
+			exit 1
+			;;
+		esac
+		;;
+	esac
+	if [ "${ID:-}" = ubuntu ]; then
+		note "Ubuntu 的 chromium 是 snap 转包，WSL 无 snapd 时可能安装失败，失败可从清单移除 / On Ubuntu chromium is a snap transitional package and may fail without snapd"
+	fi
+fi
+
 # 与 arch-quickstart 相同、且 Debian stable 中存在的常用包（Debian 命名）
 # Common packages from the Arch quickstart that exist in Debian stable
 step "安装常用命令行工具 / Installing command line tools"
-sudo apt-get update -qq
-sudo apt-get install -y --no-install-recommends \
+if ! sudo apt-get update -qq; then
+	err "apt 更新失败，请检查网络或软件源 / apt update failed; check network or package sources"
+	exit 1
+fi
+if ! sudo apt-get install -y --no-install-recommends \
 	7zip \
 	bat \
 	btop \
@@ -48,6 +73,7 @@ sudo apt-get install -y --no-install-recommends \
 	openssh-client \
 	poppler-utils \
 	ripgrep \
+	shellcheck \
 	shfmt \
 	starship \
 	subversion \
@@ -55,27 +81,36 @@ sudo apt-get install -y --no-install-recommends \
 	zoxide \
 	xdg-utils \
 	podman \
-	podman-compose
+	podman-compose; then
+	err "apt 安装失败，请检查网络或软件源 / apt install failed; check network or package sources"
+	exit 1
+fi
 ok "命令行工具安装完成 / Command line tools installed"
 
 # bat：Debian 因与 bacula-console-qt 撞名把二进制装成 batcat，这里补回习惯的 bat 命令
 # bat: Debian ships the binary as batcat (name clash with bacula-console-qt); symlink it back to bat
 step "为 bat 创建 batcat 符号链接 / Symlinking bat -> batcat"
-if [ -x "$(command -v batcat)" ] && [ ! -e "$HOME/.local/bin/bat" ]; then
+if [ -x "$(command -v batcat)" ]; then
 	mkdir -p "$HOME/.local/bin"
-	ln -s "$(command -v batcat)" "$HOME/.local/bin/bat"
-	ok "已创建 ~/.local/bin/bat -> batcat / bat symlink created"
+	if [ -L "$HOME/.local/bin/bat" ] && [ "$(readlink "$HOME/.local/bin/bat")" = "$(command -v batcat)" ]; then
+		ok "bat 软链已正确，跳过 / bat symlink already correct, skipping"
+	elif [ -e "$HOME/.local/bin/bat" ] && [ ! -L "$HOME/.local/bin/bat" ]; then
+		ok "$HOME/.local/bin/bat 是真实文件，保留不动 / exists as a real file, leaving it"
+	else
+		ln -sf "$(command -v batcat)" "$HOME/.local/bin/bat"
+		ok "已创建/修复 $HOME/.local/bin/bat -> batcat / bat symlink created or repaired"
+	fi
 else
-	ok "batcat 不可用或链接已存在，跳过 / batcat unavailable or link exists, skipping"
+	ok "batcat 不可用，跳过 / batcat unavailable, skipping"
 fi
 
 # 将 fish 设为默认 shell（重新登录后生效）
 # Set fish as the default shell (effective after re-login)
 step "设置 fish 为默认 shell / Setting fish as the default shell"
-if [ "$(getent passwd "$USER" | cut -d: -f7)" = "$(command -v fish)" ]; then
+if [ "$(getent passwd "${USER:-$(id -un)}" | cut -d: -f7)" = "$(command -v fish)" ]; then
 	ok "默认 shell 已是 fish / fish is already the default shell"
 else
-	sudo chsh -s "$(command -v fish)" "$USER"
+	sudo chsh -s "$(command -v fish)" "${USER:-$(id -un)}"
 	ok "默认 shell 已设为 fish（重新登录生效）/ Default shell set to fish (effective after re-login)"
 fi
 
@@ -260,50 +295,27 @@ else
 	fi
 fi
 
-# DSH：DeepSeek Harness 及插件市场（可选，默认否；AUTO_YES 时安装）
-# 依赖上面的 Node LTS 与 pnpm；插件装在 ~/.dsh/profiles/<profile>/ 下
-# DSH: DeepSeek Harness plus the plugin market (optional, default no; AUTO_YES installs it)
-# Depends on the Node LTS and pnpm above; plugins live under ~/.dsh/profiles/<profile>/
-step "安装 DSH 与插件市场 / Installing DSH with the plugin market"
-if confirm_install 0 "是否安装 DSH（含插件市场 dshmarket）？(y/N) / Install DSH with dshmarket?"; then
+# DSH：DeepSeek Harness（可选，默认否；AUTO_YES 时安装）
+# 通过 pnpm 全局安装 DSH（不指定版本 tag，始终取最新）
+# 依赖上面的 Node LTS 与 pnpm
+# DSH: DeepSeek Harness (optional, default no; AUTO_YES installs it)
+# Installed globally via pnpm (no version tag, always latest)
+# Depends on the Node LTS and pnpm above
+step "安装 DSH / Installing DSH"
+if confirm_install 0 "是否安装 DSH？(y/N) / Install DSH? (y/N)"; then
 	if ! command -v node >/dev/null 2>&1; then
 		warn "未找到 node，跳过 DSH 安装（请先安装 Node.js LTS）/ node not found, skipping DSH (install Node.js LTS first)"
+	elif ! command -v pnpm >/dev/null 2>&1; then
+		warn "未找到 pnpm，跳过 DSH 安装 / pnpm not found, skipping DSH install"
+		note "  请确认 $PNPM_HOME/bin 在 PATH 中 / make sure $PNPM_HOME/bin is on PATH"
 	else
-		# npx 会自动拉取最新的 @deepseek-ai/dsh 并执行；插件走 profile web
-		# npx fetches the latest @deepseek-ai/dsh and runs it; the plugin targets profile web
-		if npx --yes @deepseek-ai/dsh plugin --profile web add dshmarket; then
-			ok "DSH 与插件市场安装完成 / DSH and dshmarket installed"
+		# 通过 pnpm 全局安装 DSH，不指定版本 tag，pnpm 默认取最新
+		# Install DSH globally via pnpm without a version tag; pnpm resolves the latest
+		if pnpm add -g @deepseek-ai/dsh; then
+			ok "DSH 安装完成（$PNPM_HOME/bin/dsh）/ DSH installed ($PNPM_HOME/bin/dsh)"
 		else
-			warn "DSH 插件市场安装失败，请稍后手动重试 / dshmarket install failed, retry manually later"
-			note "  npx @deepseek-ai/dsh plugin --profile web add dshmarket"
-		fi
-
-		# 技能库接线：由 chezmoi 管理的 dot_config/fish/conf.d/01-env.fish.tmpl 负责，
-		# 它在 WSL 下渲染出 DSH_AGENTS_HOME 指向 Windows 侧 ~/.agents，
-		# DSH 的 skill-filesystem 据此扫描 <DSH_AGENTS_HOME>/skills（rank 500）。
-		# 这里只做校验与提示，不改写任何文件，避免与 chezmoi 争抢同一份配置。
-		# Skill wiring is owned by the chezmoi-managed
-		# dot_config/fish/conf.d/01-env.fish.tmpl, which renders DSH_AGENTS_HOME at the
-		# Windows-side ~/.agents under WSL; DSH's skill-filesystem then scans
-		# <DSH_AGENTS_HOME>/skills (rank 500). This block only verifies and advises —
-		# it never writes files, so chezmoi stays the single source of truth.
-		step "检查 DSH 技能库配置 / Checking the DSH skill library wiring"
-		if [ -f "$HOME/.config/fish/conf.d/01-env.fish" ] &&
-			grep -q "DSH_AGENTS_HOME" "$HOME/.config/fish/conf.d/01-env.fish"; then
-			ok "fish 已配置 DSH_AGENTS_HOME（chezmoi 管理）/ DSH_AGENTS_HOME configured in fish"
-		else
-			warn "fish 尚未配置 DSH_AGENTS_HOME / DSH_AGENTS_HOME not yet configured in fish"
-			note "  请执行 chezmoi apply 应用模板 / run 'chezmoi apply' to render the template"
-			note "  或手动确认 ~/.config/fish/conf.d/01-env.fish / or inspect that file"
-		fi
-		# 旧版脚本曾在 ~/.dsh/skills 建软链接；若残留则提示清理，因为软链接会占住
-		# rank 400 的位置，使 WSL 本地技能无处安放。
-		# Older versions symlinked ~/.dsh/skills; flag a leftover, since that link occupies
-		# the rank-400 slot and leaves no room for WSL-local skills.
-		if [ -L "$HOME/.dsh/skills" ]; then
-			warn "发现遗留的 ~/.dsh/skills 软链接 / leftover ~/.dsh/skills symlink found"
-			note "  该位置现由 rank 400 使用，建议移除 / that slot is rank 400 now; consider removing it:"
-			note "  rm \"$HOME/.dsh/skills\""
+			warn "DSH 安装失败，请稍后手动重试 / DSH install failed, retry manually later"
+			note "  pnpm add -g @deepseek-ai/dsh"
 		fi
 	fi
 fi

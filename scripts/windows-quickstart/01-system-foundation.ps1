@@ -19,7 +19,7 @@ $ErrorActionPreference = "Stop"
 . "$PSScriptRoot/00-common.ps1"
 
 # 初始化自动确认模式
-Initialize-AutoYes
+Initialize-AutoYes -AutoYes:$AutoYes
 
 Write-Header "系统基础环境配置 / System Foundation Setup"
 
@@ -29,7 +29,7 @@ Write-Step "更新 winget 源 / Updating winget sources"
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过更新 / winget not installed, skipping source update"
 
-    $openChoice = Confirm-Install "是否打开安装页面以安装 winget？1) Microsoft Store（推荐） 2) GitHub Releases（下载）；输入 1/2，回车跳过 / Open install page? 1) MS Store (recommended) 2) GitHub Releases (download); enter to skip"
+    $openChoice = Read-Choice -Prompt "是否打开安装页面以安装 winget？1) Microsoft Store（推荐） 2) GitHub Releases（下载）；输入 1/2，回车跳过 / Open install page? 1) MS Store (recommended) 2) GitHub Releases (download); enter to skip" -Default ""
     switch ($openChoice) {
         '1' {
             try {
@@ -94,13 +94,13 @@ else {
 Write-Step "检查 Scoop 安装状态 / Checking Scoop installation"
 if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
     Write-Note "Scoop 未安装，开始安装… / Scoop not installed, starting installation…"
-    
+
     # 设置执行策略
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-    
+
     # 安装 Scoop
     Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-    
+
     Write-Ok "Scoop 安装完成 / Scoop installation completed"
 }
 else {
@@ -208,7 +208,7 @@ if ($installVCRedist -notmatch '^[Nn]$') {
         Write-Warn "winget 未安装，跳过 Visual C++ 运行库安装 / winget not installed, skipping Visual C++ installation"
     }
     else {
-        $wingApps = @{ 
+        $wingApps = [ordered]@{
             "Microsoft.VCRedist.2005.x64"  = @{ Desc = "VC++ 2005 x64"; InstallArgs = @("--exact", "--silent") }
             "Microsoft.VCRedist.2005.x86"  = @{ Desc = "VC++ 2005 x86"; InstallArgs = @("--exact", "--silent") }
             "Microsoft.VCRedist.2008.x64"  = @{ Desc = "VC++ 2008 x64"; InstallArgs = @("--exact", "--silent") }
@@ -222,10 +222,10 @@ if ($installVCRedist -notmatch '^[Nn]$') {
             "Microsoft.VCRedist.2015+.x64" = @{ Desc = "VC++ 2015-2022 x64"; InstallArgs = @("--exact", "--silent") }
             "Microsoft.VCRedist.2015+.x86" = @{ Desc = "VC++ 2015-2022 x86"; InstallArgs = @("--exact", "--silent") }
         }
-        
+
         Write-Step "正在安装 Visual C++ 运行库... / Installing Visual C++ Redistributables..."
         Install-WingetApps $wingApps -Force
-        
+
         Write-Ok "Visual C++ 运行库安装完成 / Visual C++ Redistributables installation completed"
     }
 }
@@ -237,7 +237,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过 WebView2 安装 / winget not installed, skipping WebView2 installation"
 }
 else {
-    $wingApps = @{ 
+    $wingApps = [ordered]@{
         "Microsoft.EdgeWebView2Runtime" = @{ Desc = "WebView2 Runtime"; InstallArgs = @("--exact", "--silent") }
     }
     Install-WingetApps $wingApps -Force
@@ -250,7 +250,7 @@ if (-not (Get-Command chezmoi -ErrorAction SilentlyContinue)) {
     if ($installChezmoi -notmatch '^[Nn]$') {
         scoop install chezmoi
         Write-Ok "Chezmoi 安装完成 / Chezmoi installation completed"
-        
+
         $initChezmoi = Confirm-Install "是否初始化 dotfiles 配置？(Y/n) / Initialize dotfiles configuration? (Y/n)"
         if ($initChezmoi -notmatch '^[Nn]$') {
             chezmoi init https://github.com/Cyanix-0721/dotfiles.git --apply
