@@ -107,34 +107,56 @@ else {
     Write-Warn "mise 不可用,跳过按全局配置安装 / mise unavailable, skipping install from global mise config"
 }
 
-# 1.5 Node.js Latest（可选，默认否；AutoYes 时安装最新版并设为全局默认）
-# Node.js Latest (optional, default no; AutoYes installs latest version and sets it as the global default)
+# 1.5 Node.js 最新 LTS（默认安装并设为全局默认）
+# Node.js latest LTS (installed and set as the global default by default)
 if (Get-Command fnm -ErrorAction SilentlyContinue) {
-    Write-Step "Node.js Latest / Node.js Latest (optional)"
-    $installLatest = Confirm-Install "是否安装最新版 Node.js？(y/N) / Install latest Node.js? (y/N)"
-    if ($installLatest -match '^[Yy]$') {
-        Write-Step "通过 fnm 安装最新版 Node.js / Installing latest Node.js via fnm"
-        fnm install --latest
-        if ($LASTEXITCODE -eq 0) {
-            Write-Ok "最新版 Node.js 安装完成 / Latest Node.js installed"
-            # 默认非全局；是否设为全局默认同样可选（AutoYes 时自动设为全局默认）
-            # Global default is off by default; setting it is also optional (AutoYes sets it automatically)
-            $setGlobal = Confirm-Install "是否将最新版设为全局默认？(y/N) / Set latest as global default? (y/N)"
-            if ($setGlobal -match '^[Yy]$') {
-                $latestLine = fnm list 2>$null | Where-Object { $_ -notmatch 'system' } | Select-Object -First 1
-                $latestVersion = [regex]::Match($latestLine, 'v?\d+\.\d+\.\d+').Value
-                if ($latestVersion) {
-                    fnm default $latestVersion
-                    fnm use $latestVersion | Out-Null
-                    Write-Ok "已将 Node.js $latestVersion 设为全局默认 / Node.js $latestVersion set as global default"
+    Write-Step "Node.js 最新 LTS / Node.js latest LTS"
+    $installLts = Confirm-Install "是否安装最新 LTS 版 Node.js？(Y/n) / Install latest LTS Node.js? (Y/n)"
+    if ($installLts -notmatch '^[Nn]') {
+        Write-Step "通过 fnm 安装最新 LTS 版 Node.js / Installing latest LTS Node.js via fnm"
+        # 同版本已安装时 fnm 返回非零，故结果统一由 fnm list 判定
+        # fnm exits non-zero when the same version is already installed; the outcome is
+        # therefore judged by fnm list below
+        try {
+            fnm install --lts 2>$null
+        }
+        catch {
+            Write-Note "fnm 未返回成功（同版本已安装时属正常）/ fnm did not succeed (expected if this LTS is already installed)"
+        }
+        $ltsLine = fnm list 2>$null | Where-Object { $_ -match 'lts-latest' } | Select-Object -First 1
+        $ltsVersion = [regex]::Match([string]$ltsLine, 'v?\d+\.\d+\.\d+').Value
+        if ($ltsVersion) {
+            Write-Ok "最新 LTS 版 Node.js $ltsVersion 安装完成 / Latest LTS Node.js $ltsVersion installed"
+            # lts-latest 别名随 fnm install --lts 自动指向新版本，比固定版本号更稳；
+            # 个别环境无法创建别名时退回写具体版本号
+            # The lts-latest alias follows `fnm install --lts`, so prefer it over a pinned
+            # version; environments that cannot create the alias fall back to the pin
+            $defaultOk = $false
+            try {
+                fnm default lts-latest 2>$null
+                $defaultOk = $LASTEXITCODE -eq 0
+            }
+            catch {
+                $defaultOk = $false
+            }
+            if (-not $defaultOk) {
+                try {
+                    fnm default $ltsVersion 2>$null
+                    $defaultOk = $LASTEXITCODE -eq 0
                 }
-                else {
-                    Write-Warn "未能识别最新版本，跳过设为全局默认 / Could not identify latest version, skipping global default"
+                catch {
+                    $defaultOk = $false
                 }
+            }
+            if ($defaultOk) {
+                Write-Ok "已将 Node.js $ltsVersion 设为全局默认 / Node.js $ltsVersion set as global default"
+            }
+            else {
+                Write-Warn "设置全局默认失败 / Failed to set global default"
             }
         }
         else {
-            Write-Err "最新版 Node.js 安装失败 / Latest Node.js installation failed"
+            Write-Err "最新 LTS 版 Node.js 安装失败 / Latest LTS Node.js installation failed"
         }
     }
     else {
