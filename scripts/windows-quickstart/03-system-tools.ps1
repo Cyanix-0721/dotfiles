@@ -126,6 +126,37 @@ else {
     }
 }
 
+# ContextMenuMgrPlus（右键菜单管理，替代 ContextMenuManager / Context menu manager）
+Write-Header "ContextMenuMgrPlus (右键菜单管理 / Context Menu Manager)"
+
+if (Test-ScoopInstalled "contextmenumgrplus") {
+    Write-Ok "contextmenumgrplus 已安装 / contextmenumgrplus is already installed"
+}
+else {
+    $installCmm = Confirm-Install "是否安装 ContextMenuMgrPlus（右键菜单管理）？(y/N) / Install ContextMenuMgrPlus (context menu manager)? (y/N)"
+    if ($installCmm -match '^[Yy]$') {
+        $bucketList = scoop bucket list
+        if ($bucketList -match 'PLFJY') {
+            Write-Ok "Bucket 'PLFJY' 已添加 / Bucket 'PLFJY' already added"
+        }
+        else {
+            Write-Step "添加 bucket: PLFJY / Adding bucket: PLFJY"
+            scoop bucket add PLFJY https://github.com/PLFJY/scoop-bucket.git
+            Write-Ok "Bucket 'PLFJY' 添加成功 / Bucket 'PLFJY' added successfully"
+        }
+
+        if (Test-ScoopInstalled "contextmenumgrplus-beta") {
+            Write-Warn "检测到 contextmenumgrplus-beta，请先 scoop uninstall contextmenumgrplus-beta / Beta package conflicts with the stable one"
+        }
+        else {
+            scoop install PLFJY/ContextMenuMgrPlus
+            Reset-ScoopCache
+            Write-Ok "contextmenumgrplus 安装完成 / contextmenumgrplus installation completed"
+            Write-Note "部分需要提权的右键菜单操作会提示安装/修复其 Windows 服务 / Elevated menu operations may prompt to install or repair its service"
+        }
+    }
+}
+
 # OpenHashTab (文件哈希右键扩展)
 Write-Header "OpenHashTab (文件哈希右键扩展) / OpenHashTab (File Hash Context Menu)"
 
