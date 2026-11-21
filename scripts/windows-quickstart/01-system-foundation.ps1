@@ -177,23 +177,42 @@ else {
 # PowerShell 组件（pwsh 装好后一次性可选安装；默认否）
 # PowerShell components (one-time optional install after pwsh; default no)
 Write-Header "PowerShell 组件 / PowerShell Components"
-$installPsComponents = Confirm-Install "是否安装常用 PowerShell 组件（PSScriptAnalyzer / PSReadLine / PSWindowsUpdate / ImportExcel / NTFSSecurity）？(y/N) / Install PowerShell components? (y/N)"
+$installPsComponents = Confirm-Install "是否安装常用 PowerShell 组件（PSScriptAnalyzer / PSReadLine / PSWindowsUpdate / ImportExcel / NTFSSecurity / Pester）？(y/N) / Install PowerShell components? (y/N)"
 if ($installPsComponents -match '^[Yy]$') {
     # PS 模块（缺则装；TLS1.2 供 PowerShell 5.1）
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-    $psModules = @("PSScriptAnalyzer", "PSReadLine", "PSWindowsUpdate", "ImportExcel", "NTFSSecurity")
-    foreach ($moduleName in $psModules) {
-        if (Get-Module -ListAvailable -Name $moduleName) {
-            Write-Ok "$moduleName 已安装 / $moduleName already installed"
+    # 模块 → 最低版本（$null 表示不限）。Pester 系统自带 3.4.0，需强制 >=5，避免被旧版占位跳过。
+    $psModules = [ordered]@{
+        'PSScriptAnalyzer' = $null
+        'PSReadLine'       = $null
+        'PSWindowsUpdate'  = $null
+        'ImportExcel'      = $null
+        'NTFSSecurity'     = $null
+        'Pester'           = [version]'5.0.0'
+    }
+    foreach ($moduleName in $psModules.Keys) {
+        $minVersion = $psModules[$moduleName]
+        $available = Get-Module -ListAvailable -Name $moduleName
+        $satisfied = $false
+        if ($available) {
+            $satisfied = if ($null -eq $minVersion) { $true } else { [bool]($available | Where-Object { $_.Version -ge $minVersion }) }
         }
-        else {
-            try {
+        if ($satisfied) {
+            if ($null -eq $minVersion) { Write-Ok "$moduleName 已安装 / $moduleName already installed" }
+            else { Write-Ok "$moduleName（>= $minVersion）已安装 / $moduleName (>= $minVersion) already installed" }
+            continue
+        }
+        try {
+            if ($null -eq $minVersion) {
                 Install-Module -Name $moduleName -Scope CurrentUser -Force -ErrorAction Stop
-                Write-Ok "$moduleName 安装完成 / $moduleName installation completed"
             }
-            catch {
-                Write-Warn "$moduleName 安装失败（非致命）/ Installing $moduleName failed: $($_.Exception.Message)"
+            else {
+                Install-Module -Name $moduleName -MinimumVersion $minVersion -Scope CurrentUser -Force -ErrorAction Stop
             }
+            Write-Ok "$moduleName 安装完成 / $moduleName installation completed"
+        }
+        catch {
+            Write-Warn "$moduleName 安装失败（非致命）/ Installing $moduleName failed: $($_.Exception.Message)"
         }
     }
 }
