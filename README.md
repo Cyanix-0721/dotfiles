@@ -53,7 +53,7 @@ WSL quickstart 默认启用 **Windows OpenSSH agent 转发（win-ssh）**：WSL 
 交互式菜单，可选择安装：
 
 - **系统基础**：包管理器（Scoop/pacman）、终端、字体、基础工具
-- **开发工具**：Neovim、lazygit、GitHub CLI、uv、mise、shellcheck、ollama 等
+- **开发工具**：Neovim、lazygit、GitHub 等
 - **常用软件**：浏览器、办公、媒体、备份等
 
 ## 主要配置

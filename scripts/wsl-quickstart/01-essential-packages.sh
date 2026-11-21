@@ -99,29 +99,35 @@ else
 	ok "fnm 安装完成 / fnm installed"
 fi
 
-# Node.js：可选安装最新版（默认否）；AUTO_YES 时安装最新版并设为全局默认
-# Node.js: optionally install latest version (default no); AUTO_YES installs latest version and sets it as global default
-step "安装 Node.js Latest（fnm）/ Installing Node.js Latest (fnm)"
+# Node.js：默认安装最新 LTS 并设为全局默认（按项目切换由 12-fnm.fish 的 --use-on-cd 提供）
+# Node.js: install latest LTS and set it as the global default by default
+# (per-project switching handled by --use-on-cd in 12-fnm.fish, reading .node-version / .nvmrc)
+step "安装 Node.js Latest LTS（fnm）/ Installing Node.js latest LTS (fnm)"
 export PATH="${XDG_DATA_HOME:-$HOME/.local/share}/fnm:$HOME/.fnm:$PATH"
 if command -v fnm >/dev/null 2>&1; then
 	# 本次会话加载 fnm（fish 集成由 12-fnm.fish 提供）
 	# Load fnm for this session (fish integration lives in 12-fnm.fish)
 	eval "$(fnm env --use-on-cd --shell bash)"
-	# 询问是否安装最新版（默认否，回车跳过）；按项目切换由 12-fnm.fish 的 --use-on-cd 提供（读取 .node-version / .nvmrc）
-	# Ask whether to install latest version (default no); per-project switching handled by --use-on-cd in 12-fnm.fish (.node-version / .nvmrc)
-	if confirm_install 0 "是否安装最新版 Node.js？(y/N) / Install latest Node.js?"; then
-		fnm install --latest
-		ok "最新版 Node.js 安装完成 / Latest Node.js installed"
-		# 默认非全局；是否设为全局默认同样可选（AUTO_YES 时自动设为全局默认）
-		# Global default is off by default; setting it is also optional (AUTO_YES sets it automatically)
-		if confirm_install 0 "是否将最新版设为全局默认？(y/N) / Set latest as global default?"; then
-			latest_version="$(fnm list 2>/dev/null | grep -v 'system' | head -n1 | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
-			if [ -n "$latest_version" ]; then
-				fnm default "$latest_version"
-				ok "已将 Node.js $latest_version 设为全局默认 / Node.js $latest_version set as global default"
+	if confirm_install 1 "是否安装最新 LTS 版 Node.js？/ Install latest LTS Node.js?"; then
+		# 同版本已安装时 fnm 返回非零，故用列表结果判断是否安装成功
+		# fnm exits non-zero when the same version is already installed; verify via list instead
+		fnm install --lts || true
+		lts_version="$(fnm list 2>/dev/null | grep 'lts-latest' | head -n1 | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
+		if [ -n "$lts_version" ]; then
+			ok "最新 LTS 版 Node.js $lts_version 安装完成 / Latest LTS Node.js $lts_version installed"
+			# lts-latest 别名随 fnm install --lts 自动指向新版本，比固定版本号更稳；
+			# 个别旧环境无法创建别名时退回写具体版本号
+			# The lts-latest alias follows `fnm install --lts`, so prefer it over a pinned
+			# version; some older setups cannot create the alias, so fall back to the pin
+			if fnm default lts-latest; then
+				ok "已将 Node.js $lts_version 设为全局默认 / Node.js $lts_version set as global default"
+			elif fnm default "$lts_version"; then
+				ok "已将 Node.js $lts_version 设为全局默认 / Node.js $lts_version set as global default"
 			else
-				warn "未能识别最新版本，跳过设为全局默认 / Could not identify latest version, skipping global default"
+				warn "设置全局默认失败 / Failed to set global default"
 			fi
+		else
+			err "最新 LTS 版 Node.js 安装失败 / Latest LTS Node.js installation failed"
 		fi
 	fi
 else
@@ -197,7 +203,7 @@ if ! command -v node >/dev/null 2>&1; then
 	# pnpm 清单是 `#!/bin/sh` + `exec node ...`，没有 node 会直接 exec 失败
 	# The pnpm shim is `#!/bin/sh` + `exec node ...`, so a missing node makes it fail on exec
 	warn "未找到 node，跳过 codex 安装（pnpm 版 codex 依赖 Node 运行时）/ node not found, skipping codex (the pnpm build needs a Node runtime)"
-	note "  请先在上一步安装 Node.js，或手动执行 fnm install --latest / install Node.js in the step above first, or run 'fnm install --latest'"
+	note "  请先在上一步安装 Node.js，或手动执行 fnm install --lts / install Node.js in the step above first, or run 'fnm install --lts'"
 elif ! command -v pnpm >/dev/null 2>&1; then
 	warn "未找到 pnpm，跳过 codex 安装 / pnpm not found, skipping codex install"
 	note "  请确认 $PNPM_HOME/bin 在 PATH 中 / make sure $PNPM_HOME/bin is on PATH"

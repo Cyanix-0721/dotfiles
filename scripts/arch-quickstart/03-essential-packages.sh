@@ -23,6 +23,33 @@ step "安装开发工具 / Installing development tools"
 sudo pacman -S --noconfirm neovim python-pynvim lazygit gitui github-cli uv ast-grep git-delta fnm poppler resvg imagemagick jq luarocks ruff shellcheck shfmt copyparty
 paru -S --noconfirm visual-studio-code-bin
 
+# Node.js：默认安装最新 LTS 并设为 fnm 全局默认（fish 集成由 12-fnm.fish 提供）
+# Node.js: install latest LTS and set it as the fnm global default by default
+# (fish integration lives in 12-fnm.fish)
+if confirm_install 1 "是否安装最新 LTS 版 Node.js？/ Install latest LTS Node.js?"; then
+	step "安装 Node.js Latest LTS（fnm）/ Installing Node.js latest LTS (fnm)"
+	# 同版本已安装时 fnm 返回非零，故用列表结果判断是否安装成功
+	# fnm exits non-zero when the same version is already installed; verify via list instead
+	fnm install --lts || true
+	lts_version="$(fnm list 2>/dev/null | grep 'lts-latest' | head -n1 | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
+	if [ -n "$lts_version" ]; then
+		ok "最新 LTS 版 Node.js $lts_version 安装完成 / Latest LTS Node.js $lts_version installed"
+		# lts-latest 别名随 fnm install --lts 自动指向新版本，比固定版本号更稳；
+		# 个别旧环境无法创建别名时退回写具体版本号
+		# The lts-latest alias follows `fnm install --lts`, so prefer it over a pinned
+		# version; some older setups cannot create the alias, so fall back to the pin
+		if fnm default lts-latest; then
+			ok "已将 Node.js $lts_version 设为全局默认 / Node.js $lts_version set as global default"
+		elif fnm default "$lts_version"; then
+			ok "已将 Node.js $lts_version 设为全局默认 / Node.js $lts_version set as global default"
+		else
+			warn "设置全局默认失败 / Failed to set global default"
+		fi
+	else
+		err "最新 LTS 版 Node.js 安装失败 / Latest LTS Node.js installation failed"
+	fi
+fi
+
 step "安装系统工具 / Installing system tools"
 sudo pacman -S --noconfirm mako fuzzel ntfs-3g niri lysd qt6ct xwayland-satellite playerctl polkit-kde-agent xdg-desktop-portal xdg-desktop-portal-gtk nwg-look cliphist wl-clipboard wl-clip-persist udisks2
 paru -S --noconfirm systemd-manager-tui

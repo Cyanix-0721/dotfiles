@@ -33,7 +33,7 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
 Write-Header "Sysinternals 工具集 / Sysinternals Suite"
 
 $sysinternalsTools = @{
-    "sysmon"           = @{ Desc = "Sysmon (系统监视器 / System Monitor)"; Global = $true }
+    "sysmon"           = @{ Desc = "Sysmon (系统监视器 / System Monitor)"; Global = $false }
     "handle"           = @{ Desc = "Handle (句柄查看工具 / View open handles)"; Global = $false }
     "autoruns"         = @{ Desc = "Autoruns (启动项管理工具 / Startup manager)"; Global = $false }
     "autologon"        = @{ Desc = "AutoLogon (自动登录工具 / Auto login utility)"; Global = $true }
@@ -89,8 +89,8 @@ $winTools = @{
     "wiztree"         = @{ Desc = "WizTree (磁盘空间分析工具 / Disk space analyzer)"; Global = $false }
     "spacesniffer"    = @{ Desc = "SpaceSniffer (磁盘空间可视化工具 / Disk space visualizer)"; Global = $false }
     "memreduct"       = @{ Desc = "Mem Reduct (内存优化工具 / Memory optimizer)"; Global = $false }
-    "msiafterburner"  = @{ Desc = "MSI Afterburner (GPU 超频与监控 / GPU overclocking and monitoring)"; Global = $true }
-    "rtss"            = @{ Desc = "RivaTuner Statistics Server (OSD & FPS 限制 / OSD & FPS limiter)"; Global = $true }
+    "msiafterburner"  = @{ Desc = "MSI Afterburner (GPU 超频与监控 / GPU overclocking and monitoring)"; Global = $false }
+    "rtss"            = @{ Desc = "RivaTuner Statistics Server (OSD & FPS 限制 / OSD & FPS limiter)"; Global = $false }
     "ddu"             = @{ Desc = "Display Driver Uninstaller (显卡驱动清理工具 / GPU driver cleaner)"; Global = $false }
     "quicklook"       = @{ Desc = "QuickLook (空格键快速预览文件 / File preview with spacebar)"; Global = $false }
     "geekuninstaller" = @{ Desc = "Geek Uninstaller (强力卸载工具 / Thorough uninstaller)"; Global = $false }
