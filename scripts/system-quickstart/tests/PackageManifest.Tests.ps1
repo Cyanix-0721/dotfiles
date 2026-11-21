@@ -1,9 +1,9 @@
 # Pester 测试：Windows quickstart 包清单与 dry-run 辅助
-# 运行: pwsh -Command "Invoke-Pester scripts/tests/PackageManifest.Tests.ps1"
+# 运行: pwsh -Command "Invoke-Pester scripts/system-quickstart/tests/PackageManifest.Tests.ps1"
 # 需 Pester 5+（CI 中安装）。
 
 BeforeAll {
-    $script:Common = Join-Path $PSScriptRoot '..' 'windows-quickstart' '00-common.ps1'
+    $script:Common = Join-Path $PSScriptRoot '..' 'windows' '00-common.ps1'
     . $script:Common
 }
 

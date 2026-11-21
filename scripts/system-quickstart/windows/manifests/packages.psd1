@@ -1,5 +1,5 @@
 ﻿# 包清单数据文件 / Package manifest data
-# 供 windows-quickstart 脚本经 Get-PackageSection 读取；纯数据，无逻辑。
+# 供 windows 脚本经 Get-PackageSection 读取；纯数据，无逻辑。
 # Each section: @{ Installer = 'scoop'|'winget'; Packages = @( <entry>, ... ) }
 #   scoop  entry: @{ Name='<pkg>'; Desc='...'; [Global=$true]; [Default=$false]; [PostNote=@(...)]; [AlreadyNote=@(...)] }
 #   winget entry: @{ Id='<id>';   Desc='...'; [InstallArgs=@('--exact','--silent')] }

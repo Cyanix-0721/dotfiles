@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bash 公共库测试：read_pkg_list 的去注释/去空白/去重/非法校验
-# 运行: bash scripts/tests/test-quickstart-common.sh
+# 运行: bash scripts/system-quickstart/tests/test-quickstart-common.sh
 set -euo pipefail
 
 dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

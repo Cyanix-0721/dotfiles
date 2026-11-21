@@ -37,15 +37,15 @@ sh -c "$(curl -fsLS https://get.chezmoi.io/lb)" -- init --apply Cyanix-0721
 ```bash
 # Windows（本机）
 cd ~/.local/share/chezmoi
-./scripts/windows-quickstart/00-main.ps1
+./scripts/system-quickstart/windows/00-main.ps1
 
 # Arch Linux
 cd ~/.local/share/chezmoi
-./scripts/arch-quickstart/00-main.sh
+./scripts/system-quickstart/arch/00-main.sh
 
 # WSL（Debian 等）
 cd ~/.local/share/chezmoi
-./scripts/wsl-quickstart/00-main.sh
+./scripts/system-quickstart/wsl/00-main.sh
 ```
 
 WSL quickstart 默认启用 **Windows OpenSSH agent 转发（win-ssh）**：WSL 内 git 借助 Windows OpenSSH agent（KeePassXC 注入的密钥）完成认证，接线由 chezmoi 模板 `dot_gitconfig.tmpl` 自动完成（检测到 `WSL_DISTRO_NAME` 时写入 `core.sshCommand = ~/bin/win-ssh`）。机制细节与排查见 [AGENTS.md](./AGENTS.md)「机制说明：WSL git SSH 转发」。

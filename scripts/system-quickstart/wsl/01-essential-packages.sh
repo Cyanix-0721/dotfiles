@@ -41,7 +41,7 @@ if [ -r /etc/os-release ]; then
 	fi
 fi
 
-# 与 arch-quickstart 相同、且 Debian stable 中存在的常用包（Debian 命名）
+# 与 arch 相同、且 Debian stable 中存在的常用包（Debian 命名）
 # Common packages from the Arch quickstart that exist in Debian stable
 # 包清单见 manifests/apt-packages.list / See manifests/apt-packages.list
 step "安装常用命令行工具 / Installing command line tools"

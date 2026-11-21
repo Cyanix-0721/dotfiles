@@ -26,9 +26,12 @@ dot_condarc / dot_gitconfig.tmpl / dot_wezterm.lua / dot_wslconfig
                           → ~/ 根级点文件
 private_dot_ssh/          → ~/.ssh(敏感,0600)
 scripts/                  独立工具脚本(.chezmoiignore 排除,不同步 home)
-├─ windows-quickstart/    Windows 配置菜单,入口 00-main.ps1
-├─ arch-quickstart/       Arch 配置菜单,入口 00-main.sh
-├─ wsl-quickstart/        WSL 配置菜单,入口 00-main.sh(require_wsl 强校验)
+├─ system-quickstart/     三平台配置菜单(入口为各平台子目录的 00-main)
+│  ├─ windows/            Windows 配置菜单,入口 00-main.ps1
+│  ├─ wsl/                WSL 配置菜单,入口 00-main.sh(require_wsl 强校验)
+│  ├─ arch/               Arch 配置菜单,入口 00-main.sh
+│  ├─ lib/                跨平台 bash 公共库 quickstart-common.sh
+│  └─ tests/              Pester + bash 单测
 └─ rsync/ rename/ reflector/ install_uv_dependencies.py 等
                           各工具用途见 README「辅助脚本」
 ```
@@ -73,9 +76,9 @@ chezmoi execute-template --init \
 
 ## 机制说明:WSL git SSH 转发(win-ssh)
 
-背景:WSL 侧无法直接桥接 Windows OpenSSH agent(git 需使用 KeePassXC 注入的密钥),故 git 的 SSH 落到 Windows 侧 `ssh.exe`。该链路涉及 wsl-quickstart 脚本与 `dot_gitconfig.tmpl` 两处,改动任一方都要保持一致:
+背景:WSL 侧无法直接桥接 Windows OpenSSH agent(git 需使用 KeePassXC 注入的密钥),故 git 的 SSH 落到 Windows 侧 `ssh.exe`。该链路涉及 system-quickstart/wsl 脚本与 `dot_gitconfig.tmpl` 两处,改动任一方都要保持一致:
 
-- **部署脚本** `scripts/wsl-quickstart/02-ssh-agent-forward.sh`(默认启用,Run All 亦含)生成两个包装脚本,均幂等(已存在且内容一致则跳过;`FORCE=1` 或内容不一致且用户确认时覆盖):
+- **部署脚本** `scripts/system-quickstart/wsl/02-ssh-agent-forward.sh`(默认启用,Run All 亦含)生成两个包装脚本,均幂等(已存在且内容一致则跳过;`FORCE=1` 或内容不一致且用户确认时覆盖):
   - WSL 侧 `~/bin/win-ssh`:`sh` 包装 → 调 Windows PowerShell 执行下方脚本;
   - Windows 侧 `%USERPROFILE%\.local\bin\win-ssh.ps1`:清掉 `SSH_AUTH_SOCK`,exec Windows OpenSSH `ssh.exe`。
 - **git 接线**由 chezmoi 完成,脚本**不**设置 `GIT_SSH_COMMAND`、不注入 `.bashrc`:`dot_gitconfig.tmpl` 的非 Windows 分支检测 `WSL_DISTRO_NAME` 环境变量,存在即写 `core.sshCommand = ~/bin/win-ssh`,保证任意 shell(含非交互)下 git 均走该通道。Windows 分支则按存在性挑 `ssh.exe`:优先 winget 版 `C:/Program Files/OpenSSH/ssh.exe`(OpenSSH Preview,路径含空格须用单引号包裹,双引号会被 git 剥离),其次系统内置 `C:/Windows/System32/OpenSSH/ssh.exe`,都缺则退回 PATH 解析的 `ssh.exe`;`02-ssh-agent-forward.sh` 生成的 `win-ssh.ps1` 使用同一优先级。
@@ -103,7 +106,7 @@ push/PR 时 CI 全量校验,本地应先行自测(命令与 CI 对齐,为本仓�
 | --- | --- | --- |
 | Python | `ruff.toml`(仅 `scripts/**/*.py`,target py39,line-length 100) | `ruff check scripts/` |
 | Shell | shellcheck `-S warning` | `shellcheck -x -S warning $(git ls-files 'scripts/**/*.sh')` |
-| PowerShell | PSScriptAnalyzer | `Invoke-ScriptAnalyzer -Path scripts/windows-quickstart -Recurse` |
+| PowerShell | PSScriptAnalyzer | `Invoke-ScriptAnalyzer -Path scripts/system-quickstart/windows -Recurse` |
 | JSON / MD / YAML | `.prettierrc` / `.prettierignore` | prettier 格式 |
 | Chezmoi 模板 | — | 逐个渲染全部 `*.tmpl`(见上) |
 
@@ -113,6 +116,6 @@ push/PR 时 CI 全量校验,本地应先行自测(命令与 CI 对齐,为本仓�
 
 - 遵循 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/),格式 `type(scope): 描述`,**描述使用中文**。
 - `type` 小写:`feat` / `fix` / `refactor` / `chore` / `docs` / `style` / `test` / `perf`。
-- `scope` 为改动所属目录或模块(如 `scripts`、`windows-quickstart`、`config`、`docs`)。
+- `scope` 为改动所属目录或模块(如 `scripts`、`system-quickstart`、`config`、`docs`)。
 - 示例:`feat(scripts): 添加某功能`、`fix(docs): 修复文档错误`;必要时在标题下方补充 body。
 - 一个提交只做一件事;禁止无 type 前缀、或描述过于笼统的提交信息。

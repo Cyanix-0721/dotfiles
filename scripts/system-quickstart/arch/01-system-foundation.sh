@@ -80,7 +80,7 @@ if confirm_install 0 "配置 reflector 服务与定时器？/ Configure reflecto
 
 	# 获取脚本所在目录 / Get script directory
 	SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-	REFLECTOR_SCRIPT_DIR="$(dirname "$SCRIPT_DIR")/reflector"
+	REFLECTOR_SCRIPT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")/reflector"
 
 	if [[ -f "$REFLECTOR_SCRIPT_DIR/setup_reflector.sh" ]]; then
 		# 运行 setup_reflector.sh
