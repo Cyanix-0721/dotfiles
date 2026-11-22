@@ -156,6 +156,7 @@
                     )
                 }
                 @{ Name = 'codex'; Desc = 'OpenAI Codex CLI (AI 编程助手 / AI coding agent)'; Global = $false }
+                @{ Name = 'antigravity'; Desc = 'Antigravity (Google 的 agent 编排平台 / Google agent orchestration platform)'; Global = $false }
             )
         }
 
