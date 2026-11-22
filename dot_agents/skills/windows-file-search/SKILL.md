@@ -7,7 +7,7 @@ description: "文件检索分工——Windows 盘（C、D、E 盘）按文件名
 
 **硬规则：在 Windows 盘（C:/D:/E:）上按「文件名 / 后缀 / 大小 / 修改时间」找文件，一律先用 `es.exe`，不要用 `find` / `fdfind` 遍历 `/mnt/c`。**
 
-- 已 `scoop install everything-cli`：`C:\Users\Administrator\scoop\shims\es.exe`（ES 1.1.1.39；后端 Everything 1.5.0.1423b 常驻，索引 `C:,D:,E:` 约 287 万对象）。
+- 已 `scoop install everything-cli`：`C:\Users\Administrator\scoop\shims\es.exe`（后端 Everything 常驻，已索引 `C:,D:,E:`）。
 - WSL 侧可直接裸名调用（shim 在 drvfs 下可执行，无需 `chmod +x`），实测 ≈0.15s/次。
 
 **为什么**：`/mnt/c` 是 9p/drvfs（`trans=fd`），每次 stat 都是一次 9p 往返；`es.exe` 直接查预建的 NTFS USN 索引。差距是数量级：

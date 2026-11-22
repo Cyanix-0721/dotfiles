@@ -1,6 +1,6 @@
 ---
 name: betterleaks-scanning
-description: "密钥扫描与凭据隐私——betterleaks（含 rc.2/3/4/8/9 版本行为、git 与文件系统扫描、假绿判别）、gitleaks、会话日志不脱敏风险、读写密钥的红线。要扫密钥、查提交历史泄露、或处理/读取凭据时加载。"
+description: "密钥扫描与凭据隐私——betterleaks（git 与文件系统扫描、假绿判别、CLI 与 JSON 报告）、gitleaks、会话日志不脱敏风险、读写密钥的红线。要扫密钥、查提交历史泄露、或处理/读取凭据时加载。"
 ---
 
 # 密钥与隐私（工具输出会原样落盘）
@@ -16,26 +16,24 @@ description: "密钥扫描与凭据隐私——betterleaks（含 rc.2/3/4/8/9 �
 **默认会把命中值明文打进输出**（因此落盘）⇒ **必须显式带 `--redact`**，否则等于亲手把密钥写进会话日志。
 查提交历史 `betterleaks git <path>`——只扫跟踪内容，天然避开被忽略的产物，**日常首选**；WSL / Windows 两侧同一套用法，无需额外配置。
 
-**`2.0.0-rc.3` 起 git 扫描改走 go-git，不再 fork `git` 二进制**（rc.2 及更早会 shell out）。`2.0.0-rc.4` 把 v6 换成 **go-git v5** 并自建 object/pack 读取器，仍是纯进程内扫描：不执行 `git`、hook、diff/textconv helper、filter、SSH、credential helper，所以扫不受信任的仓库不会被它自己配置的东西执行代码。由此产生的变化：
-- Windows 侧不再需要 git 垫片。旧版会给子进程注入 `GIT_CONFIG_GLOBAL=NUL` / `GIT_CONFIG_SYSTEM=NUL` / `GIT_CONFIG_NOSYSTEM=1`，而 Git for Windows ≥2.56.0 拒绝全大写设备名 `NUL` ⇒ `git log` exit 128、只扫 0 字节却打印 `no leaks found in incomplete scan`（假绿）。rc.3 里这条注入路径已随 `cmd.Run()` 一起消失，故 `~/.local/share/git-shim/`、mise 的 `_.path` 垫片条目、`.chezmoiignore` 里的对应规则均已删除。判别依据是实测：把会记账且 `exit 128` 的假 `git.cmd` 放在 PATH 最前，rc.3 仍完整扫出 101.9 MB / `leaks found: 3`，而假 git 的调用计数为 0（rc.2 及更早则会记到调用）。
-- 假绿的判别口径仍然有效：真扫描必有 `INF scanned ~NNNN bytes`（百万级）且退出码 0；见到 `scanned ~0 bytes` + `incomplete scan` 一律当**失败**，不许当绿。这条主要识别路径写错、权限不足之类的新问题，不再是 git 垫片的专属症状。
-- `--log-opts`、`--staged`、`--unstaged`、`--pre-receive`、`--pre-receive-error-message` 在 rc.3 已删除，再传会 `unknown flag`。要让 git 自己决定扫什么就管道进来：`git log -p -B | betterleaks stdin --git-diff`（pre-commit hook 就是这么做的）。
-- 合并提交默认不再 diff（rc.2 及更早的 `git log -p` 默认跳过合并提交，rc.3 同样跳过）。彻底口径从旧的 `--log-opts="--all -m"` 换成 `--include=merges`；可选资源还有 `--include=objects,unreachable-objects,commit-messages,notes,tag-messages,reflogs`。
-- 提交过滤器：`--revision=A..B`、`--since`、`--until`、`--author`、`--committer`、`--max-commits`。远端扫描默认不再拉 PR/MR ref（rc.2 会镜像全部 ref），要旧行为用 `--clone-all-refs`，单个 PR 用 `--clone-ref=refs/pull/123/head`。
-- 大 blob 默认上限 `--git-max-blob-mib=64`：超过的包对象会打 `skipped Git content over a limit` 警告并跳过（本仓库 `dot_local/share/fcitx5/rime/build/wanxiang.table.bin` 历史上就超限），这不是扫描失败，但要知道历史里那一块没被覆盖。
-- 速度：rc.3 比 rc.2 快约 2×（go-git 化 + 合并提交不 diff），本仓库 `betterleaks git .` 约 1.7s / 101.9 MB。
-- **rc.4 收窄了「假绿」的边界**：go-git v5 移植后引入一类结构性不支持，表现为「日志里只有 WRN、结果残缺」，容易被当成绿。已实测（本机 Git 2.x + rc.4）：
+**git 扫描走 go-git，纯进程内**：不执行 `git`、hook、diff/textconv helper、filter、SSH、credential helper，所以扫不受信任的仓库不会被它自己配置的东西执行代码，Windows 侧也不再需要 git 垫片。由此：
+- 假绿判别口径：真扫描必有 `INF scanned ~NNNN bytes`（百万级）且退出码 0；见到 `scanned ~0 bytes` + `incomplete scan` 一律当**失败**，不许当绿。这条口径主要用来识别路径写错、权限不足之类的问题。
+- `--log-opts`、`--staged`、`--unstaged`、`--pre-receive`、`--pre-receive-error-message` 已不存在，再传会 `unknown flag`。要让 git 自己决定扫什么就管道进来：`git log -p -B | betterleaks stdin --git-diff`（pre-commit hook 就是这么做的）。
+- 合并提交默认不 diff。彻底口径用 `--include=merges`；可选资源还有 `--include=objects,unreachable-objects,commit-messages,notes,tag-messages,reflogs`。
+- 提交过滤器：`--revision=A..B`、`--since`、`--until`、`--author`、`--committer`、`--max-commits`。远端扫描默认不拉 PR/MR ref，要拉全部用 `--clone-all-refs`，单个 PR 用 `--clone-ref=refs/pull/123/head`。
+- 大 blob 默认上限 `--git-max-blob-mib=64`：超过的包对象会打 `skipped Git content over a limit` 警告并跳过（本仓库 `dot_local/share/fcitx5/rime/build/wanxiang.table.bin` 就超限），这不是扫描失败，但要知道历史里那一块没被覆盖。
+- 结构性不支持的「假绿」边界（日志里只有 WRN、结果残缺，容易当成绿）：
   - reftable 仓库（`git config extensions.refstorage reftable`）⇒ `ERR failed to scan Git repository error="unknown extension: refstorage"` + `scanned ~0 bytes` + `incomplete scan`，退出码 1。这种残缺是安全的（会判失败），可放心用退出码判断。
-  - SHA-1 / SHA-256 仓库同一二进制都支持（实测 `--object-format=sha256` 正常，rc.3 也正常），无需 build tag。但 HTTP(S) 克隆目前只支持 SHA-1 仓库，要扫 SHA-256 仓库得先本地 clone 再 `betterleaks git <path>`。
+  - SHA-1 / SHA-256 仓库同一二进制都支持（`--object-format=sha256` 正常），无需 build tag。但 HTTP(S) 克隆目前只支持 SHA-1 仓库，要扫 SHA-256 仓库得先本地 clone 再 `betterleaks git <path>`。
   - `--shared` / `--reference` 克隆出的仓库、以及直接扫 submodule checkout，需要 `--allow-external-objects`；否则因对象库在仓库目录之外而被拒。
   - 硬上限：配置文件 16 MiB、单 ref 1 MiB、ref 目录嵌套 128 层、alternates 最多 4096 个对象目录、无 mmap 时 pack/index 最多同时开 64 个文件、单仓库最多 800 万个 object id 参与可达性分类。超限是错误（不是静默跳过），大仓库改用 `--include=objects` 替代 `--include=unreachable-objects`。
   - rename 检测在相似度打平时配对可能不同（继承自 go-git），可能导致两次运行命中的行不同。需要可比对的结果时用 `-o x.json` 存 JSON 再 diff，别肉眼比对终端。
 
-**rc.9 实测（Windows x64 官方二进制）**：配置与命令行用法同 rc.3/rc.4，本仓库 `betterleaks.toml` 原样能加载（`config check` → `OK: 475 rules (247 with validation, 228 without validation)`）。
-- 规则数 **475**（rc.8 为 476）：#482 删掉 5 条 client-side publishable key 规则（`posthog-project-api-key`、`lob-pub-api-key`、`flutterwave-public-key`、`devcycle-client-sdk-key`、`devcycle-mobile-sdk-key`），形态并入 `rules/generic/filter.go` 的 `testAndPublicAPIFilters`，防止 `generic-api-key` 把它们捡回来。**Breaking**：`--disable-rule` / `--isolate-rule` 再用这 5 个 ID 会 `rule not found`；配置里的 `disabledRules` 只告警不报错。
-- #493 移除顶层 `analysis.reason`（JSON 报告 breaking change）——解析 JSON 报告别再找这个字段；#497 补 padded URL-safe 与 unpadded standard base64 解码，命中会变多（不是假阳）。
-- 子命令：`version`、`config check`（验配置并跑内嵌 rule 测试）、`config path`、`config hash`、`config show`（默认 toml）/ `config show toml` / `config show ids`。裸 `config show` 仍可用，`config show ids | wc -l` 数规则最省事。
-- `git . --redact` 本仓库实测 104.29 MB / 1.12s / `leaks found: 11`；`wanxiang.table.bin`（约 85 MB）仍按 `--git-max-blob-mib=64` 打 `skipped Git content over a limit` 跳过。`--redact` / `--include` / `--clone-ref` / `--clone-all-refs` / `--allow-external-objects` 等 flag 与 rc.3/rc.4 一致。
+**配置与 CLI**：本仓库 `betterleaks.toml` 原样能加载（`config check` → `OK: N rules (...)`）。
+- 规则集会随上游增删变动，别把条数写死当断言；`config show ids | wc -l` 数规则最省事。client-side publishable key 类规则（`posthog-project-api-key`、`lob-pub-api-key`、`flutterwave-public-key`、`devcycle-client-sdk-key`、`devcycle-mobile-sdk-key`）已并入 `rules/generic/filter.go` 的 `testAndPublicAPIFilters`，防止 `generic-api-key` 把它们捡回来；这些 ID 已不在规则表里，`--disable-rule` / `--isolate-rule` 再引用会 `rule not found`，配置里的 `disabledRules` 只告警不报错。
+- JSON 报告**没有**顶层 `analysis.reason` 字段，别找它；base64 解码支持 padded URL-safe 与 unpadded standard，命中会变多（不是假阳）。
+- 子命令：`version`、`config check`（验配置并跑内嵌 rule 测试）、`config path`、`config hash`、`config show`（默认 toml）/ `config show toml` / `config show ids`。裸 `config show` 仍可用。
+- 本仓库 `git . --redact` 约 1s / ~100 MB 级；`wanxiang.table.bin`（约 85 MB）按 `--git-max-blob-mib=64` 打 `skipped Git content over a limit` 跳过。相关 flag：`--redact` / `--include` / `--clone-ref` / `--clone-all-refs` / `--allow-external-objects`。
 
 扫工作树用 `betterleaks filesystem <path>`：注意它**不读 `.gitignore`**，会连构建产物一起遍历（全局配置已排除 `.git/`、`.uvcache/`、`.gradle/`、`.kotlin/`，以及内嵌默认的 `node_modules/`、lockfile、图片字体等；但未排除 `build/`、`dist/`、`target/` 等通用产物名）；在大仓库上先确认路径范围，别直接扫仓库根。
 
