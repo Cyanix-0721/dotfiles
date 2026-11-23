@@ -115,52 +115,52 @@ else {
 # 效率工具
 Write-Header "效率工具 / Productivity Tools"
 
-Install-ScoopPackages (Get-PackageSection 'ess.productivity').Packages
+Install-ScoopPackages (Get-PackageSection 'ess.productivity')
 
 # 密码管理器
 Write-Header "密码管理器 / Password Managers"
 
-Install-ScoopPackages (Get-PackageSection 'ess.password').Packages
+Install-ScoopPackages (Get-PackageSection 'ess.password')
 
 # 邮件客户端
 Write-Header "邮件客户端 / Email Clients"
 
-Install-ScoopPackages (Get-PackageSection 'ess.email').Packages
+Install-ScoopPackages (Get-PackageSection 'ess.email')
 
 # 通讯软件
 Write-Header "通讯软件 / Communication Apps"
 
-Install-ScoopPackages (Get-PackageSection 'ess.comm').Packages
+Install-ScoopPackages (Get-PackageSection 'ess.comm')
 
 # 文件同步
 Write-Header "文件同步 / File Synchronization"
 
-Install-ScoopPackages (Get-PackageSection 'ess.sync').Packages
+Install-ScoopPackages (Get-PackageSection 'ess.sync')
 
 # 远程控制
 Write-Header "远程控制 / Remote Control"
 
-Install-ScoopPackages (Get-PackageSection 'ess.remote').Packages
+Install-ScoopPackages (Get-PackageSection 'ess.remote')
 
 # 下载工具
 Write-Header "下载工具 / Download Tools"
 
-Install-ScoopPackages (Get-PackageSection 'ess.download').Packages
+Install-ScoopPackages (Get-PackageSection 'ess.download')
 
 # 多媒体
 Write-Header "多媒体工具 / Multimedia Tools"
 
-Install-ScoopPackages (Get-PackageSection 'ess.multimedia').Packages
+Install-ScoopPackages (Get-PackageSection 'ess.multimedia')
 
 # 阅读器
 Write-Header "阅读器 / Readers"
 
-Install-ScoopPackages (Get-PackageSection 'ess.readers').Packages
+Install-ScoopPackages (Get-PackageSection 'ess.readers')
 
 # 字体
 Write-Header "字体 / Fonts"
 
-Install-ScoopPackages (Get-PackageSection 'ess.fonts').Packages
+Install-ScoopPackages (Get-PackageSection 'ess.fonts')
 
 # 游戏平台
 Write-Header "游戏平台 / Game Platforms"
@@ -169,7 +169,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过游戏平台安装 / winget not installed, skipping game platforms installation"
 }
 else {
-    Install-WingetApps (Get-PackageSection 'ess.games').Packages -Force
+    Install-WingetApps (Get-PackageSection 'ess.games') -Force
 }
 
 Write-Header "必备软件包安装完成 / Essential applications installation completed"

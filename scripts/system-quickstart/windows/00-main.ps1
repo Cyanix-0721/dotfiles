@@ -17,7 +17,9 @@ $ErrorActionPreference = "Stop"
 $Script:ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # 加载公共函数
-. "$Script:ScriptDir/00-common.ps1"`nif (Set-DryRun -DryRun:$DryRun) { $env:QUICKSTART_DRY_RUN = '1' }`nStart-Log
+. "$Script:ScriptDir/00-common.ps1"
+if (Set-DryRun -DryRun:$DryRun) { $env:QUICKSTART_DRY_RUN = '1' }
+Start-Log
 
 # ===== 菜单单一真源 / Single source of truth =====
 # 菜单显示与选项分派都读取本表，新增/调整项只改这里

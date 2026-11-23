@@ -34,27 +34,27 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
 # Sysinternals 工具集
 Write-Header "Sysinternals 工具集 / Sysinternals Suite"
 
-Install-ScoopPackages (Get-PackageSection 'sys.sysinternals').Packages
+Install-ScoopPackages (Get-PackageSection 'sys.sysinternals')
 
 # 系统信息和监控工具
 Write-Header "系统信息和监控工具 / System Info and Monitoring Tools"
 
-Install-ScoopPackages (Get-PackageSection 'sys.monitor').Packages
+Install-ScoopPackages (Get-PackageSection 'sys.monitor')
 
 # 文件管理器
 Write-Header "文件管理器 / File Managers"
 
-Install-ScoopPackages (Get-PackageSection 'sys.fileMgr').Packages
+Install-ScoopPackages (Get-PackageSection 'sys.fileMgr')
 
 # 压缩工具
 Write-Header "压缩工具 / Compression Tools"
 
-Install-ScoopPackages (Get-PackageSection 'sys.compression').Packages
+Install-ScoopPackages (Get-PackageSection 'sys.compression')
 
 # Windows 增强工具
 Write-Header "Windows 增强工具 / Windows Enhancement Tools"
 
-Install-ScoopPackages (Get-PackageSection 'sys.winTools').Packages
+Install-ScoopPackages (Get-PackageSection 'sys.winTools')
 
 # Win顺 / WinShun（文件搜索和启动器，替代 Flow Launcher / File search launcher, replaces Flow Launcher）
 Write-Header "Win顺 / WinShun (文件搜索和启动器 / File search and launcher)"
@@ -90,18 +90,18 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过 OpenHashTab 安装 / winget not installed, skipping OpenHashTab installation"
 }
 else {
-    Install-WingetApps (Get-PackageSection 'sys.openHashTab').Packages -Force
+    Install-WingetApps (Get-PackageSection 'sys.openHashTab') -Force
 }
 
 # 终端与命令行工具
 Write-Header "终端与命令行工具 / Terminal & CLI Tools"
 
-Install-ScoopPackages (Get-PackageSection 'sys.term').Packages
+Install-ScoopPackages (Get-PackageSection 'sys.term')
 
 # 网络工具
 Write-Header "网络工具 / Network Tools"
 
-Install-ScoopPackages (Get-PackageSection 'sys.network').Packages
+Install-ScoopPackages (Get-PackageSection 'sys.network')
 
 # OpenSSH Preview（比 Windows 内置版本更新 / Newer than the built-in OpenSSH）
 Write-Header "OpenSSH Preview"
@@ -110,7 +110,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过 OpenSSH Preview 安装 / winget not installed, skipping OpenSSH Preview installation"
 }
 else {
-    Install-WingetApps (Get-PackageSection 'sys.openSsh').Packages -Force
+    Install-WingetApps (Get-PackageSection 'sys.openSsh') -Force
 
     # winget 已安装后再次执行走 MSI 修复(repair)路径：组件标记键
     # HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\ssh-agent.exe

@@ -230,7 +230,7 @@ if ($installVCRedist -notmatch '^[Nn]$') {
     }
     else {
         Write-Step "正在安装 Visual C++ 运行库... / Installing Visual C++ Redistributables..."
-        Install-WingetApps (Get-PackageSection 'foundation.vcredist').Packages -Force
+        Install-WingetApps (Get-PackageSection 'foundation.vcredist') -Force
 
         Write-Ok "Visual C++ 运行库安装完成 / Visual C++ Redistributables installation completed"
     }
@@ -243,7 +243,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过 WebView2 安装 / winget not installed, skipping WebView2 installation"
 }
 else {
-    Install-WingetApps (Get-PackageSection 'foundation.webview2').Packages -Force
+    Install-WingetApps (Get-PackageSection 'foundation.webview2') -Force
 }
 
 # 安装 Chezmoi 配置管理工具

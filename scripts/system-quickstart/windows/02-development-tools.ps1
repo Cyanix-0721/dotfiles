@@ -34,22 +34,22 @@ if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
 # 编辑器和 IDE
 Write-Header "编辑器 / Editors and IDEs"
 
-Install-ScoopPackages (Get-PackageSection 'dev.editors').Packages
+Install-ScoopPackages (Get-PackageSection 'dev.editors')
 
 # Git 工具
 Write-Header "Git 工具 / Git Tools"
 
-Install-ScoopPackages (Get-PackageSection 'dev.gitTools').Packages
+Install-ScoopPackages (Get-PackageSection 'dev.gitTools')
 
 # Shell 脚本工具
 Write-Header "Shell 脚本工具 / Shell Script Tools"
 
-Install-ScoopPackages (Get-PackageSection 'dev.shellTools').Packages
+Install-ScoopPackages (Get-PackageSection 'dev.shellTools')
 
 # SVN 客户端
 Write-Header "SVN 客户端 / SVN Clients"
 
-Install-ScoopPackages (Get-PackageSection 'dev.svnTools').Packages
+Install-ScoopPackages (Get-PackageSection 'dev.svnTools')
 
 
 # 环境管理
@@ -57,7 +57,7 @@ Write-Header "环境管理 / Environment Management"
 
 # 1. 版本管理器 (必装 / Required)
 Write-Step "版本管理器 / Version Manager (Required)"
-Install-ScoopPackages (Get-PackageSection 'dev.versionManager').Packages
+Install-ScoopPackages (Get-PackageSection 'dev.versionManager')
 
 # 1.2 按全局 mise 配置安装全部声明工具
 # Install all tools declared in the global mise config.
@@ -148,7 +148,7 @@ else {
 # 2. Node 包管理器（pnpm，独立二进制；运行 JS 项目仍需 Node）
 # Node package manager (pnpm, standalone binary; running JS projects still needs Node)
 Write-Step "Node 包管理器 / Node Package Manager (pnpm)"
-Install-ScoopPackages (Get-PackageSection 'dev.nodePkg').Packages
+Install-ScoopPackages (Get-PackageSection 'dev.nodePkg')
 
 # 2.1 DSH（DeepSeek Harness）CLI 与 TUI（pnpm 全局安装，需 Node 运行）
 # DSH (DeepSeek Harness) CLI & TUI (installed globally via pnpm; needs Node to run)
@@ -181,7 +181,7 @@ else {
 Write-Step "Python 包管理器 / Python Package Manager (Optional)"
 Write-Note "可以选择安装 uv、miniconda3 或两者都装 / Can install uv, miniconda3, or both"
 
-Install-ScoopPackages (Get-PackageSection 'dev.pythonPkg').Packages
+Install-ScoopPackages (Get-PackageSection 'dev.pythonPkg')
 
 # uv 工具 (copyparty, ruff / uv tools)
 if (Get-Command uv -ErrorAction SilentlyContinue) {
@@ -275,17 +275,17 @@ else {
 # API 开发工具
 Write-Header "API 开发工具 / API Development Tools"
 
-Install-ScoopPackages (Get-PackageSection 'dev.api').Packages
+Install-ScoopPackages (Get-PackageSection 'dev.api')
 
 # 数据库工具
 Write-Header "数据库工具 / Database Tools"
 
-Install-ScoopPackages (Get-PackageSection 'dev.db').Packages
+Install-ScoopPackages (Get-PackageSection 'dev.db')
 
 # 其他开发工具
 Write-Header "其他开发工具 / Other Development Tools"
 
-Install-ScoopPackages (Get-PackageSection 'dev.misc').Packages
+Install-ScoopPackages (Get-PackageSection 'dev.misc')
 
 # Android 工具 / Android tools
 Write-Header "Android 工具 / Android Tools"
@@ -382,7 +382,7 @@ else {
 # AI 开发工具
 Write-Header "AI 开发工具 / AI Development Tools"
 
-Install-ScoopPackages (Get-PackageSection 'dev.ai').Packages
+Install-ScoopPackages (Get-PackageSection 'dev.ai')
 
 # WSL2 + Debian
 Write-Header "WSL2 / Debian 安装 / WSL2 / Debian setup"
