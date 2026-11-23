@@ -106,7 +106,7 @@ push/PR 时 CI 全量校验,本地应先行自测(命令与 CI 对齐,为本仓�
 | --- | --- | --- |
 | Python | `ruff.toml`(仅 `scripts/**/*.py`,target py39,line-length 100) | `ruff check scripts/` |
 | Shell | shellcheck `-S warning` | `shellcheck -x -S warning $(git ls-files 'scripts/**/*.sh')` |
-| PowerShell | PSScriptAnalyzer | `Invoke-ScriptAnalyzer -Path scripts/system-quickstart/windows -Recurse` |
+| PowerShell | PSScriptAnalyzer | `Invoke-ScriptAnalyzer -Path scripts/system-quickstart -Recurse -Settings scripts/system-quickstart/PSScriptAnalyzerSettings.psd1 -EnableExit` |
 | JSON / MD / YAML | `.prettierrc` / `.prettierignore` | prettier 格式 |
 | Chezmoi 模板 | — | 逐个渲染全部 `*.tmpl`(见上) |
 

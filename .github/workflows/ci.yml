@@ -42,18 +42,71 @@ jobs:
       - name: Run ruff
         run: ruff check scripts/
 
-  # 3. Shell lint (shellcheck)
+  # 3. Shell lint & integrity checks (bash -n / shellcheck / +x / manifests)
   shell:
-    name: Shell lint (shellcheck)
+    name: Shell lint & integrity checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - name: Install shellcheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
-      - name: Run shellcheck
+      - name: Run bash -n and shellcheck
         run: |
-          mapfile -t sh_files < <(find scripts dot_local/bin -name '*.sh' -type f)
+          set -euo pipefail
+          mapfile -t sh_files < <(git ls-files 'scripts/**/*.sh' 'dot_local/**/*.sh')
+          if [ "${#sh_files[@]}" -eq 0 ]; then
+            echo "ERROR: no .sh files matched" >&2
+            exit 1
+          fi
+          for f in "${sh_files[@]}"; do
+            bash -n "$f"
+          done
           shellcheck -x -S warning "${sh_files[@]}"
+      - name: Check executable git modes (+x)
+        run: |
+          set -euo pipefail
+          checked=0
+          failed=0
+          while IFS=$'\t' read -r meta path; do
+            case "$path" in
+              */00-common.sh) continue ;;
+            esac
+            mode="${meta%% *}"
+            checked=$((checked + 1))
+            if [ "$mode" != "100755" ]; then
+              echo "ERROR: $path has git mode $mode, expected 100755" >&2
+              failed=1
+            fi
+          done < <(git ls-files -s -- \
+            'scripts/system-quickstart/arch/0[0-9]-*.sh' \
+            'scripts/system-quickstart/wsl/0[0-9]-*.sh' \
+            'scripts/reflector/setup_reflector.sh')
+          if [ "$checked" -eq 0 ]; then
+            echo "ERROR: no executable scripts matched for mode check" >&2
+            exit 1
+          fi
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
+          echo "Executable mode check OK ($checked scripts verified 100755)"
+      - name: Validate package manifests via read_pkg_list
+        run: |
+          set -euo pipefail
+          . scripts/system-quickstart/lib/quickstart-common.sh
+          mapfile -t manifests < <(git ls-files 'scripts/system-quickstart/*/manifests/*.list')
+          if [ "${#manifests[@]}" -eq 0 ]; then
+            echo "ERROR: no manifest .list files matched" >&2
+            exit 1
+          fi
+          for m in "${manifests[@]}"; do
+            out="$(read_pkg_list "$m")"
+            if [ -z "$out" ]; then
+              echo "ERROR: manifest $m yielded 0 packages" >&2
+              exit 1
+            fi
+            mapfile -t pkgs < <(printf '%s\n' "$out")
+            echo "Manifest OK: $m (${#pkgs[@]} packages)"
+          done
 
   # 4. PowerShell lint (PSScriptAnalyzer)
   powershell:
@@ -65,7 +118,8 @@ jobs:
         run: |
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
           Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
-          Invoke-ScriptAnalyzer -Path scripts/system-quickstart/windows -Recurse
+          Import-Module PSScriptAnalyzer
+          Invoke-ScriptAnalyzer -Path scripts/system-quickstart -Recurse -Settings scripts/system-quickstart/PSScriptAnalyzerSettings.psd1 -EnableExit
 
   # 5. Pester 单元测试（Windows quickstart 包清单 / dry-run）
   pester:
@@ -76,16 +130,31 @@ jobs:
       - shell: pwsh
         run: |
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-          Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -Scope CurrentUser
-          Import-Module Pester -MinimumVersion 5.0.0
+          Install-Module -Name Pester -MinimumVersion 5.0.0 -MaximumVersion 6.99.99 -Force -Scope CurrentUser
+          Import-Module Pester -MinimumVersion 5.0.0 -MaximumVersion 6.99.99
           $result = Invoke-Pester -Path scripts/system-quickstart/tests/PackageManifest.Tests.ps1 -PassThru -Output Normal
-          if ($result.FailedCount -gt 0) { throw "$($result.FailedCount) Pester test(s) failed" }
+          if ($result.Result -ne 'Passed' -or $result.TotalCount -eq 0 -or $result.FailedCount -gt 0) {
+            throw "Pester check failed: Result=$($result.Result), Total=$($result.TotalCount), Failed=$($result.FailedCount)"
+          }
 
-  # 6. Bash 单元测试（公共库 read_pkg_list 等）
+  # 6. Bash 单元测试与 Arch 演练冒烟测试（公共库 read_pkg_list / Arch dry-run）
   bash-tests:
-    name: Bash unit tests
+    name: Bash unit & dry-run smoke tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Run bash tests
+      - name: Run bash unit tests
         run: bash scripts/system-quickstart/tests/test-quickstart-common.sh
+      - name: Run Arch quickstart dry-run smoke tests
+        run: |
+          set -euo pipefail
+          for s in \
+            scripts/system-quickstart/arch/01-system-foundation.sh \
+            scripts/system-quickstart/arch/02-chinese-localization.sh \
+            scripts/system-quickstart/arch/03-essential-packages.sh; do
+            echo "=== Dry-run smoke: $s ==="
+            QUICKSTART_DRY_RUN=1 AUTO_YES=1 bash "$s" </dev/null >/dev/null
+          done
+          echo "=== Dry-run smoke: arch/00-main.sh (Run All) ==="
+          printf '1\n\n0\n' | TERM=dumb bash scripts/system-quickstart/arch/00-main.sh --dry-run --auto-yes >/dev/null
+          echo "Arch dry-run smoke tests OK"
