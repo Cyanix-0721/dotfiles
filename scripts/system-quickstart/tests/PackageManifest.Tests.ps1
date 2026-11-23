@@ -460,16 +460,72 @@ Describe 'Windows script AST and static safety checks' {
         $raw | Should -Match '\$LASTEXITCODE'
     }
 
-    It '02-development-tools.ps1 has no hardcoded credentials, normalizes LF, and avoids multi-arg uv tool install' {
+    It '02-development-tools.ps1 has no hardcoded credentials, normalizes to real LF, and avoids multi-arg uv tool install' {
         $devPath = Join-Path $script:WindowsDir '02-development-tools.ps1'
         $raw = Get-Content -LiteralPath $devPath -Raw
 
         $raw | Should -Not -Match '\bslayer\b'
         $raw | Should -Not -Match '114514'
         $raw | Should -Match '-AsSecureString'
-        $raw | Should -Match '\\r\\n'
+        $raw | Should -Match '-replace\s+"\\r\\n\|\\r",\s+"`n"'
+        $raw | Should -Not -Match '-replace\s+"\\r\\n(?:\|\\r)?",\s+"\\n"'
         $raw | Should -Match 'DoNotExpandEnvironmentNames'
         $raw | Should -Not -Match 'uv\s+tool\s+install\s+copyparty\s+ruff'
+
+        # Verify actual runtime CRLF/CR -> LF normalization produces 0x0A, zero 0x0D, and zero literal \n
+        $crlfSample = "set -eu`r`necho OK`r`n"
+        $normalized = $crlfSample -replace "\r\n|\r", "`n"
+        $normalized.IndexOf([char]0x0A) | Should -BeGreaterOrEqual 0
+        $normalized.IndexOf([char]0x0D) | Should -Be -1
+        $normalized.Contains('\n') | Should -BeFalse
+    }
+
+    It 'preserves caller -DryRun and -AutoYes CLI switches across 00-common.ps1 dot-sourcing without env vars' {
+        $probeScript = Join-Path ([System.IO.Path]::GetTempPath()) ("quickstart-cli-probe-{0}.ps1" -f [guid]::NewGuid().ToString('N'))
+        $probeLog = Join-Path ([System.IO.Path]::GetTempPath()) ("quickstart-cli-probe-{0}.log" -f [guid]::NewGuid().ToString('N'))
+        $saved = @{
+            QUICKSTART_DRY_RUN  = $env:QUICKSTART_DRY_RUN
+            QUICKSTART_AUTO_YES = $env:QUICKSTART_AUTO_YES
+            AUTO_YES            = $env:AUTO_YES
+            QUICKSTART_LOG_FILE = $env:QUICKSTART_LOG_FILE
+        }
+        try {
+            @"
+param(
+    [switch]`$AutoYes,
+    [switch]`$DryRun
+)
+`$ErrorActionPreference = 'Stop'
+. '$($script:Common)'
+`$dryResult = Set-DryRun -DryRun:`$DryRun
+Start-Log -Path '$probeLog'
+Initialize-AutoYes -AutoYes:`$AutoYes
+Write-Output ("DRY={0};AUTO={1};LOG={2}" -f `$dryResult, `$Script:AutoYes, [string]`$Script:LogFile)
+"@ | Set-Content -LiteralPath $probeScript -Encoding UTF8
+
+            $env:QUICKSTART_DRY_RUN = $null
+            $env:QUICKSTART_AUTO_YES = $null
+            $env:AUTO_YES = $null
+            $env:QUICKSTART_LOG_FILE = $null
+
+            $out = & pwsh -NoProfile -NonInteractive -File $probeScript -DryRun -AutoYes
+            $LASTEXITCODE | Should -Be 0
+            ($out -join "`n") | Should -Match 'DRY=True;AUTO=True;LOG='
+            Test-Path -LiteralPath $probeLog | Should -BeFalse
+
+            # Also run real 01-system-foundation.ps1 with -DryRun -AutoYes and cleared env vars
+            $fndPath = Join-Path $script:WindowsDir '01-system-foundation.ps1'
+            $null = & pwsh -NoProfile -NonInteractive -File $fndPath -DryRun -AutoYes
+            $LASTEXITCODE | Should -Be 0
+        }
+        finally {
+            $env:QUICKSTART_DRY_RUN = $saved.QUICKSTART_DRY_RUN
+            $env:QUICKSTART_AUTO_YES = $saved.QUICKSTART_AUTO_YES
+            $env:AUTO_YES = $saved.AUTO_YES
+            $env:QUICKSTART_LOG_FILE = $saved.QUICKSTART_LOG_FILE
+            if (Test-Path -LiteralPath $probeScript) { Remove-Item -LiteralPath $probeScript -Force }
+            if (Test-Path -LiteralPath $probeLog) { Remove-Item -LiteralPath $probeLog -Force }
+        }
     }
 
     It '01-system-foundation.ps1 does not use Invoke-Expression and supports Scoop -RunAsAdmin' {

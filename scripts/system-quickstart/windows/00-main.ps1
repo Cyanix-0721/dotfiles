@@ -25,13 +25,8 @@ $prevLogFile = $env:QUICKSTART_LOG_FILE
 $prevAutoYes = $env:QUICKSTART_AUTO_YES
 $prevNoPrompt = $env:QUICKSTART_NO_AUTO_YES_PROMPT
 
-$Script:IsDryRun = Set-DryRun -DryRun:$DryRun
-if ($Script:IsDryRun) { $env:QUICKSTART_DRY_RUN = '1' }
-Start-Log
-if ($Script:LogFile) { $env:QUICKSTART_LOG_FILE = $Script:LogFile }
-
-$Script:MainAutoYes = [bool]($AutoYes -or $env:QUICKSTART_AUTO_YES -eq '1' -or $env:AUTO_YES -eq '1')
-if ($Script:MainAutoYes) { $env:QUICKSTART_AUTO_YES = '1' }
+$Script:IsDryRun = $false
+$Script:MainAutoYes = $false
 $Script:ShouldExit = $false
 
 # ===== 菜单单一真源 / Single source of truth =====
@@ -153,8 +148,16 @@ function Invoke-Script {
     return $true
 }
 
-# 主循环（通过 try/finally 确保环境变量不泄漏到父会话）
+# 主循环（将环境变量写入与主循环一并纳入 try/finally，确保异常或退出时均不泄漏到父会话）
 try {
+    $Script:IsDryRun = Set-DryRun -DryRun:$DryRun
+    if ($Script:IsDryRun) { $env:QUICKSTART_DRY_RUN = '1' }
+    Start-Log
+    if ($Script:LogFile) { $env:QUICKSTART_LOG_FILE = $Script:LogFile }
+
+    $Script:MainAutoYes = [bool]($AutoYes -or $env:QUICKSTART_AUTO_YES -eq '1' -or $env:AUTO_YES -eq '1')
+    if ($Script:MainAutoYes) { $env:QUICKSTART_AUTO_YES = '1' }
+
     $maxKey = ($Script:MenuItems | ForEach-Object { [int]$_.Key } | Measure-Object -Maximum).Maximum
     while (-not $Script:ShouldExit) {
         Show-Menu

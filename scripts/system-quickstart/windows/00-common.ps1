@@ -172,9 +172,11 @@ function Invoke-External {
 }
 
 # ===== 可观测性 / Observability：dry-run 与日志 =====
-$Script:DryRun = $false
+# 保留调用方 param([switch]$DryRun) 已绑定到 Script 作用域的值，避免 dot-source 覆盖 CLI 开关
+$existingDryRun = Get-Variable -Name DryRun -Scope Script -ErrorAction SilentlyContinue
+$Script:DryRun = if ($null -ne $existingDryRun) { [bool]$existingDryRun.Value } else { $false }
 $Script:LogFile = $null
-if (-not [string]::IsNullOrWhiteSpace($env:QUICKSTART_LOG_FILE) -and $env:QUICKSTART_DRY_RUN -ne '1') {
+if (-not $Script:DryRun -and $env:QUICKSTART_DRY_RUN -ne '1' -and -not [string]::IsNullOrWhiteSpace($env:QUICKSTART_LOG_FILE)) {
     $Script:LogFile = $env:QUICKSTART_LOG_FILE
 }
 
@@ -252,7 +254,9 @@ function Write-Note {
 }
 
 # ===== 安装确认 / Install confirmation =====
-$Script:AutoYes = $false
+# 保留调用方 param([switch]$AutoYes) 已绑定到 Script 作用域的值，避免 dot-source 覆盖 CLI 开关
+$existingAutoYes = Get-Variable -Name AutoYes -Scope Script -ErrorAction SilentlyContinue
+$Script:AutoYes = if ($null -ne $existingAutoYes) { [bool]$existingAutoYes.Value } else { $false }
 
 function Initialize-AutoYes {
     param(

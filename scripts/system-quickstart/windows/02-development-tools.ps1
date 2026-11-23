@@ -47,7 +47,7 @@ function Invoke-WslStdin {
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         $writer = New-Object System.IO.StreamWriter($proc.StandardInput.BaseStream, $utf8NoBom)
         $writer.NewLine = "`n"
-        $normalizedInput = $InputText -replace "\r\n", "\n"
+        $normalizedInput = $InputText -replace "\r\n|\r", "`n"
         $writer.Write($normalizedInput)
         $writer.Flush()
         $writer.Close()
@@ -612,6 +612,10 @@ if (Confirm-YesNo -Prompt "是否安装 WSL2、Debian 发行版并配置默认�
                         if (-not $userAlreadyExists -and [string]::IsNullOrEmpty($env:WSL_DEFAULT_PASSWORD)) {
                             Write-Note "自动确认模式创建新用户 '$candidateUser' 需要同时设置 WSL_DEFAULT_PASSWORD；未提供，跳过非 root 用户与密码配置 / Auto-yes mode requires WSL_DEFAULT_PASSWORD to create new user '$candidateUser'; skipping non-root user/password setup"
                         }
+                        elseif (-not $userAlreadyExists -and $env:WSL_DEFAULT_PASSWORD -match '[\r\n]') {
+                            Write-Err "WSL_DEFAULT_PASSWORD 包含非法换行符，跳过非 root 用户配置 / WSL_DEFAULT_PASSWORD contains newline, skipping user setup"
+                            Add-Failure "WSL user config"
+                        }
                         else {
                             $defaultUser = $candidateUser
                             $defaultSecret = $env:WSL_DEFAULT_PASSWORD
@@ -706,7 +710,7 @@ fi
 apt-get update
 apt-get full-upgrade -y
 apt-get install -y git curl ca-certificates gnupg lsb-release
-'@ -replace "\r\n", "\n"
+'@ -replace "\r\n|\r", "`n"
 
             Write-Step "在 Debian 中初始化用户、完成系统更新并安装 Git / Initializing Debian user, applying system updates, and installing Git"
             $wslArgs = if ($configureUser) {
