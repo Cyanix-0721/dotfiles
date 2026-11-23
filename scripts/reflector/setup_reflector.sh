@@ -42,9 +42,10 @@ check_root() {
 }
 
 install_reflector() {
+	check_root
 	if ! command -v reflector &>/dev/null; then
 		echo "正在安装 reflector..."
-		pacman -Sy reflector --noconfirm
+		pacman -Syu --needed --noconfirm reflector
 	fi
 }
 
@@ -97,12 +98,12 @@ run_reflector() {
 		echo "✓ 镜像列表更新成功"
 
 		local total_servers
-		total_servers=$(grep -c '^Server' /etc/pacman.d/mirrorlist)
+		total_servers=$(grep -c '^Server' /etc/pacman.d/mirrorlist || true)
 
 		echo -e "\n当前镜像服务器数量: $total_servers"
 		echo -e "\n前10个镜像服务器:"
 		echo "=========================================="
-		grep '^Server' /etc/pacman.d/mirrorlist | head -10 | nl -w2
+		awk '/^Server/ { c++; if (c <= 10) printf "%2d\t%s\n", c, $0 }' /etc/pacman.d/mirrorlist
 		echo "=========================================="
 	else
 		echo "✗ 镜像列表更新失败" >&2
@@ -114,14 +115,14 @@ show_status() {
 	check_root
 
 	local total_servers
-	total_servers=$(grep -c '^Server' /etc/pacman.d/mirrorlist)
+	total_servers=$(grep -c '^Server' /etc/pacman.d/mirrorlist || true)
 
 	echo "=========================================="
 	echo "Reflector 定时任务状态:"
 	systemctl status reflector.timer --no-pager || true
 	echo -e "\n当前镜像服务器数量: $total_servers"
 	echo -e "\n前10个镜像服务器:"
-	grep '^Server' /etc/pacman.d/mirrorlist | head -10 | nl -w2
+	awk '/^Server/ { c++; if (c <= 10) printf "%2d\t%s\n", c, $0 }' /etc/pacman.d/mirrorlist
 	echo "=========================================="
 }
 
