@@ -37,6 +37,7 @@
             Installer = 'scoop'
             Packages  = @(
                 @{ Name = 'vscode'; Desc = 'Visual Studio Code'; Global = $false }
+                @{ Name = 'neovim'; Desc = 'Neovim'; Global = $false }
             )
         }
         'dev.gitTools' = @{
