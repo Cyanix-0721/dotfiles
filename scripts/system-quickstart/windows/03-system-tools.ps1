@@ -11,7 +11,8 @@
 
 param(
     [switch]$AutoYes,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$NoAutoYesPrompt
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,7 +22,7 @@ $ErrorActionPreference = "Stop"
 Set-DryRun -DryRun:$DryRun | Out-Null
 
 # 初始化自动确认模式
-Initialize-AutoYes -AutoYes:$AutoYes
+Initialize-AutoYes -AutoYes:$AutoYes -NoPrompt:$NoAutoYesPrompt
 
 Write-Header "系统工具安装 / System Tools Installation"
 
@@ -56,30 +57,52 @@ Write-Header "Windows 增强工具 / Windows Enhancement Tools"
 
 Install-ScoopPackages (Get-PackageSection 'sys.winTools')
 
-# Win顺 / WinShun（文件搜索和启动器，替代 Flow Launcher / File search launcher, replaces Flow Launcher）
+# Win顺 / WinShun（文件搜索和启动器，替代 Flow Launcher；默认否，-AutoYes 跳过）
 Write-Header "Win顺 / WinShun (文件搜索和启动器 / File search and launcher)"
 
 if (Test-ScoopInstalled "winshun") {
     Write-Ok "winshun 已安装 / winshun is already installed"
 }
 else {
-    $installWinShun = Confirm-Install "是否安装 Win顺 WinShun（替代 Flow Launcher）？(y/N) / Install WinShun (replaces Flow Launcher)? (y/N)"
-    if ($installWinShun -match '^[Yy]$') {
-        $bucketList = scoop bucket list
-        if ($bucketList -match 'winshun') {
-            Write-Ok "Bucket 'winshun' 已添加 / Bucket 'winshun' already added"
+    if (Confirm-YesNo -Prompt "是否安装 Win顺 WinShun（替代 Flow Launcher）？(y/N) / Install WinShun (replaces Flow Launcher)? (y/N)") {
+        if (Test-DryRun) {
+            Write-Note "[dry-run] 将添加 bucket 'winshun' 并安装 winshun / would add bucket 'winshun' and install winshun"
         }
         else {
-            Write-Step "添加 bucket: winshun / Adding bucket: winshun"
-            scoop bucket add winshun https://github.com/LingCore/WinShun
-            Write-Ok "Bucket 'winshun' 添加成功 / Bucket 'winshun' added successfully"
-        }
+            $bucketOk = $true
+            if (Test-ScoopBucket -Name 'winshun') {
+                Write-Ok "Bucket 'winshun' 已添加 / Bucket 'winshun' already added"
+            }
+            else {
+                Write-Step "添加 bucket: winshun / Adding bucket: winshun"
+                $global:LASTEXITCODE = 0
+                & scoop @('bucket', 'add', 'winshun', 'https://github.com/LingCore/WinShun')
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Ok "Bucket 'winshun' 添加成功 / Bucket 'winshun' added successfully"
+                }
+                else {
+                    Write-Err "Bucket 'winshun' 添加失败（退出码 $LASTEXITCODE）/ Failed to add bucket 'winshun' (exit $LASTEXITCODE)"
+                    Add-Failure "scoop bucket winshun"
+                    $bucketOk = $false
+                }
+            }
 
-        scoop install winshun
-        Reset-ScoopCache
-        Write-Ok "winshun 安装完成 / winshun installation completed"
-        Write-Note "索引服务不随 Scoop 安装：默认仅索引手动添加的文件夹 / Index service is not installed by Scoop: only folders you pick are indexed"
-        Write-Note "整盘索引：设置 → 搜索范围 → 磁盘 → 索引方式（需管理员权限）/ Whole-disk index: Settings → Search scope → Disks → Index method (admin required)"
+            if ($bucketOk) {
+                $global:LASTEXITCODE = 0
+                & scoop @('install', 'winshun')
+                $winshunExit = $LASTEXITCODE
+                Reset-ScoopCache
+                if ($winshunExit -eq 0) {
+                    Write-Ok "winshun 安装完成 / winshun installation completed"
+                    Write-Note "索引服务不随 Scoop 安装：默认仅索引手动添加的文件夹 / Index service is not installed by Scoop: only folders you pick are indexed"
+                    Write-Note "整盘索引：设置 → 搜索范围 → 磁盘 → 索引方式（需管理员权限）/ Whole-disk index: Settings → Search scope → Disks → Index method (admin required)"
+                }
+                else {
+                    Write-Err "winshun 安装失败（退出码 $winshunExit）/ winshun installation failed (exit $winshunExit)"
+                    Add-Failure "winshun"
+                }
+            }
+        }
     }
 }
 
@@ -90,7 +113,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过 OpenHashTab 安装 / winget not installed, skipping OpenHashTab installation"
 }
 else {
-    Install-WingetApps (Get-PackageSection 'sys.openHashTab') -Force
+    Install-WingetApps (Get-PackageSection 'sys.openHashTab')
 }
 
 # 终端与命令行工具
@@ -110,7 +133,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过 OpenSSH Preview 安装 / winget not installed, skipping OpenSSH Preview installation"
 }
 else {
-    Install-WingetApps (Get-PackageSection 'sys.openSsh') -Force
+    Install-WingetApps (Get-PackageSection 'sys.openSsh')
 
     # winget 已安装后再次执行走 MSI 修复(repair)路径：组件标记键
     # HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\ssh-agent.exe
@@ -118,7 +141,7 @@ else {
     # Re-running after install triggers MSI repair, which skips ServiceInstall when the component
     # flag key above already exists — the ssh-agent service is then missing and must be created manually
     $sshAgentExe = "$env:ProgramFiles\OpenSSH\ssh-agent.exe"
-    $sshAgentSvc = Get-Service ssh-agent -ErrorAction SilentlyContinue
+    $sshAgentSvc = Get-Service -Name ssh-agent -ErrorAction SilentlyContinue
 
     if (-not $sshAgentSvc) {
         Write-Warn "未检测到 ssh-agent 服务 / ssh-agent service not found"
@@ -128,31 +151,52 @@ else {
         Write-Note "    -DisplayName 'OpenSSH Authentication Agent' -StartupType Automatic"
         Write-Note "  Start-Service ssh-agent"
 
-        $createSvc = Confirm-Install "是否现在创建 ssh-agent 服务？(Y/n) / Create the ssh-agent service now? (Y/n)"
-        if ($createSvc -notmatch '^[Nn]$') {
-            if (-not (Test-Path $sshAgentExe)) {
-                Write-Err "未找到 $sshAgentExe / not found"
+        if (Confirm-YesNo -Prompt "是否现在创建 ssh-agent 服务？(Y/n) / Create the ssh-agent service now? (Y/n)" -DefaultYes) {
+            if (Test-DryRun) {
+                Write-Note "[dry-run] 将创建并启动 ssh-agent 服务 / would create and start ssh-agent service"
             }
-            elseif (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+            elseif (-not (Test-Path -LiteralPath $sshAgentExe)) {
+                Write-Err "未找到 $sshAgentExe / not found"
+                Add-Failure "ssh-agent service"
+            }
+            elseif (-not (Test-IsAdministrator)) {
                 Write-Warn "需要管理员权限，请以管理员身份运行本脚本 / Administrator privileges required"
+                Add-Failure "ssh-agent service (admin required)"
             }
             else {
                 try {
                     New-Service -Name ssh-agent -BinaryPathName "`"$sshAgentExe`"" `
                         -DisplayName "OpenSSH Authentication Agent" -StartupType Automatic | Out-Null
-                    Start-Service ssh-agent
+                    Start-Service -Name ssh-agent
                     Write-Ok "ssh-agent 服务已创建并启动 / ssh-agent service created and started"
                 }
                 catch {
                     Write-Err "ssh-agent 服务创建失败 / failed to create ssh-agent service: $($_.Exception.Message)"
+                    Add-Failure "ssh-agent service"
                 }
             }
         }
     }
     elseif ($sshAgentSvc.Status -ne "Running") {
-        Write-Step "启动 ssh-agent 服务 / Starting ssh-agent service"
-        Start-Service ssh-agent
-        Write-Ok "ssh-agent 服务已启动 / ssh-agent service started"
+        if (Test-DryRun) {
+            Write-Note "[dry-run] 将设置 ssh-agent 为自动启动并启动服务 / would set ssh-agent to Automatic and start it"
+        }
+        elseif (-not (Test-IsAdministrator)) {
+            Write-Warn "需要管理员权限以配置并启动 ssh-agent 服务 / Administrator privileges required to configure and start ssh-agent service"
+            Add-Failure "ssh-agent service (admin required)"
+        }
+        else {
+            Write-Step "配置并启动 ssh-agent 服务 / Configuring and starting ssh-agent service"
+            try {
+                Set-Service -Name ssh-agent -StartupType Automatic -ErrorAction Stop
+                Start-Service -Name ssh-agent -ErrorAction Stop
+                Write-Ok "ssh-agent 服务已启动 / ssh-agent service started"
+            }
+            catch {
+                Write-Err "ssh-agent 服务启动失败 / failed to start ssh-agent service: $($_.Exception.Message)"
+                Add-Failure "ssh-agent service"
+            }
+        }
     }
     else {
         Write-Ok "ssh-agent 服务运行中 / ssh-agent service is running"
@@ -166,8 +210,8 @@ Write-Header "系统工具安装完成 / System tools installation completed"
 $globalRoot = if ($env:SCOOP_GLOBAL) { $env:SCOOP_GLOBAL } else { "C:\ProgramData\scoop" }
 $globalAppsDir = Join-Path $globalRoot "apps"
 Write-Note "全局安装的应用 / Globally installed apps:"
-if (Test-Path $globalAppsDir) {
-    Get-ChildItem $globalAppsDir -Directory | Select-Object -ExpandProperty Name
+if (Test-Path -LiteralPath $globalAppsDir) {
+    Get-ChildItem -LiteralPath $globalAppsDir -Directory | Select-Object -ExpandProperty Name
 }
 else {
     Write-Note "未检测到全局应用目录 / No global apps directory found"

@@ -11,7 +11,8 @@
 
 param(
     [switch]$AutoYes,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$NoAutoYesPrompt
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,7 +22,7 @@ $ErrorActionPreference = "Stop"
 Set-DryRun -DryRun:$DryRun | Out-Null
 
 # 初始化自动确认模式
-Initialize-AutoYes -AutoYes:$AutoYes
+Initialize-AutoYes -AutoYes:$AutoYes -NoPrompt:$NoAutoYesPrompt
 
 Write-Header "必备软件包安装 / Essential Applications Installation"
 
@@ -53,8 +54,7 @@ if ($installedBrowsers.Count -eq $browserOptions.Count) {
     Write-Ok "所有浏览器已安装 / All browsers already installed"
 }
 else {
-    $install = Confirm-Install "是否安装浏览器？(Y/n) / Install browsers? (Y/n)"
-    if ($install -notmatch '^[Nn]$') {
+    if (Confirm-YesNo -Prompt "是否安装浏览器？(Y/n) / Install browsers? (Y/n)" -DefaultYes) {
         Write-Note "请选择要安装的浏览器（默认 1）/ Select browsers to install (default 1):"
         Write-Note "  [1] zen-browser + helium（默认 / default）"
         for ($i = 0; $i -lt $browserOptions.Count; $i++) {
@@ -63,52 +63,47 @@ else {
         }
         Write-Note "  [$($browserOptions.Count + 2)] 全部安装 / Install all"
 
-        $choice = Read-Host "请输入编号（默认 1）/ Enter a number (default 1)"
+        $choice = Read-Choice -Prompt "请输入编号（默认 1）/ Enter a number (default 1)" -Default "1"
         if ($choice -match '^\d+$') { $selection = [int]$choice } else { $selection = 1 }
 
+        $targetsToInstall = @()
         if ($selection -eq 1) {
             # 默认：同时安装 zen-browser + helium（跳过已安装）
-            foreach ($name in @("zen-browser", "helium")) {
-                if (Test-ScoopInstalled $name) {
-                    Write-Ok "$name 已安装 / $name is already installed"
-                }
-                else {
-                    scoop install $name
-                    Write-Ok "$name 安装完成 / $name installation completed"
-                }
-            }
+            $targetsToInstall = @("zen-browser", "helium")
         }
         elseif ($selection -ge 2 -and $selection -le ($browserOptions.Count + 1)) {
-            $target = $browserOptions[$selection - 2]
-            if (Test-ScoopInstalled $target.Name) {
-                Write-Ok "$($target.Name) 已安装 / $($target.Name) is already installed"
-            }
-            else {
-                scoop install $target.Name
-                Write-Ok "$($target.Name) 安装完成 / $($target.Name) installation completed"
-            }
+            $targetsToInstall = @($browserOptions[$selection - 2].Name)
         }
         elseif ($selection -eq ($browserOptions.Count + 2)) {
-            foreach ($opt in $browserOptions) {
-                if ($installedBrowsers -notcontains $opt.Name) {
-                    scoop install $opt.Name
-                    Write-Ok "$($opt.Name) 安装完成 / $($opt.Name) installation completed"
-                }
-            }
+            $targetsToInstall = @($browserOptions | ForEach-Object { $_.Name })
         }
         else {
             Write-Warn "无效输入，默认安装 zen-browser + helium / Invalid input, installing zen-browser + helium by default"
-            foreach ($name in @("zen-browser", "helium")) {
-                if (Test-ScoopInstalled $name) {
-                    Write-Ok "$name 已安装 / $name is already installed"
+            $targetsToInstall = @("zen-browser", "helium")
+        }
+
+        $installedAny = $false
+        foreach ($name in $targetsToInstall) {
+            if (Test-ScoopInstalled $name) {
+                Write-Ok "$name 已安装 / $name is already installed"
+            }
+            elseif (Test-DryRun) {
+                Write-Note "[dry-run] 将安装 $name / would install $name"
+            }
+            else {
+                $global:LASTEXITCODE = 0
+                & scoop @('install', $name)
+                $installedAny = $true
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Ok "$name 安装完成 / $name installation completed"
                 }
                 else {
-                    scoop install $name
-                    Write-Ok "$name 安装完成 / $name installation completed"
+                    Write-Err "$name 安装失败（退出码 $LASTEXITCODE）/ $name installation failed (exit $LASTEXITCODE)"
+                    Add-Failure $name
                 }
             }
         }
-        Reset-ScoopCache
+        if ($installedAny) { Reset-ScoopCache }
     }
 }
 
@@ -162,19 +157,21 @@ Write-Header "字体 / Fonts"
 
 Install-ScoopPackages (Get-PackageSection 'ess.fonts')
 
-# 游戏平台
+# 游戏平台（默认否 y/N，-AutoYes 跳过）
 Write-Header "游戏平台 / Game Platforms"
 
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Warn "winget 未安装，跳过游戏平台安装 / winget not installed, skipping game platforms installation"
 }
 else {
-    Install-WingetApps (Get-PackageSection 'ess.games') -Force
+    Install-WingetApps (Get-PackageSection 'ess.games')
 }
 
 Write-Header "必备软件包安装完成 / Essential applications installation completed"
-Write-Note "当前已安装的所有应用 / All currently installed applications:"
-scoop list
+if (-not (Test-DryRun) -and (Get-Command scoop -ErrorAction SilentlyContinue)) {
+    Write-Note "当前已安装的所有应用 / All currently installed applications:"
+    & scoop @('list')
+}
 
 Write-FailureSummary
 if ((Get-FailureCount) -gt 0) { exit 1 }

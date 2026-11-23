@@ -330,9 +330,9 @@
         'ess.games' = @{
             Installer = 'winget'
             Packages  = @(
-                @{ Id = 'Valve.Steam'; Desc = 'Steam (游戏平台 / Steam)'; InstallArgs = @('--exact', '--silent') }
-                @{ Id = 'EpicGames.EpicGamesLauncher'; Desc = 'Epic Games Launcher'; InstallArgs = @('--exact', '--silent') }
-                @{ Id = 'GOG.Galaxy'; Desc = 'GOG Galaxy'; InstallArgs = @('--exact', '--silent') }
+                @{ Id = 'Valve.Steam'; Desc = 'Steam (游戏平台 / Steam)'; Default = $false; InstallArgs = @('--exact', '--silent') }
+                @{ Id = 'EpicGames.EpicGamesLauncher'; Desc = 'Epic Games Launcher'; Default = $false; InstallArgs = @('--exact', '--silent') }
+                @{ Id = 'GOG.Galaxy'; Desc = 'GOG Galaxy'; Default = $false; InstallArgs = @('--exact', '--silent') }
             )
         }
     }

@@ -10,7 +10,8 @@
 #>
 
 param(
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$AutoYes
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,11 +19,23 @@ $Script:ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # 加载公共函数
 . "$Script:ScriptDir/00-common.ps1"
-if (Set-DryRun -DryRun:$DryRun) { $env:QUICKSTART_DRY_RUN = '1' }
+
+$prevDryRun = $env:QUICKSTART_DRY_RUN
+$prevLogFile = $env:QUICKSTART_LOG_FILE
+$prevAutoYes = $env:QUICKSTART_AUTO_YES
+$prevNoPrompt = $env:QUICKSTART_NO_AUTO_YES_PROMPT
+
+$Script:IsDryRun = Set-DryRun -DryRun:$DryRun
+if ($Script:IsDryRun) { $env:QUICKSTART_DRY_RUN = '1' }
 Start-Log
+if ($Script:LogFile) { $env:QUICKSTART_LOG_FILE = $Script:LogFile }
+
+$Script:MainAutoYes = [bool]($AutoYes -or $env:QUICKSTART_AUTO_YES -eq '1' -or $env:AUTO_YES -eq '1')
+if ($Script:MainAutoYes) { $env:QUICKSTART_AUTO_YES = '1' }
+$Script:ShouldExit = $false
 
 # ===== 菜单单一真源 / Single source of truth =====
-# 菜单显示与选项分派都读取本表，新增/调整项只改这里
+# 菜单显示、选项分派与 RunAll 都读取本表，新增/调整项只改这里
 $Script:MenuItems = @(
     [pscustomobject]@{ Key = '1'; Color = 'Green'; Title = '全部运行 / Run All (Complete Setup)'; Action = 'RunAll' }
     [pscustomobject]@{ Key = '2'; Color = 'Yellow'; Title = '系统基础环境配置 / System Foundation Setup'; Script = '01-system-foundation.ps1' }
@@ -43,11 +56,17 @@ function Show-Menu {
 
 function Invoke-Script {
     param (
-        [Parameter(Mandatory = $true)]
-        [string]$ScriptNumber
+        [AllowEmptyString()]
+        [string]$ScriptNumber = ''
     )
 
-    $item = $Script:MenuItems | Where-Object { $_.Key -eq $ScriptNumber } | Select-Object -First 1
+    $normalized = if ($null -eq $ScriptNumber) { '' } else { $ScriptNumber.Trim() }
+    if ([string]::IsNullOrEmpty($normalized)) {
+        Write-Warn "无效选项 / Invalid option"
+        return $false
+    }
+
+    $item = $Script:MenuItems | Where-Object { $_.Key -eq $normalized } | Select-Object -First 1
     if (-not $item) {
         Write-Warn "无效选项 / Invalid option"
         return $false
@@ -56,32 +75,51 @@ function Invoke-Script {
     switch ($item.Action) {
         'Exit' {
             Write-Ok "再见! / Goodbye!"
-            exit 0
+            $Script:ShouldExit = $true
+            return $true
         }
         'RunAll' {
-            $autoYes = $false
-            $autoYesChoice = Read-Host "是否全选 Y（自动确认所有安装）？(Y/n) / Select all Y (auto-confirm all installations)? (Y/n)"
-            if ($autoYesChoice -notmatch '^[Nn]') {
-                $autoYes = $true
-                Write-Note "自动确认模式已启用 / Auto-yes mode enabled"
+            $runAutoYes = $Script:MainAutoYes
+            if (-not $runAutoYes) {
+                $runAutoYes = Confirm-YesNo -Prompt "是否启用自动确认（自动确认默认推荐项 Y/n，跳过默认否项 y/N）？(Y/n) / Enable auto-confirm (Y/n items only, skip y/N)? (Y/n)" -DefaultYes
+                if ($runAutoYes) {
+                    Write-Note "自动确认模式已启用（仅自动确认默认推荐项 Y/n，跳过默认否项 y/N）/ Auto-yes mode enabled (Y/n only, skips y/N)"
+                }
             }
 
             Write-Step "开始完整配置 / Starting complete setup"
-            $scripts = Get-ChildItem -Path "$Script:ScriptDir/0[1-5]-*.ps1" | Sort-Object Name
-            foreach ($script in $scripts) {
-                Write-Step "执行 $($script.Name) / Executing $($script.Name)"
+            $menuScripts = @($Script:MenuItems | Where-Object { $_.PSObject.Properties['Script'] -and $_.Script })
+            $hadFailure = $false
+            foreach ($menuItem in $menuScripts) {
+                $scriptPath = Join-Path $Script:ScriptDir $menuItem.Script
+                if (-not (Test-Path -LiteralPath $scriptPath)) {
+                    Write-Err "错误: 脚本 $($menuItem.Script) 不存在 / Error: Script $($menuItem.Script) does not exist"
+                    $hadFailure = $true
+                    continue
+                }
+                Write-Step "执行 $($menuItem.Script) / Executing $($menuItem.Script)"
                 try {
-                    if ($autoYes) {
-                        & $script.FullName -AutoYes
-                    }
-                    else {
-                        & $script.FullName
+                    $global:LASTEXITCODE = 0
+                    & $scriptPath -AutoYes:$runAutoYes -DryRun:$Script:IsDryRun -NoAutoYesPrompt:(-not $runAutoYes)
+                    if ($LASTEXITCODE -ne 0) {
+                        $hadFailure = $true
+                        Write-Warn "脚本 $($menuItem.Script) 返回非零退出码 ($LASTEXITCODE) / Script $($menuItem.Script) exited with code $LASTEXITCODE"
+                        if (-not $runAutoYes) {
+                            Read-Host "按回车键继续… / Press Enter to continue…" | Out-Null
+                        }
                     }
                 }
                 catch {
-                    Write-Warn "脚本 $($script.Name) 执行失败 / Script $($script.Name) execution failed: $($_.Exception.Message)"
-                    Read-Host "按回车键继续… / Press Enter to continue…"
+                    $hadFailure = $true
+                    Write-Warn "脚本 $($menuItem.Script) 执行失败 / Script $($menuItem.Script) execution failed: $($_.Exception.Message)"
+                    if (-not $runAutoYes) {
+                        Read-Host "按回车键继续… / Press Enter to continue…" | Out-Null
+                    }
                 }
+            }
+            if ($hadFailure) {
+                Write-Warn "完整配置已完成，但部分脚本执行失败 / Complete setup finished with failures"
+                return $false
             }
             Write-Ok "所有配置完成! / All configurations completed!"
             return $true
@@ -90,10 +128,15 @@ function Invoke-Script {
 
     if ($item.Script) {
         $scriptPath = Join-Path $Script:ScriptDir $item.Script
-        if (Test-Path $scriptPath) {
+        if (Test-Path -LiteralPath $scriptPath) {
             Write-Step "执行 $($item.Script) / Executing $($item.Script)"
             try {
-                & $scriptPath
+                $global:LASTEXITCODE = 0
+                & $scriptPath -AutoYes:$Script:MainAutoYes -DryRun:$Script:IsDryRun
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Err "脚本 $($item.Script) 返回非零退出码 ($LASTEXITCODE) / Script $($item.Script) exited with code $LASTEXITCODE"
+                    return $false
+                }
                 return $true
             }
             catch {
@@ -110,15 +153,21 @@ function Invoke-Script {
     return $true
 }
 
-# 主循环
-$maxKey = ($Script:MenuItems | ForEach-Object { [int]$_.Key } | Measure-Object -Maximum).Maximum
-while ($true) {
-    Show-Menu
-    $choice = Read-Host "请选择操作 / Please select an option [0-$maxKey]"
+# 主循环（通过 try/finally 确保环境变量不泄漏到父会话）
+try {
+    $maxKey = ($Script:MenuItems | ForEach-Object { [int]$_.Key } | Measure-Object -Maximum).Maximum
+    while (-not $Script:ShouldExit) {
+        Show-Menu
+        $choice = Read-Host "请选择操作 / Please select an option [0-$maxKey]"
+        if ($null -eq $choice) {
+            break
+        }
 
-    $success = Invoke-Script -ScriptNumber $choice
+        $success = Invoke-Script -ScriptNumber $choice
+        if ($Script:ShouldExit) {
+            break
+        }
 
-    if ($choice -ne "0") {
         Write-Host ""
         if ($success) {
             Write-Ok "操作成功 / Operation successful"
@@ -126,6 +175,14 @@ while ($true) {
         else {
             Write-Warn "执行失败，请检查错误信息 / Execution failed, please check error messages"
         }
-        Read-Host "按回车键返回主菜单… / Press Enter to return to main menu…"
+        if (-not $Script:MainAutoYes) {
+            Read-Host "按回车键返回主菜单… / Press Enter to return to main menu…" | Out-Null
+        }
     }
+}
+finally {
+    $env:QUICKSTART_DRY_RUN = $prevDryRun
+    $env:QUICKSTART_LOG_FILE = $prevLogFile
+    $env:QUICKSTART_AUTO_YES = $prevAutoYes
+    $env:QUICKSTART_NO_AUTO_YES_PROMPT = $prevNoPrompt
 }
