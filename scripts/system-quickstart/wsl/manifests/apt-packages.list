@@ -6,7 +6,9 @@ bat
 btop
 bubblewrap
 build-essential
+ca-certificates
 chromium
+curl
 git-delta
 eza
 fastfetch

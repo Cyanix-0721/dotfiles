@@ -12,12 +12,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 加载公共函数
 . "$SCRIPT_DIR/00-common.sh"
 
+# 解析 CLI 参数（--dry-run / --auto-yes / -h）
+parse_wsl_args "$@"
+
 require_wsl "常用软件安装仅支持 WSL / Essential packages only install inside WSL"
 
 header "常用软件安装 / Essential Packages"
 
 # 启用自动确认（菜单 Run All 时传入 AUTO_YES=1）
 init_auto_yes
+
+# 确保 ~/.local/bin 在 PATH 中，避免非登录 shell 下 uv/mise/magpie 幂等检测失效
+case ":$PATH:" in
+*":$HOME/.local/bin:"*) : ;;
+*) export PATH="$HOME/.local/bin:$PATH" ;;
+esac
 
 # 发行版校验：包名按 Debian/Ubuntu 写死，非 Debian 系直接退出
 # Distro check: package names target Debian/Ubuntu; exit on other distros
@@ -45,34 +54,51 @@ fi
 # Common packages from the Arch quickstart that exist in Debian stable
 # 包清单见 manifests/apt-packages.list / See manifests/apt-packages.list
 step "安装常用命令行工具 / Installing command line tools"
-if ! sudo apt-get update -qq; then
+if ! qs_run_cmd sudo apt-get update -qq; then
 	err "apt 更新失败，请检查网络或软件源 / apt update failed; check network or package sources"
+	add_failure "apt-get update"
+	write_failure_summary || true
 	exit 1
 fi
 APT_LIST="$SCRIPT_DIR/manifests/apt-packages.list"
 if ! apt_packages_raw="$(read_pkg_list "$APT_LIST")"; then
 	err "读取包清单失败 / Failed to read package list: $APT_LIST"
+	add_failure "read_pkg_list ($APT_LIST)"
+	write_failure_summary || true
 	exit 1
 fi
-mapfile -t apt_packages <<<"$apt_packages_raw"
-if ! qs_run_cmd sudo apt-get install -y --no-install-recommends "${apt_packages[@]}"; then
-	err "apt 安装失败，请检查网络或软件源 / apt install failed; check network or package sources"
-	exit 1
+apt_packages=()
+if [ -n "$apt_packages_raw" ]; then
+	mapfile -t apt_packages <<<"$apt_packages_raw"
 fi
-ok "命令行工具安装完成 / Command line tools installed"
+if [ "${#apt_packages[@]}" -gt 0 ]; then
+	if ! qs_run_cmd sudo apt-get install -y --no-install-recommends "${apt_packages[@]}"; then
+		err "apt 安装失败，请检查网络或软件源 / apt install failed; check network or package sources"
+		add_failure "apt-get install (${#apt_packages[@]} packages)"
+		write_failure_summary || true
+		exit 1
+	fi
+	ok "命令行工具安装完成 / Command line tools installed"
+else
+	warn "包清单为空，跳过 apt 安装 / Package list is empty, skipping apt install"
+fi
 
 # bat：Debian 因与 bacula-console-qt 撞名把二进制装成 batcat，这里补回习惯的 bat 命令
 # bat: Debian ships the binary as batcat (name clash with bacula-console-qt); symlink it back to bat
 step "为 bat 创建 batcat 符号链接 / Symlinking bat -> batcat"
-if [ -x "$(command -v batcat)" ]; then
-	mkdir -p "$HOME/.local/bin"
-	if [ -L "$HOME/.local/bin/bat" ] && [ "$(readlink "$HOME/.local/bin/bat")" = "$(command -v batcat)" ]; then
+batcat_bin="$(command -v batcat 2>/dev/null || true)"
+if [ -n "$batcat_bin" ] && [ -x "$batcat_bin" ]; then
+	if [ -L "$HOME/.local/bin/bat" ] && [ "$(readlink "$HOME/.local/bin/bat")" = "$batcat_bin" ]; then
 		ok "bat 软链已正确，跳过 / bat symlink already correct, skipping"
 	elif [ -e "$HOME/.local/bin/bat" ] && [ ! -L "$HOME/.local/bin/bat" ]; then
 		ok "$HOME/.local/bin/bat 是真实文件，保留不动 / exists as a real file, leaving it"
 	else
-		ln -sf "$(command -v batcat)" "$HOME/.local/bin/bat"
-		ok "已创建/修复 $HOME/.local/bin/bat -> batcat / bat symlink created or repaired"
+		if qs_run_cmd mkdir -p "$HOME/.local/bin" && qs_run_cmd ln -sf "$batcat_bin" "$HOME/.local/bin/bat"; then
+			ok "已创建/修复 $HOME/.local/bin/bat -> batcat / bat symlink created or repaired"
+		else
+			warn "创建 bat 软链失败 / Failed to create bat symlink"
+			add_failure "bat symlink ($HOME/.local/bin/bat -> $batcat_bin)"
+		fi
 	fi
 else
 	ok "batcat 不可用，跳过 / batcat unavailable, skipping"
@@ -81,11 +107,22 @@ fi
 # 将 fish 设为默认 shell（重新登录后生效）
 # Set fish as the default shell (effective after re-login)
 step "设置 fish 为默认 shell / Setting fish as the default shell"
-if [ "$(getent passwd "${USER:-$(id -un)}" | cut -d: -f7)" = "$(command -v fish)" ]; then
-	ok "默认 shell 已是 fish / fish is already the default shell"
+fish_bin="$(command -v fish 2>/dev/null || true)"
+if [ -z "$fish_bin" ]; then
+	warn "未找到 fish，跳过默认 shell 设置 / fish not found, skipping default shell setup"
 else
-	sudo chsh -s "$(command -v fish)" "${USER:-$(id -un)}"
-	ok "默认 shell 已设为 fish（重新登录生效）/ Default shell set to fish (effective after re-login)"
+	target_user="${USER:-$(id -un)}"
+	current_shell="$(getent passwd "$target_user" 2>/dev/null | cut -d: -f7 || true)"
+	if [ "$current_shell" = "$fish_bin" ]; then
+		ok "默认 shell 已是 fish / fish is already the default shell"
+	else
+		if qs_run_cmd sudo chsh -s "$fish_bin" "$target_user"; then
+			ok "默认 shell 已设为 fish（重新登录生效）/ Default shell set to fish (effective after re-login)"
+		else
+			warn "设置默认 shell 失败 / Failed to set default shell to fish"
+			add_failure "chsh -s $fish_bin $target_user"
+		fi
+	fi
 fi
 
 # uv：使用官方安装脚本（而非 apt）
@@ -93,9 +130,15 @@ fi
 step "安装 uv（官方脚本）/ Installing uv (official installer)"
 if command -v uv >/dev/null 2>&1; then
 	ok "uv 已安装，跳过 / uv already installed, skipping"
+elif [ "${DRY_RUN:-0}" = "1" ]; then
+	note "[dry-run] curl -LsSf https://astral.sh/uv/install.sh | sh"
 else
-	curl -LsSf https://astral.sh/uv/install.sh | sh
-	ok "uv 安装完成（~/.local/bin/uv）/ uv installed (~/.local/bin/uv)"
+	if curl -LsSf https://astral.sh/uv/install.sh | sh; then
+		ok "uv 安装完成（~/.local/bin/uv）/ uv installed (~/.local/bin/uv)"
+	else
+		warn "uv 安装失败，请稍后手动重试 / uv install failed, retry manually later"
+		add_failure "uv (official installer)"
+	fi
 fi
 
 # fnm：使用官方安装脚本（Debian stable 无对应包）；fish 集成由 12-fnm.fish 提供，故始终 --skip-shell
@@ -103,9 +146,15 @@ fi
 step "安装 fnm（官方脚本）/ Installing fnm (official installer)"
 if command -v fnm >/dev/null 2>&1 || [ -x "${XDG_DATA_HOME:-$HOME/.local/share}/fnm/fnm" ] || [ -x "$HOME/.fnm/fnm" ]; then
 	ok "fnm 已安装，跳过 / fnm already installed, skipping"
+elif [ "${DRY_RUN:-0}" = "1" ]; then
+	note "[dry-run] curl -fsSL https://fnm.vercel.app/install | bash -s -- --skip-shell"
 else
-	curl -fsSL https://fnm.vercel.app/install | bash -s -- --skip-shell
-	ok "fnm 安装完成 / fnm installed"
+	if curl -fsSL https://fnm.vercel.app/install | bash -s -- --skip-shell; then
+		ok "fnm 安装完成 / fnm installed"
+	else
+		warn "fnm 安装失败，请稍后手动重试 / fnm install failed, retry manually later"
+		add_failure "fnm (official installer)"
+	fi
 fi
 
 # Node.js：默认安装最新 LTS 并设为全局默认（按项目切换由 12-fnm.fish 的 --use-on-cd 提供）
@@ -113,30 +162,38 @@ fi
 # (per-project switching handled by --use-on-cd in 12-fnm.fish, reading .node-version / .nvmrc)
 step "安装 Node.js Latest LTS（fnm）/ Installing Node.js latest LTS (fnm)"
 export PATH="${XDG_DATA_HOME:-$HOME/.local/share}/fnm:$HOME/.fnm:$PATH"
-if command -v fnm >/dev/null 2>&1; then
+if [ "${DRY_RUN:-0}" = "1" ]; then
+	if confirm_install 1 "是否安装最新 LTS 版 Node.js？/ Install latest LTS Node.js?"; then
+		qs_run_cmd fnm install --lts
+		qs_run_cmd fnm default lts-latest
+	fi
+elif command -v fnm >/dev/null 2>&1; then
 	# 本次会话加载 fnm（fish 集成由 12-fnm.fish 提供）
 	# Load fnm for this session (fish integration lives in 12-fnm.fish)
 	eval "$(fnm env --use-on-cd --shell bash)"
 	if confirm_install 1 "是否安装最新 LTS 版 Node.js？/ Install latest LTS Node.js?"; then
 		# 同版本已安装时 fnm 返回非零，故用列表结果判断是否安装成功
 		# fnm exits non-zero when the same version is already installed; verify via list instead
-		fnm install --lts || true
-		lts_version="$(fnm list 2>/dev/null | grep 'lts-latest' | head -n1 | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
+		qs_run_cmd fnm install --lts || true
+		# 使用 awk 完整消费输入至 EOF 并始终以 0 退出，避免 pipefail 下 grep/head 误中止或 SIGPIPE
+		lts_version="$({ fnm list 2>/dev/null || true; } | awk '!found && /lts-latest/ { if (match($0, /v?[0-9]+\.[0-9]+\.[0-9]+/)) { print substr($0, RSTART, RLENGTH); found=1 } }')"
 		if [ -n "$lts_version" ]; then
 			ok "最新 LTS 版 Node.js $lts_version 安装完成 / Latest LTS Node.js $lts_version installed"
 			# lts-latest 别名随 fnm install --lts 自动指向新版本，比固定版本号更稳；
 			# 个别旧环境无法创建别名时退回写具体版本号
 			# The lts-latest alias follows `fnm install --lts`, so prefer it over a pinned
 			# version; some older setups cannot create the alias, so fall back to the pin
-			if fnm default lts-latest; then
+			if qs_run_cmd fnm default lts-latest; then
 				ok "已将 Node.js $lts_version 设为全局默认 / Node.js $lts_version set as global default"
-			elif fnm default "$lts_version"; then
+			elif qs_run_cmd fnm default "$lts_version"; then
 				ok "已将 Node.js $lts_version 设为全局默认 / Node.js $lts_version set as global default"
 			else
 				warn "设置全局默认失败 / Failed to set global default"
+				add_failure "fnm default ($lts_version)"
 			fi
 		else
 			err "最新 LTS 版 Node.js 安装失败 / Latest LTS Node.js installation failed"
+			add_failure "Node.js LTS (fnm install --lts)"
 		fi
 	fi
 else
@@ -158,17 +215,24 @@ export PNPM_HOME="${PNPM_HOME:-$HOME/.local/share/pnpm}"
 export PATH="$PNPM_HOME/bin:$PATH"
 if command -v pnpm >/dev/null 2>&1; then
 	ok "pnpm 已安装，跳过 / pnpm already installed, skipping"
+elif [ "${DRY_RUN:-0}" = "1" ]; then
+	qs_run_cmd sudo apt-get install -y --no-install-recommends libatomic1
+	note "[dry-run] curl -fsSL https://get.pnpm.io/install.sh | sh -"
 else
 	# glibc 构建需要 libatomic.so.1（WSL 完整发行版通常已含，缺失时补装）
 	# The glibc build needs libatomic.so.1 (normally present on full distros; install if missing)
-	sudo apt-get install -y --no-install-recommends libatomic1 >/dev/null 2>&1 || true
-	curl -fsSL https://get.pnpm.io/install.sh | sh -
-	# 安装器把 CLI 写进 $PNPM_HOME/bin，PATH 已在上面无条件导出；
-	# 持久化的 fish PATH 由 chezmoi 管理的 dot_config/fish/conf.d/01-env.fish 提供
-	# The installer drops the CLIs into $PNPM_HOME/bin (PATH already exported above);
-	# the persistent fish PATH comes from the chezmoi-managed
-	# dot_config/fish/conf.d/01-env.fish
-	ok "pnpm 安装完成（$PNPM_HOME/bin）/ pnpm installed ($PNPM_HOME/bin)"
+	qs_run_cmd sudo apt-get install -y --no-install-recommends libatomic1 >/dev/null 2>&1 || true
+	if curl -fsSL https://get.pnpm.io/install.sh | sh -; then
+		# 安装器把 CLI 写进 $PNPM_HOME/bin，PATH 已在上面无条件导出；
+		# 持久化的 fish PATH 由 chezmoi 管理的 dot_config/fish/conf.d/01-env.fish 提供
+		# The installer drops the CLIs into $PNPM_HOME/bin (PATH already exported above);
+		# the persistent fish PATH comes from the chezmoi-managed
+		# dot_config/fish/conf.d/01-env.fish
+		ok "pnpm 安装完成（$PNPM_HOME/bin）/ pnpm installed ($PNPM_HOME/bin)"
+	else
+		warn "pnpm 安装失败，请稍后手动重试 / pnpm install failed, retry manually later"
+		add_failure "pnpm (official installer)"
+	fi
 fi
 
 # mise：使用官方安装脚本（mise.run，自带 self-update）
@@ -176,27 +240,41 @@ fi
 step "安装 mise（官方安装脚本）/ Installing mise (official installer)"
 if command -v mise >/dev/null 2>&1; then
 	ok "mise 已安装，跳过 / mise already installed, skipping"
+elif [ "${DRY_RUN:-0}" = "1" ]; then
+	note "[dry-run] curl -fsSL https://mise.run | sh"
 else
-	curl https://mise.run | sh
-	ok "mise 安装完成（~/.local/bin/mise）/ mise installed (~/.local/bin/mise)"
+	if curl -fsSL https://mise.run | sh; then
+		ok "mise 安装完成（~/.local/bin/mise）/ mise installed (~/.local/bin/mise)"
+	else
+		warn "mise 安装失败，请稍后手动重试 / mise install failed, retry manually later"
+		add_failure "mise (official installer)"
+	fi
 fi
 
 # 按全局 mise 配置安装全部声明工具（go / betterleaks 等）
 # Install all tools declared in the global mise config (go / betterleaks, etc.)
 # 全局工具声明由 chezmoi 纳管（dot_config/mise/config.toml → ~/.config/mise/config.toml），
 # 此处不逐个指定工具，统一 `mise install` 按声明安装（幂等，只补缺失版本）。
-MISE_BIN="$(command -v mise || true)"
+MISE_BIN="$(command -v mise 2>/dev/null || true)"
 [ -n "$MISE_BIN" ] || MISE_BIN="$HOME/.local/bin/mise"
-if [ ! -x "$MISE_BIN" ]; then
+if [ "${DRY_RUN:-0}" = "1" ]; then
+	if [ -f "$HOME/.config/mise/config.toml" ]; then
+		step "按全局 mise 配置安装工具 / Installing tools declared in global mise config"
+		qs_run_cmd "$MISE_BIN" install
+	else
+		warn "未找到全局 mise 配置 ~/.config/mise/config.toml，请先运行 chezmoi apply 部署配置后重试 / Global mise config not found; run 'chezmoi apply' to deploy it, then rerun '$MISE_BIN install'"
+	fi
+elif [ ! -x "$MISE_BIN" ]; then
 	warn "mise 不可用，跳过按全局配置安装 / mise unavailable, skipping install from global mise config"
 elif [ ! -f "$HOME/.config/mise/config.toml" ]; then
 	warn "未找到全局 mise 配置 ~/.config/mise/config.toml，请先运行 chezmoi apply 部署配置后重试 / Global mise config not found; run 'chezmoi apply' to deploy it, then rerun '$MISE_BIN install'"
 else
 	step "按全局 mise 配置安装工具 / Installing tools declared in global mise config"
-	if "$MISE_BIN" install; then
+	if qs_run_cmd "$MISE_BIN" install; then
 		ok "全局 mise 配置中的工具已安装 / All tools in global mise config installed"
 	else
 		warn "mise install 返回非零，可稍后手动运行 '$MISE_BIN install' 重试 / mise install returned non-zero; rerun '$MISE_BIN install' later"
+		add_failure "mise install"
 	fi
 fi
 
@@ -208,7 +286,9 @@ fi
 # `pnpm add -g @openai/codex`, whereas the standalone build re-runs install.sh. Routing
 # everything through pnpm keeps the update path aligned with the pnpm step above.
 step "安装 codex（pnpm 全局）/ Installing codex (pnpm global)"
-if ! command -v node >/dev/null 2>&1; then
+if [ "${DRY_RUN:-0}" = "1" ]; then
+	qs_run_cmd pnpm add -g @openai/codex
+elif ! command -v node >/dev/null 2>&1; then
 	# pnpm 清单是 `#!/bin/sh` + `exec node ...`，没有 node 会直接 exec 失败
 	# The pnpm shim is `#!/bin/sh` + `exec node ...`, so a missing node makes it fail on exec
 	warn "未找到 node，跳过 codex 安装（pnpm 版 codex 依赖 Node 运行时）/ node not found, skipping codex (the pnpm build needs a Node runtime)"
@@ -220,17 +300,17 @@ else
 	# 用 `pnpm list` 而非 `command -v codex` 判断是否已装：PATH 里可能还残留 npm 或
 	# standalone 版 codex，那会让这里误判「已安装」而放过 pnpm 安装，结果 codex update
 	# 仍然指向错误的更新器。
-	# Detect with `pnpm list`, not `command -v codex`: PATH may still hold an npm or
-	# standalone codex, which would look "already installed" and skip the pnpm install,
-	# leaving codex update pointed at the wrong updater.
-	if pnpm list -g --depth=0 @openai/codex 2>/dev/null | grep -q '@openai/codex'; then
+	# 先捕获输出再 grep，避免 pipefail 下 grep -q 提前关闭管道导致 SIGPIPE。
+	pnpm_codex_list="$(pnpm list -g --depth=0 @openai/codex 2>/dev/null || true)"
+	if grep -q '@openai/codex' <<<"$pnpm_codex_list"; then
 		ok "codex 已由 pnpm 安装，跳过 / codex already installed via pnpm, skipping"
 	else
-		if pnpm add -g @openai/codex; then
+		if qs_run_cmd pnpm add -g @openai/codex; then
 			ok "codex 安装完成（$PNPM_HOME/bin/codex，数据在 ~/.codex）/ codex installed ($PNPM_HOME/bin/codex, data in ~/.codex)"
 		else
 			warn "codex 安装失败，请稍后手动重试 / codex install failed, retry manually later"
 			note "  pnpm add -g @openai/codex"
+			add_failure "codex (pnpm add -g @openai/codex)"
 		fi
 	fi
 fi
@@ -252,32 +332,31 @@ step "安装 magpie CLI（官方脚本）/ Installing magpie CLI (official insta
 MAGPIE_BIN="$HOME/.local/bin/magpie"
 if command -v magpie >/dev/null 2>&1 || [ -x "$MAGPIE_BIN" ]; then
 	ok "magpie 已安装，跳过 / magpie already installed, skipping"
+elif [ "${DRY_RUN:-0}" = "1" ]; then
+	note "[dry-run] curl -fsSL https://usemagpie.ai/install.sh | MAGPIE_CLI=1 sh"
 else
-	# 安装脚本按 uname 选 magpie-cli-linux-<arch>，SHA-256 取自 usemagpie.ai/api/latest
-	# 管道放在子 shell 里开 pipefail：没有它，curl 失败时 sh 读到空 stdin 仍退出 0，
-	# 会把「下载失败」误报成安装完成。子 shell 隔离，不影响脚本其余部分。
-	# The installer picks magpie-cli-linux-<arch> from uname and verifies it against
-	# the SHA-256 published by usemagpie.ai/api/latest.
-	# The pipe runs in a subshell with pipefail: without it a failed curl still exits 0
-	# (sh reads empty stdin), reporting success for a download that never happened.
-	if (set -o pipefail && curl -fsSL https://usemagpie.ai/install.sh | MAGPIE_CLI=1 sh); then
+	# 脚本顶部已启用 set -euo pipefail，curl 失败时不会误报成功
+	if curl -fsSL https://usemagpie.ai/install.sh | MAGPIE_CLI=1 sh; then
 		ok "magpie 安装完成（$MAGPIE_BIN）/ magpie installed ($MAGPIE_BIN)"
 		note "  终端 UI：magpie tui；浏览器 UI：magpie web（WSL 无桌面时用这个）/ terminal UI: 'magpie tui'; browser UI: 'magpie web'"
 	else
 		warn "magpie 安装失败，请稍后手动重试 / magpie install failed, retry manually later"
 		note "  curl -fsSL https://usemagpie.ai/install.sh | MAGPIE_CLI=1 sh"
+		add_failure "magpie (official installer)"
 	fi
 fi
 
-# DSH：DeepSeek Harness（可选，默认否；AUTO_YES 时安装）
+# DSH：DeepSeek Harness（可选，默认否；AUTO_YES 时跳过）
 # 通过 pnpm 全局安装 DSH（不指定版本 tag，始终取最新）
 # 依赖上面的 Node LTS 与 pnpm
-# DSH: DeepSeek Harness (optional, default no; AUTO_YES installs it)
+# DSH: DeepSeek Harness (optional, default no; skipped when AUTO_YES=1)
 # Installed globally via pnpm (no version tag, always latest)
 # Depends on the Node LTS and pnpm above
 step "安装 DSH / Installing DSH"
-if confirm_install 0 "是否安装 DSH？(y/N) / Install DSH? (y/N)"; then
-	if ! command -v node >/dev/null 2>&1; then
+if confirm_install 0 "是否安装 DSH？/ Install DSH?"; then
+	if [ "${DRY_RUN:-0}" = "1" ]; then
+		qs_run_cmd pnpm add -g @deepseek-ai/dsh
+	elif ! command -v node >/dev/null 2>&1; then
 		warn "未找到 node，跳过 DSH 安装（请先安装 Node.js LTS）/ node not found, skipping DSH (install Node.js LTS first)"
 	elif ! command -v pnpm >/dev/null 2>&1; then
 		warn "未找到 pnpm，跳过 DSH 安装 / pnpm not found, skipping DSH install"
@@ -285,11 +364,12 @@ if confirm_install 0 "是否安装 DSH？(y/N) / Install DSH? (y/N)"; then
 	else
 		# 通过 pnpm 全局安装 DSH，不指定版本 tag，pnpm 默认取最新
 		# Install DSH globally via pnpm without a version tag; pnpm resolves the latest
-		if pnpm add -g @deepseek-ai/dsh; then
+		if qs_run_cmd pnpm add -g @deepseek-ai/dsh; then
 			ok "DSH 安装完成（$PNPM_HOME/bin/dsh）/ DSH installed ($PNPM_HOME/bin/dsh)"
 		else
 			warn "DSH 安装失败，请稍后手动重试 / DSH install failed, retry manually later"
 			note "  pnpm add -g @deepseek-ai/dsh"
+			add_failure "DSH (pnpm add -g @deepseek-ai/dsh)"
 		fi
 	fi
 fi
@@ -305,6 +385,8 @@ note "  mise    → mise self-update"
 note "  codex   → codex update（走 pnpm：pnpm add -g @openai/codex）/ codex update (via pnpm)"
 note "  magpie  → magpie update（自更新，代理用 --proxy）/ magpie update (--proxy behind a firewall)"
 
-ok "常用软件安装完成 / Essential packages installed"
+if ! write_failure_summary; then
+	exit 1
+fi
 
-write_failure_summary
+ok "常用软件安装完成 / Essential packages installed"
