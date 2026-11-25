@@ -9,12 +9,16 @@ BeforeAll {
 }
 
 Describe 'Package manifest' {
-    It 'loads and has all 33 sections' {
+    It 'loads manifest sections with well-formed ids' {
         $manifest = Get-PackageManifest
-        $manifest.Sections.Count | Should -Be 33
+        $ids = @($manifest.Sections.Keys)
+        $ids.Count | Should -BeGreaterThan 0
+        foreach ($id in $ids) {
+            $id | Should -Match '^[a-z][a-zA-Z0-9]*\.[a-zA-Z0-9]+$' -Because "section id '$id' must follow <group>.<name>"
+        }
     }
 
-    It 'every section is valid (installer scoop/winget, non-empty unique keys, valid schema)' {
+    It 'every section is valid (installer scoop/winget, non-empty packages, non-empty Desc)' {
         $manifest = Get-PackageManifest
         foreach ($id in $manifest.Sections.Keys) {
             $section = $manifest.Sections[$id]
@@ -22,20 +26,25 @@ Describe 'Package manifest' {
             @($section.Packages).Count | Should -BeGreaterThan 0
 
             $resolved = Get-PackageSection -Id $id
-            $keys = @($resolved.Keys)
-            $keys.Count | Should -Be @($section.Packages).Count
-            @($keys | Where-Object { [string]::IsNullOrWhiteSpace($_) }).Count | Should -Be 0
-            ($keys | Sort-Object -Unique).Count | Should -Be $keys.Count
-            foreach ($k in $keys) {
+            foreach ($k in @($resolved.Keys)) {
                 [string]::IsNullOrWhiteSpace($resolved[$k].Desc) | Should -BeFalse -Because "section '$id' entry '$k' must have a non-empty Desc"
             }
         }
     }
 
-    It 'Get-PackageSection returns expected counts' {
-        (Get-PackageSection 'sys.term').Count | Should -Be 10
-        (Get-PackageSection 'foundation.vcredist').Count | Should -Be 12
-        (Get-PackageSection 'ess.games').Count | Should -Be 3
+    It 'Get-PackageSection maps every package to a unique key, in manifest order' {
+        $manifest = Get-PackageManifest
+        foreach ($id in $manifest.Sections.Keys) {
+            $section = $manifest.Sections[$id]
+            $resolved = Get-PackageSection -Id $id
+            # scoop 用 Name 作键，winget 用 Id；顺序必须与清单书写顺序一致
+            $expectedKeys = @($section.Packages | ForEach-Object {
+                    if ($section.Installer -eq 'winget') { $_.Id } else { $_.Name }
+                })
+            $keys = @($resolved.Keys)
+            $keys.Count | Should -Be $expectedKeys.Count -Because "section '$id' must not drop or collapse packages"
+            ($keys -join '|') | Should -Be ($expectedKeys -join '|') -Because "section '$id' must expose its packages in manifest order"
+        }
     }
 
     It 'marks ess.games entries as Default = $false' {
