@@ -103,6 +103,8 @@ function Get-PackageSection {
 
 # ===== 权限与原生命令兼容辅助 =====
 function Test-IsAdministrator {
+    # 非 Windows 平台没有 WindowsIdentity（CI 在 ubuntu 上跑 dry-run 会调用本函数），直接视为非管理员
+    if ([System.Environment]::OSVersion.Platform -ne [System.PlatformID]::Win32NT) { return $false }
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($identity)
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)

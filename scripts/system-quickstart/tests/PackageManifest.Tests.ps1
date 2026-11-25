@@ -33,7 +33,7 @@ Describe 'Package manifest' {
     }
 
     It 'Get-PackageSection returns expected counts' {
-        (Get-PackageSection 'sys.term').Count | Should -Be 11
+        (Get-PackageSection 'sys.term').Count | Should -Be 10
         (Get-PackageSection 'foundation.vcredist').Count | Should -Be 12
         (Get-PackageSection 'ess.games').Count | Should -Be 3
     }
