@@ -224,7 +224,6 @@
         'sys.term' = @{
             Installer = 'scoop'
             Packages  = @(
-                @{ Name = 'wezterm-nightly'; Desc = 'WezTerm (GPU 加速终端 / GPU-accelerated terminal)'; Global = $false }
                 @{ Name = 'windows-terminal'; Desc = 'Windows Terminal (微软官方终端 / Microsoft official terminal)'; Global = $false }
                 @{ Name = 'less'; Desc = 'less (终端分页器 / Terminal pager)'; Global = $false }
                 @{ Name = 'microsoft-coreutils'; Desc = 'GNU Coreutils (ls/cp/mv 等 Linux 核心命令 / GNU core utilities)'; Global = $false }

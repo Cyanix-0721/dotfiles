@@ -61,7 +61,6 @@ WSL quickstart 默认启用 **Windows OpenSSH agent 转发（win-ssh）**：WSL 
 | 配置 | 说明 |
 | ------ | ------ |
 | `dot_gitconfig.tmpl` | Git 全局配置（delta diff、自动 push 上游、rebase autoStash 等） |
-| `dot_wezterm.lua` | WezTerm 终端（GPU 加速、分屏、字体） |
 | `dot_wslconfig` | WSL 资源限制（内存 10GB、6 核、镜像网络） |
 | `dot_condarc` | Conda 镜像源 + 代理 |
 | `dot_aria2/aria2.conf.tmpl` | Aria2 下载器（RPC 密钥由变量注入） |

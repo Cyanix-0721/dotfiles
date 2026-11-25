@@ -82,15 +82,13 @@ header "终端模拟器 / Terminal Emulator"
 echo "选择终端模拟器 / Select terminal emulator:"
 echo "  1) kitty (默认/default)"
 echo "  2) alacritty"
-echo "  3) wezterm"
-echo "  4) 全部安装 / Install all"
-terminal_choice="$(read_choice "1" "输入选择 (1-4) [1]: ")"
+echo "  3) 全部安装 / Install all"
+terminal_choice="$(read_choice "1" "输入选择 (1-3) [1]: ")"
 
 term_packages=()
 case "$terminal_choice" in
 2) term_packages=(alacritty) ;;
-3) term_packages=(wezterm) ;;
-4) term_packages=(kitty alacritty wezterm) ;;
+3) term_packages=(kitty alacritty) ;;
 *) term_packages=(kitty) ;;
 esac
 

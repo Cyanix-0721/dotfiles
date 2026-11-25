@@ -22,7 +22,7 @@
 dot_config/               → ~/.config/<app>
 dot_local/                → ~/.local/share(共享数据)
 dot_aria2/                → ~/.aria2(aria2.conf + run_once session 初始化)
-dot_condarc / dot_gitconfig.tmpl / dot_wezterm.lua / dot_wslconfig
+dot_condarc / dot_gitconfig.tmpl / dot_wslconfig
                           → ~/ 根级点文件
 private_dot_ssh/          → ~/.ssh(敏感,0600)
 scripts/                  独立工具脚本(.chezmoiignore 排除,不同步 home)
@@ -54,7 +54,7 @@ scripts/                  独立工具脚本(.chezmoiignore 排除,不同步 hom
 | --- | --- | --- |
 | `fish`、`kitty`、`btop`、`niri`、`fuzzel`、`fontconfig`、`mpd`、`rmpc`、`fcitx5`、`environment.d`、`noctalia`(+ `dot_local/share/fcitx5`) | Linux(Arch / WSL) | Windows 侧由 `.chezmoiignore` 忽略 |
 | `powershell`(+ `dot_wslconfig`) | Windows | 非 Windows 侧忽略 |
-| `fastfetch`、`mise`、`starship.toml`、`yazi`、wezterm、gitconfig、condarc、aria2、ssh、`betterleaks` | 全部 | 通用 |
+| `fastfetch`、`mise`、`starship.toml`、`yazi`、gitconfig、condarc、aria2、ssh、`betterleaks` | 全部 | 通用 |
 
 **新增应用配置时的流程**:想清目标平台 → 放入 `dot_config/<app>/`(敏感则 `private_` 前缀)→ 若为平台限定,在 `.chezmoiignore` 对应 `{{- if eq .chezmoi.os "..." }}` 分支补忽略规则。
 
