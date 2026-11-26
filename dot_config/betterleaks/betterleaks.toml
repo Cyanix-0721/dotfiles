@@ -15,9 +15,9 @@
 #   betterleaks -c C:\Users\<user>\.config\betterleaks\betterleaks.toml ...
 
 # 版本下限：必须写在所有表头之前
-# 刻意**不**跟随 mise 里的安装版本（当前 2.0.0-rc.9），而是写本配置真正需要的下限：
-# 本文件只用 minVersion / prefilter / [extend]，rc.3 / rc.4 / rc.8 / rc.9 均已实测可加载
-# （rc.3/rc.4 规则数为 466、rc.8 为 476、rc.9 为 475，均能加载本配置），故下限停在 rc.3。
+# 刻意**不**跟随 mise 里的安装版本（当前 2.0.0-rc.15），而是写本配置真正需要的下限：
+# 本文件只用 minVersion / prefilter / [extend]，rc.3 / rc.4 / rc.8 / rc.9 / rc.15 均已实测可加载
+# （rc.3/rc.4 规则数为 466、rc.8 为 476、rc.9 为 475、rc.15 为 484，均能加载本配置），故下限停在 rc.3。
 # 为什么重要：minVersion 是**单向门** —— 配置写多高，低于它的二进制就一律拒绝启动。
 # 若跟着安装版本抬到 rc.9，WSL 双克隆那边先 apply 后 install 就会让 betterleaks 全面
 # 不可用（`FTL config requires v2.0.0-rc.9 or newer; running 2.0.0-rc.3`）。
@@ -64,8 +64,8 @@ matchesAny(attributes["path"], [
 ])
 '''
 
-# 继承内嵌默认规则集（rc.1/rc.3/rc.4 为 465/466/466 条，rc.8 为 476 条，rc.9 为 475 条
-# —— 条数随版本变动，以 `betterleaks config show | grep -c '^\[\[rules\]\]'`
+# 继承内嵌默认规则集（rc.1/rc.3/rc.4 为 465/466/466 条，rc.8 为 476 条，rc.9 为 475 条，
+# rc.15 为 484 条 —— 条数随版本变动，以 `betterleaks config show | grep -c '^\[\[rules\]\]'`
 # 或 `betterleaks config show ids | wc -l` 的实测为准）。
 # 自定义配置不会自动继承默认规则，
 # 必须显式 extend，否则只剩本文件里写的规则。
@@ -73,7 +73,7 @@ matchesAny(attributes["path"], [
 # 因 prefilter 是并集语义，检测行为 = 默认规则集 - .git/构建缓存 噪音。
 # [extend] is mandatory: a custom config inherits NOTHING by default.
 # The embedded default rule count changes between versions (465 in rc.1, 466 in
-# rc.3/rc.4, 476 in rc.8, 475 in rc.9) -- always re-measure, do not trust these numbers.
+# rc.3/rc.4, 476 in rc.8, 475 in rc.9, 484 in rc.15) -- always re-measure, do not trust these numbers.
 [extend]
 useDefault = true
 
