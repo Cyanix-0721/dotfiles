@@ -30,11 +30,89 @@ If (Test-Path "C:\Users\Administrator\scoop\apps\miniconda3\current\Scripts\cond
 }
 #endregion
 
-#region fastfetch
-if (Get-Command fastfetch -ErrorAction SilentlyContinue) {
-    fastfetch
-    Set-Alias -Name ff -Value fastfetch
+#region init script cache
+# 静态缓存外部工具的 init / completion 脚本，避免每次启动反复拉起子进程与 IEX 解析。
+# 通过解析 scoop .shim 拿到真实 exe 的路径、大小与修改时间作为缓存键，升级/降级自动重建。
+$script:__PwshInitCacheDir = if ($env:LOCALAPPDATA) {
+    Join-Path $env:LOCALAPPDATA 'pwsh-cache'
+} else {
+    Join-Path ([System.IO.Path]::GetTempPath()) 'pwsh-cache'
 }
+
+function Resolve-RealCommandPath {
+    param([Parameter(Mandatory)][string]$Name)
+    $cmd = Get-Command -Name $Name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $cmd) { return $null }
+
+    $exePath = $cmd.Source
+    $shimPath = [System.IO.Path]::ChangeExtension($exePath, '.shim')
+    if ([System.IO.File]::Exists($shimPath)) {
+        foreach ($line in [System.IO.File]::ReadLines($shimPath)) {
+            if ($line -match '^\s*path\s*=\s*"?([^"\r\n]+)"?\s*$') {
+                $target = $Matches[1].Trim()
+                if ([System.IO.File]::Exists($target)) {
+                    $exePath = $target
+                }
+                break
+            }
+        }
+    }
+    return $exePath
+}
+
+function Get-CachedInitScript {
+    param(
+        [Parameter(Mandatory)][string]$Name,
+        [Parameter(Mandatory)][string]$ExePath,
+        [Parameter(Mandatory)][string[]]$Arguments
+    )
+    if (-not [System.IO.File]::Exists($ExePath)) { return $null }
+
+    $fi = [System.IO.FileInfo]::new($ExePath)
+    $linkTarget = $fi.ResolveLinkTarget($true)
+    if ($linkTarget -is [System.IO.FileInfo]) {
+        $fi = $linkTarget
+    }
+
+    $cacheKey = "# cache-key: $($fi.FullName)|$($fi.Length)|$($fi.LastWriteTimeUtc.Ticks)|$($Arguments -join ' ')"
+    $cacheFile = Join-Path $script:__PwshInitCacheDir "$Name.ps1"
+
+    if ([System.IO.File]::Exists($cacheFile)) {
+        $sr = [System.IO.StreamReader]::new($cacheFile, [System.Text.Encoding]::UTF8)
+        try { $firstLine = $sr.ReadLine() } finally { $sr.Dispose() }
+        if ($firstLine -eq $cacheKey) {
+            return $cacheFile
+        }
+    }
+
+    if (-not [System.IO.Directory]::Exists($script:__PwshInitCacheDir)) {
+        [void][System.IO.Directory]::CreateDirectory($script:__PwshInitCacheDir)
+    }
+
+    $content = (& $ExePath @Arguments | Out-String)
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($content)) {
+        return $null
+    }
+
+    $tmpFile = Join-Path $script:__PwshInitCacheDir "$Name.$PID.$([System.Guid]::NewGuid().ToString('N')).tmp"
+    $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+    [System.IO.File]::WriteAllText($tmpFile, "$cacheKey`r`n$content", $utf8NoBom)
+    try {
+        [System.IO.File]::Move($tmpFile, $cacheFile, $true)
+    } catch {
+        Remove-Item -LiteralPath $tmpFile -ErrorAction SilentlyContinue
+    }
+    return $cacheFile
+}
+#endregion
+
+#region fastfetch
+# 不在启动时自动运行 fastfetch，仅保留 ff 别名按需调用（直指真实 exe，跳过 scoop shim）
+$__ffExe = Resolve-RealCommandPath 'fastfetch'
+if ($__ffExe) {
+    Set-Alias -Name ff -Value $__ffExe
+}
+Remove-Variable -Name __ffExe -ErrorAction SilentlyContinue
 #endregion
 
 #region aliases
@@ -66,9 +144,14 @@ Set-Alias -Name sccog -Value Clear-ScoopCacheOldGlobal
 #endregion
 
 #region zoxide init
-if (Get-Command zoxide -ErrorAction SilentlyContinue) {
-    Invoke-Expression (& { (zoxide init powershell | Out-String) })
+$__zoxideExe = Resolve-RealCommandPath 'zoxide'
+if ($__zoxideExe) {
+    $__zoxideCache = Get-CachedInitScript -Name 'zoxide' -ExePath $__zoxideExe -Arguments @('init', 'powershell')
+    if ($__zoxideCache) {
+        . $__zoxideCache
+    }
 }
+Remove-Variable -Name __zoxideExe, __zoxideCache -ErrorAction SilentlyContinue
 #endregion
 
 #region yazi init
@@ -84,9 +167,15 @@ function y {
 #endregion
 
 #region starship init
-if (Get-Command starship -ErrorAction SilentlyContinue) {
-    Invoke-Expression (&starship init powershell)
+# 使用 --print-full-init 直接生成完整初始化脚本并静态缓存，消除默认 init 的二次进程拉起与双重 IEX
+$__starshipExe = Resolve-RealCommandPath 'starship'
+if ($__starshipExe) {
+    $__starshipCache = Get-CachedInitScript -Name 'starship' -ExePath $__starshipExe -Arguments @('init', 'powershell', '--print-full-init')
+    if ($__starshipCache) {
+        . $__starshipCache
+    }
 }
+Remove-Variable -Name __starshipExe, __starshipCache -ErrorAction SilentlyContinue
 #endregion
 
 #region mise init
@@ -96,8 +185,23 @@ if (Get-Command mise -ErrorAction SilentlyContinue) {
 #endregion
 
 #region uv autocompletion
-if (Get-Command uv -ErrorAction SilentlyContinue) {
-    (& uv generate-shell-completion powershell) | Out-String | Invoke-Expression
+# 懒加载 + 静态缓存：避免每次启动生成并解析 766KB/4752 行补全脚本，首次对 uv 按 Tab 时再加载。
+$script:__UvExe = Resolve-RealCommandPath 'uv'
+$script:__UvCompletionLoaded = $false
+if ($script:__UvExe) {
+    Register-ArgumentCompleter -Native -CommandName 'uv' -ScriptBlock {
+        param($wordToComplete, $commandAst, $cursorPosition)
+        $null = $wordToComplete
+        if ($script:__UvCompletionLoaded) { return }
+        $script:__UvCompletionLoaded = $true
+
+        $cacheFile = Get-CachedInitScript -Name 'uv' -ExePath $script:__UvExe -Arguments @('generate-shell-completion', 'powershell')
+        if (-not $cacheFile) { return }
+
+        . $cacheFile
+        $relCursor = $cursorPosition - $commandAst.Extent.StartOffset
+        ([System.Management.Automation.CommandCompletion]::CompleteInput($commandAst.Extent.Text, $relCursor, $null)).CompletionMatches
+    }
 }
 #endregion
 
