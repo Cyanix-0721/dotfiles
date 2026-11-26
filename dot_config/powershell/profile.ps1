@@ -64,7 +64,9 @@ function Get-CachedInitScript {
     param(
         [Parameter(Mandatory)][string]$Name,
         [Parameter(Mandatory)][string]$ExePath,
-        [Parameter(Mandatory)][string[]]$Arguments
+        [Parameter(Mandatory)][string[]]$Arguments,
+        [string]$ExtraKey = '',
+        [scriptblock]$Transform
     )
     if (-not [System.IO.File]::Exists($ExePath)) { return $null }
 
@@ -75,6 +77,9 @@ function Get-CachedInitScript {
     }
 
     $cacheKey = "# cache-key: $($fi.FullName)|$($fi.Length)|$($fi.LastWriteTimeUtc.Ticks)|$($Arguments -join ' ')"
+    if ($ExtraKey) {
+        $cacheKey = "$cacheKey|$ExtraKey"
+    }
     $cacheFile = Join-Path $script:__PwshInitCacheDir "$Name.ps1"
 
     if ([System.IO.File]::Exists($cacheFile)) {
@@ -92,6 +97,13 @@ function Get-CachedInitScript {
     $content = (& $ExePath @Arguments | Out-String)
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($content)) {
         return $null
+    }
+
+    if ($Transform) {
+        $content = & $Transform $content $ExePath
+        if ([string]::IsNullOrWhiteSpace($content)) {
+            return $null
+        }
     }
 
     $tmpFile = Join-Path $script:__PwshInitCacheDir "$Name.$PID.$([System.Guid]::NewGuid().ToString('N')).tmp"
@@ -167,21 +179,63 @@ function y {
 #endregion
 
 #region starship init
-# 使用 --print-full-init 直接生成完整初始化脚本并静态缓存，消除默认 init 的二次进程拉起与双重 IEX
+# 使用 --print-full-init 直接生成完整初始化脚本并静态缓存，消除默认 init 的二次进程拉起与双重 IEX；
+# 同时预计算并内联 prompt --continuation（将 starship.toml 元信息并入缓存键，改配置自动刷新）。
 $__starshipExe = Resolve-RealCommandPath 'starship'
 if ($__starshipExe) {
-    $__starshipCache = Get-CachedInitScript -Name 'starship' -ExePath $__starshipExe -Arguments @('init', 'powershell', '--print-full-init')
+    $__starshipCfgPath = if ($env:STARSHIP_CONFIG) {
+        $env:STARSHIP_CONFIG
+    } else {
+        Join-Path $HOME '.config\starship.toml'
+    }
+    $__starshipExtraKey = if ([System.IO.File]::Exists($__starshipCfgPath)) {
+        $__cfgFi = [System.IO.FileInfo]::new($__starshipCfgPath)
+        "cont-v1|$($__cfgFi.FullName)|$($__cfgFi.Length)|$($__cfgFi.LastWriteTimeUtc.Ticks)"
+    } else {
+        'cont-v1|none'
+    }
+    $__starshipCache = Get-CachedInitScript -Name 'starship' -ExePath $__starshipExe -Arguments @('init', 'powershell', '--print-full-init') -ExtraKey $__starshipExtraKey -Transform {
+        param($raw, $exePath)
+        $contLines = @(& $exePath prompt --continuation 2>$null)
+        if ($LASTEXITCODE -eq 0 -and $contLines.Count -gt 0) {
+            $contText = [string]::Join("`n", $contLines)
+            if ($contText.Length -gt 0) {
+                $escaped = $contText.Replace("'", "''")
+                $replacement = "Set-PSReadLineOption -ContinuationPrompt '$escaped'"
+                $pattern = '(?s)Set-PSReadLineOption\s+-ContinuationPrompt\s+\(\s*Invoke-Native\s+-Executable\s+[^\r\n]+\s+-Arguments\s+@\(\s*"prompt",\s*"--continuation"\s*\)\s*\)'
+                $evaluator = [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $null = $m; $replacement }
+                return [regex]::Replace($raw, $pattern, $evaluator)
+            }
+        }
+        return $raw
+    }
     if ($__starshipCache) {
         . $__starshipCache
     }
 }
-Remove-Variable -Name __starshipExe, __starshipCache -ErrorAction SilentlyContinue
+Remove-Variable -Name __starshipExe, __starshipCfgPath, __starshipExtraKey, __cfgFi, __starshipCache -ErrorAction SilentlyContinue
 #endregion
 
 #region mise init
-if (Get-Command mise -ErrorAction SilentlyContinue) {
-    (&mise activate pwsh) | Out-String | Invoke-Expression
+# 静态缓存 mise activate pwsh 的壳代码（剥离头部硬编码的当前 PATH 快照），
+# 省去每次启动拉起第一次 mise.exe；保留末尾 _mise_hook 动态更新工具与环境变量。
+$__miseExe = Resolve-RealCommandPath 'mise'
+if ($__miseExe) {
+    $__miseCache = Get-CachedInitScript -Name 'mise' -ExePath $__miseExe -Arguments @('activate', 'pwsh') -ExtraKey 'strip-preamble-v1' -Transform {
+        param($raw, $exePath)
+        $null = $exePath
+        $anchor = '$env:MISE_SHELL = ''pwsh'''
+        $idx = $raw.IndexOf($anchor, [System.StringComparison]::Ordinal)
+        if ($idx -lt 0) { return $null }
+        return $raw.Substring($idx)
+    }
+    if ($__miseCache) {
+        . $__miseCache
+    } else {
+        (& $__miseExe activate pwsh) | Out-String | Invoke-Expression
+    }
 }
+Remove-Variable -Name __miseExe, __miseCache -ErrorAction SilentlyContinue
 #endregion
 
 #region uv autocompletion
