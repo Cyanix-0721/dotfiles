@@ -85,45 +85,6 @@ else {
     }
 }
 
-# 确保 PowerShell 7 已安装（可选，推荐；脚本本身兼容 PowerShell 5.1）
-# Ensure PowerShell 7 is installed (optional, recommended; scripts stay 5.1-compatible)
-Write-Step "检查 PowerShell 7 / Checking PowerShell 7"
-if (Get-Command pwsh -ErrorAction SilentlyContinue) {
-    Write-Ok "PowerShell 7 已安装 / PowerShell 7 is already installed"
-}
-else {
-    if (Confirm-YesNo -Prompt "未检测到 PowerShell 7，是否用 winget 安装？(Y/n) / PowerShell 7 not found, install via winget? (Y/n)" -DefaultYes) {
-        if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-            Write-Warn "winget 未安装，跳过 PowerShell 7 安装 / winget not installed, skipping PowerShell 7 installation"
-        }
-        elseif (Test-DryRun) {
-            Write-Note "[dry-run] 将通过 winget 安装 Microsoft.PowerShell / would install Microsoft.PowerShell via winget"
-        }
-        else {
-            try {
-                Invoke-WingetInstall -Id "Microsoft.PowerShell" -InstallArgs @("--exact", "--silent")
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Ok "PowerShell 7 安装完成，请重新打开终端以使用 pwsh / PowerShell 7 installed; reopen terminal to use pwsh"
-                }
-                elseif ($LASTEXITCODE -eq 3010) {
-                    Write-Warn "PowerShell 7 安装完成，需要重启系统以生效（退出码 3010）/ PowerShell 7 installed, reboot required (exit 3010)"
-                }
-                else {
-                    Write-Err "PowerShell 7 安装失败（退出码 $LASTEXITCODE）/ Installing PowerShell 7 failed (exit $LASTEXITCODE)"
-                    Add-Failure "Microsoft.PowerShell (winget)"
-                }
-            }
-            catch {
-                Write-Err "PowerShell 7 安装失败 / Installing PowerShell 7 failed: $($_.Exception.Message)"
-                Add-Failure "Microsoft.PowerShell (winget)"
-            }
-        }
-    }
-    else {
-        Write-Note "跳过 PowerShell 7 安装 / Skipping PowerShell 7 installation"
-    }
-}
-
 # 检查并安装 Scoop
 Write-Step "检查 Scoop 安装状态 / Checking Scoop installation"
 if (-not (Get-Command scoop -ErrorAction SilentlyContinue)) {
@@ -189,6 +150,40 @@ else {
     else {
         Write-Err "Scoop 更新失败（退出码 $LASTEXITCODE）/ Scoop update failed (exit $LASTEXITCODE)"
         Add-Failure "scoop update"
+    }
+}
+
+# 确保 PowerShell 7 已安装（可选，推荐；脚本本身兼容 PowerShell 5.1）
+# Ensure PowerShell 7 is installed via Scoop (optional, recommended; scripts stay 5.1-compatible)
+Write-Step "检查 PowerShell 7 / Checking PowerShell 7"
+if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+    Write-Ok "PowerShell 7 已安装 / PowerShell 7 is already installed"
+}
+else {
+    if (Confirm-YesNo -Prompt "未检测到 PowerShell 7，是否用 scoop 安装？(Y/n) / PowerShell 7 not found, install via scoop? (Y/n)" -DefaultYes) {
+        if (Test-DryRun) {
+            Write-Note "[dry-run] 将安装 pwsh (scoop) / would install pwsh via scoop"
+        }
+        elseif (-not $hasScoop) {
+            Write-Warn "Scoop 不可用，跳过 PowerShell 7 安装 / Scoop unavailable, skipping PowerShell 7 installation"
+            Add-Failure "pwsh"
+        }
+        else {
+            $global:LASTEXITCODE = 0
+            & scoop @('install', 'pwsh')
+            $pwshExit = $LASTEXITCODE
+            Reset-ScoopCache
+            if ($pwshExit -eq 0) {
+                Write-Ok "PowerShell 7 安装完成，请重新打开终端以使用 pwsh / PowerShell 7 installed; reopen terminal to use pwsh"
+            }
+            else {
+                Write-Err "PowerShell 7 安装失败（退出码 $pwshExit）/ Installing PowerShell 7 failed (exit $pwshExit)"
+                Add-Failure "pwsh"
+            }
+        }
+    }
+    else {
+        Write-Note "跳过 PowerShell 7 安装 / Skipping PowerShell 7 installation"
     }
 }
 
