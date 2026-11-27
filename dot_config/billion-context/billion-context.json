@@ -18,11 +18,15 @@
       "search_context",
       "bash"
     ],
-    "preserveRecentMessages": 6,
-    "preserveRecentTokens": 8000,
+    "preserveRecentMessages": 60,
+    "preserveRecentTokens": 300000,
+    "nudgeGrowthTokens": 450000,
+    "minCompressRangeChars": 60000,
+    "maxContextLimit": "75%",
+    "emergencyThresholdPercent": "95%",
     "ccr": {
       "enabled": true,
-      "minToolTokens": 8000
+      "minToolTokens": 150000
     },
     "search": {
       "planAware": true
