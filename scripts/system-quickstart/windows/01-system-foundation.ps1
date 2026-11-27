@@ -156,8 +156,11 @@ else {
 # 确保 PowerShell 7 已安装（可选，推荐；脚本本身兼容 PowerShell 5.1）
 # Ensure PowerShell 7 is installed via Scoop (optional, recommended; scripts stay 5.1-compatible)
 Write-Step "检查 PowerShell 7 / Checking PowerShell 7"
+# pwsh 运行中无法覆盖自身文件，更新必须借用非 pwsh 的 shell
+$pwshUpdateHint = '提示：更新 pwsh 请在 pwsh 以外的 shell（cmd / Windows PowerShell）执行：powershell -NoProfile -Command "scoop update pwsh" / To update pwsh, run it from a non-pwsh shell: powershell -NoProfile -Command "scoop update pwsh"'
 if (Get-Command pwsh -ErrorAction SilentlyContinue) {
     Write-Ok "PowerShell 7 已安装 / PowerShell 7 is already installed"
+    Write-Note $pwshUpdateHint
 }
 else {
     if (Confirm-YesNo -Prompt "未检测到 PowerShell 7，是否用 scoop 安装？(Y/n) / PowerShell 7 not found, install via scoop? (Y/n)" -DefaultYes) {
@@ -175,6 +178,7 @@ else {
             Reset-ScoopCache
             if ($pwshExit -eq 0) {
                 Write-Ok "PowerShell 7 安装完成，请重新打开终端以使用 pwsh / PowerShell 7 installed; reopen terminal to use pwsh"
+                Write-Note $pwshUpdateHint
             }
             else {
                 Write-Err "PowerShell 7 安装失败（退出码 $pwshExit）/ Installing PowerShell 7 failed (exit $pwshExit)"
